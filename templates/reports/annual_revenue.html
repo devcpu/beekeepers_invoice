@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}Jahresübersicht Einnahmen {{ stats.year }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>📊 Jahresübersicht Einnahmen</h1>
+        <div class="d-flex gap-2">
+            <!-- PDF-Export -->
+            <a href="{{ url_for('annual_revenue_report_pdf', year=stats.year) }}" 
+               class="btn btn-danger" 
+               target="_blank">
+                📄 PDF exportieren
+            </a>
+            <!-- Jahr-Auswahl -->
+            <select class="form-select d-inline-block" style="width: auto;" onchange="window.location.href='{{ url_for('annual_revenue_report') }}?year=' + this.value">
+                {% for y in available_years %}
+                <option value="{{ y }}" {% if y == stats.year %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <!-- Gesamtübersicht -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Gesamtumsatz {{ stats.year }}</h5>
+                    <h2 class="mb-0">{{ "%.2f"|format(stats.total_revenue) }} €</h2>
+                    <small>{{ stats.total_invoices }} Rechnungen</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Durchschnitt pro Rechnung</h5>
+                    <h2 class="mb-0">
+                        {% if stats.total_invoices > 0 %}
+                            {{ "%.2f"|format(stats.total_revenue / stats.total_invoices) }} €
+                        {% else %}
+                            0,00 €
+                        {% endif %}
+                    </h2>
+                    <small>Ø Rechnungswert</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Aufschlüsselung nach Kundentyp -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4 class="mb-0">Aufschlüsselung nach Kundentyp</h4>
+        </div>
+        <div class="card-body">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Kundentyp</th>
+                        <th class="text-end">Umsatz</th>
+                        <th class="text-end">Anzahl</th>
+                        <th class="text-end">Anteil</th>
+                        <th style="width: 200px;">Verteilung</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for type_key, type_data in stats.by_type.items() %}
+                    {% if type_data.count > 0 %}
+                    <tr>
+                        <td>
+                            {% if type_key == 'endkunde' %}
+                                <span class="badge bg-success">👤 {{ type_data.label }}</span>
+                            {% elif type_key == 'bar' %}
+                                <span class="badge bg-warning text-dark">🏪 {{ type_data.label }}</span>
+                            {% elif type_key == 'type1_ust_extern' %}
+                                <span class="badge bg-primary">📦 {{ type_data.label }}</span>
+                            {% elif type_key == 'type2_non_ust_extern' %}
+                                <span class="badge bg-info">📦 {{ type_data.label }}</span>
+                            {% elif type_key == 'type3_non_ust_pwa' %}
+                                <span class="badge bg-secondary">📱 {{ type_data.label }}</span>
+                            {% elif type_key == 'type4_owner_market' %}
+                                <span class="badge bg-success">🏪 {{ type_data.label }}</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ type_data.label }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end"><strong>{{ "%.2f"|format(type_data.revenue) }} €</strong></td>
+                        <td class="text-end">{{ type_data.count }}</td>
+                        <td class="text-end">
+                            {% if stats.total_revenue > 0 %}
+                                {{ "%.1f"|format((type_data.revenue / stats.total_revenue) * 100) }}%
+                            {% else %}
+                                0%
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="progress">
+                                {% set percentage = (type_data.revenue / stats.total_revenue) * 100 if stats.total_revenue > 0 else 0 %}
+                                <div class="progress-bar {% if type_key == 'bar' %}bg-warning{% elif type_key == 'endkunde' %}bg-success{% else %}bg-primary{% endif %}" 
+                                     role="progressbar" 
+                                     style="width: {{ percentage }}%"
+                                     aria-valuenow="{{ percentage }}" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100">
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="table-active">
+                        <th>Gesamt</th>
+                        <th class="text-end">{{ "%.2f"|format(stats.total_revenue) }} €</th>
+                        <th class="text-end">{{ stats.total_invoices }}</th>
+                        <th class="text-end">100%</th>
+                        <th></th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    <!-- Monatliche Aufschlüsselung -->
+    <div class="card">
+        <div class="card-header">
+            <h4 class="mb-0">Monatliche Aufschlüsselung</h4>
+        </div>
+        <div class="card-body">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th>Monat</th>
+                        <th class="text-end">Umsatz</th>
+                        <th class="text-end">Rechnungen</th>
+                        <th style="width: 300px;">Verlauf</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for month in range(1, 13) %}
+                    {% set month_data = stats.by_month[month] %}
+                    <tr>
+                        <td>{{ month_data.label }}</td>
+                        <td class="text-end">
+                            {% if month_data.revenue > 0 %}
+                                <strong>{{ "%.2f"|format(month_data.revenue) }} €</strong>
+                            {% else %}
+                                <span class="text-muted">0,00 €</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">{{ month_data.count }}</td>
+                        <td>
+                            {% if month_data.revenue > 0 %}
+                            <div class="progress">
+                                {% set percentage = (month_data.revenue / stats.max_month_revenue) * 100 if stats.max_month_revenue > 0 else 0 %}
+                                <div class="progress-bar bg-info" 
+                                     role="progressbar" 
+                                     style="width: {{ percentage }}%">
+                                </div>
+                            </div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Hinweise -->
+    <div class="alert alert-info mt-4">
+        <h5>ℹ️ Hinweise</h5>
+        <ul class="mb-0">
+            <li>Berücksichtigt werden ausschließlich Rechnungen mit Status "bezahlt"</li>
+            <li>Stornorechnungen werden automatisch mit negativen Beträgen verrechnet</li>
+            <li>Die Zuordnung zu Kundentypen erfolgt automatisch basierend auf den Kundendaten</li>
+            <li>Maßgeblich ist das Rechnungsdatum, nicht das Zahlungsdatum</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

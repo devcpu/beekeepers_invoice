@@ -919,6 +919,19 @@ curl "http://localhost:5000/api/products/search?q=Honig"
 
 ### Bestandsverwaltung (per Chargennummer)
 
+**Wichtig:** Diese API-Endpunkte sind für **normale Produktionsprozesse** (Abfüllen, Verpacken) gedacht und erstellen **keine GoBD-Dokumentation**. Für steuerrelevante Abgänge (Eigenentnahme, Verderb, Geschenke) verwenden Sie stattdessen die Web-UI unter "📝 Anpassungen".
+
+**Unterscheidung:**
+- ✅ **Normale Bestandsbewegungen** (keine GoBD-Dokumentation erforderlich):
+  - Produktion/Abfüllen → API `/stock/add`
+  - Verkauf über Kasse/Rechnung → automatischer Abzug mit Beleg
+  - Kommissionsware-Lieferung → Lieferschein
+- 📝 **Steuerrelevante Bestandsanpassungen** (GoBD-Dokumentation erforderlich):
+  - Eigenentnahme (§ 3 Abs. 1b Nr. 1 UStG) → Web-UI "📝 Anpassungen"
+  - Verderb/Bruch → Web-UI "📝 Anpassungen"
+  - Geschenke → Web-UI "📝 Anpassungen"
+  - Inventurkorrekturen → Web-UI "📝 Anpassungen"
+
 #### Bestand erhöhen
 
 ```http
@@ -937,6 +950,8 @@ Content-Type: application/json
 **Verhalten:**
 - Existiert die Charge bereits → Bestand wird erhöht
 - Neue Charge → Produkt wird automatisch angelegt (inaktiv, Name als Platzhalter)
+
+**Anwendungsfall:** Automatische Bestandsbuchung beim Abfüllen/Verpacken (keine Steuerrelevanz, daher keine GoBD-Dokumentation)
 
 **Beispiel:**
 ```bash
@@ -1273,6 +1288,18 @@ addStock("L0101", 50);  // 50 Stück zur Charge L0101 hinzufügen
 - ✅ Chargennummer kann direkt von QR-Code/Barcode gelesen werden
 - ✅ Automatische Produktanlage bei neuen Chargen
 - ✅ Echtzeit-Bestandsaktualisierung
+- ✅ Keine GoBD-Overhead für Produktionsprozesse
+
+**Hinweis zur GoBD-Compliance:**
+
+Diese Endpoints sind **bewusst ohne GoBD-Dokumentation** implementiert, da:
+1. **Produktion ist nicht steuerrelevant** - Erst der Verkauf löst Steuerpflicht aus
+2. **Verkäufe haben bereits Belege** - Rechnungen/Kassenbons erfüllen GoBD-Anforderungen
+3. **Performance** - Kein Overhead für jeden Produktionsschritt (z.B. jedes einzelne Glas)
+
+Für **steuerrelevante Abgänge ohne Beleg** (Eigenentnahme, Verderb, Geschenke) nutzen Sie die Web-UI unter "📝 Anpassungen", die vollständige GoBD-Dokumentation mit Belegnummern erstellt.
+
+**Siehe auch:** [GOBD_COMPLIANCE.md - Kapitel 8: Bestandsanpassungen](GOBD_COMPLIANCE.md#8-bestandsanpassungen)
 
 ## API-Endpunkte
 

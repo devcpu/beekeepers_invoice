@@ -416,8 +416,60 @@ is_valid = archive.verify_pdf('/path/to/invoice.pdf')
 
 ## 8. Bestandsanpassungen (Eigenentnahme, Inventur)
 
-### Anforderung
+### Anforderung und Abgrenzung
+
 Bestandsveränderungen ohne Verkauf (Eigenentnahme, Verderb, Inventur) müssen GoBD-konform dokumentiert werden, auch wenn keine Rechnung erstellt wird.
+
+**Wichtig:** Nicht alle Bestandsbewegungen erfordern GoBD-Dokumentation!
+
+#### ✅ Normale Geschäftsvorfälle (KEINE GoBD-Dokumentation erforderlich)
+
+Diese Vorgänge haben bereits ausreichende Belege und benötigen **keine** separate GoBD-Bestandsanpassung:
+
+1. **Produktion/Abfüllen**
+   - API: `POST /api/products/lot/<lot>/stock/add`
+   - **Grund:** Noch nicht verkauft, keine Steuerrelevanz
+   - **Beleg:** Produktionsprotokoll (optional)
+
+2. **Verkauf über Kasse/Rechnung**
+   - Automatischer Bestandsabzug
+   - **Grund:** Vollständiger Beleg vorhanden (Rechnung/Kassenbon)
+   - **Beleg:** RE-/BAR-Nummer (bereits GoBD-konform)
+
+3. **Kommissionsware-Lieferung**
+   - Lieferschein-System
+   - **Grund:** Lieferschein ist vollständiger Beleg
+   - **Beleg:** LS-Nummer
+
+#### 📝 Steuerrelevante Anpassungen (GoBD-Dokumentation ERFORDERLICH)
+
+Nur diese Vorgänge nutzen das Bestandsanpassungs-System mit Belegnummern:
+
+1. **Eigenentnahme** (§ 3 Abs. 1b Nr. 1 UStG)
+   - Privater Verbrauch von Geschäftsware
+   - **Steuerrelevant:** Umsatzsteuer auf Entnahme
+   - **Beispiel:** 5 Gläser Honig für privaten Haushalt
+
+2. **Geschenke**
+   - Unentgeltliche Zuwendungen
+   - **Steuerrelevant:** § 4 Abs. 5 Satz 1 Nr. 1 EStG (bei >50€)
+   - **Beispiel:** Präsentkorb an Geschäftspartner
+
+3. **Verderb/Bruch**
+   - Ware nicht mehr verkäuflich
+   - **Steuerrelevant:** Betriebsausgabe ohne Gegenwert
+   - **Beispiel:** Kristallisierter Honig
+
+4. **Inventurkorrekturen**
+   - Differenzen zwischen Soll und Ist
+   - **Steuerrelevant:** Buchwert-Anpassung
+   - **Beispiel:** 10 Gläser mehr/weniger als erwartet
+
+**Warum diese Unterscheidung?**
+- GoBD-Dokumentation ist nur für **Geschäftsvorfälle ohne ausreichenden Beleg** erforderlich
+- API-Endpoints für Produktion haben **keinen steuerlichen Vorgang** (noch nicht verkauft)
+- Verkäufe haben bereits **vollständige Belege** (Rechnungen erfüllen GoBD)
+- Eigenentnahmen/Verderb haben **keinen externen Beleg** → System muss dokumentieren
 
 ### Implementierung
 

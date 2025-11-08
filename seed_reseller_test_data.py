@@ -110,25 +110,10 @@ with app.app_context():
     db.session.commit()
     
     # ==========================================================================
-    # 4. User für jeden Reseller-Typ erstellen
+    # 4. User nur für Typ 3 und 4 erstellen
+    # (Typ 1 und 2 brauchen keinen Zugang - nur Kommissionsware)
     # ==========================================================================
     users_data = [
-        {
-            'username': 'reseller_type1',
-            'email': 'type1@test.local',
-            'password': 'test123',
-            'reseller_type': 'type1_ust_extern',
-            'customer': reseller_customers['type1_ust_extern'],
-            'description': 'USt.-pflichtig mit eigenem System'
-        },
-        {
-            'username': 'reseller_type2',
-            'email': 'type2@test.local',
-            'password': 'test123',
-            'reseller_type': 'type2_non_ust_extern',
-            'customer': reseller_customers['type2_non_ust_extern'],
-            'description': 'Nicht USt.-pflichtig ohne PWA'
-        },
         {
             'username': 'reseller_type3',
             'email': 'type3@test.local',
@@ -237,14 +222,6 @@ with app.app_context():
     print("   Username: admin")
     print("   Password: admin")
     print()
-    print("👤 Typ 1 - USt.-pflichtig extern (kein POS-Zugriff):")
-    print("   Username: reseller_type1")
-    print("   Password: test123")
-    print()
-    print("👤 Typ 2 - Nicht USt.-pflichtig extern (kein POS-Zugriff):")
-    print("   Username: reseller_type2")
-    print("   Password: test123")
-    print()
     print("👤 Typ 3 - Nicht USt.-pflichtig mit PWA (nur Bestandsumbuchung):")
     print("   Username: reseller_type3")
     print("   Password: test123")
@@ -255,5 +232,10 @@ with app.app_context():
     print("   Password: test123")
     print("   → Bei Login: Bestandsauswahl (Haupt oder Markt)")
     print("   → POS erstellt BAR-Rechnung (GoBD-konform)")
+    print()
+    print("ℹ️  Typ 1 & 2 - Nur Kommissionsware (kein System-Zugang):")
+    print("   → Biomarkt Schmidt GmbH (USt.-pflichtig)")
+    print("   → Hofladen Müller (Nicht USt.-pflichtig)")
+    print("   → Erhalten nur Lieferscheine, verkaufen selbst")
     print()
     print("="*70)

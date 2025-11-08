@@ -56,6 +56,18 @@
             </div>
         </div>
         
+        <div>
+            <label for="totp_required">
+                <input type="checkbox" id="totp_required" name="totp_required" 
+                       {% if user.totp_required %}checked{% endif %}
+                       style="width: auto; margin-right: 0.5rem;">
+                2FA verpflichtend
+            </label>
+            <small style="color: #6c757d; display: block; margin-top: 0.5rem;">
+                Benutzer muss 2FA aktivieren und kann es nicht deaktivieren
+            </small>
+        </div>
+        
         <div id="reseller-field" style="display: {% if user.role == 'reseller' %}block{% else %}none{% endif %};">
             <label for="reseller_customer_id">Zugehöriger Kunde (Reseller)</label>
             <select id="reseller_customer_id" name="reseller_customer_id">
@@ -109,6 +121,11 @@
                 <span style="color: #28a745;">✓ Aktiviert</span>
                 {% else %}
                 <span style="color: #dc3545;">✗ Nicht aktiviert</span>
+                {% endif %}
+                {% if user.totp_required %}
+                <span style="background: #ff9800; color: white; padding: 0.2rem 0.5rem; border-radius: 3px; font-size: 0.85rem; margin-left: 0.5rem;">
+                    Pflicht
+                </span>
                 {% endif %}
             </div>
         </div>

@@ -29,6 +29,11 @@
     <div style="padding: 1rem; background: #d4edda; border-left: 4px solid #28a745; border-radius: 4px; margin-bottom: 1rem;">
         <strong>✓ 2FA ist aktiviert</strong><br>
         <span style="color: #155724;">Ihr Account ist durch Zwei-Faktor-Authentifizierung geschützt.</span>
+        {% if current_user.totp_required %}
+        <br><span style="background: #ff9800; color: white; padding: 0.3rem 0.6rem; border-radius: 3px; font-size: 0.85rem; margin-top: 0.5rem; display: inline-block;">
+            🔒 2FA ist Pflicht und kann nicht deaktiviert werden
+        </span>
+        {% endif %}
     </div>
     
     <div style="display: flex; gap: 1rem; margin-top: 1rem;">
@@ -40,6 +45,7 @@
             </button>
         </form>
         
+        {% if not current_user.totp_required %}
         <form method="POST" action="{{ url_for('disable_2fa') }}" style="display: inline;" 
               onsubmit="return confirm('Sind Sie sicher, dass Sie 2FA deaktivieren möchten?');">
             <input type="password" name="password" placeholder="Passwort bestätigen" required 
@@ -48,11 +54,18 @@
                 ❌ 2FA deaktivieren
             </button>
         </form>
+        {% endif %}
     </div>
     {% else %}
-    <div style="padding: 1rem; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px; margin-bottom: 1rem;">
-        <strong>⚠ 2FA ist nicht aktiviert</strong><br>
-        <span style="color: #856404;">Erhöhen Sie die Sicherheit Ihres Accounts durch Zwei-Faktor-Authentifizierung.</span>
+    <div style="padding: 1rem; background: {% if current_user.totp_required %}#ffebee{% else %}#fff3cd{% endif %}; border-left: 4px solid {% if current_user.totp_required %}#e74c3c{% else %}#ffc107{% endif %}; border-radius: 4px; margin-bottom: 1rem;">
+        <strong>{% if current_user.totp_required %}🚨 2FA ist Pflicht{% else %}⚠ 2FA ist nicht aktiviert{% endif %}</strong><br>
+        <span style="color: {% if current_user.totp_required %}#c0392b{% else %}#856404{% endif %};">
+            {% if current_user.totp_required %}
+                Ihr Administrator hat 2FA für Ihren Account verpflichtend gemacht. Bitte richten Sie 2FA jetzt ein.
+            {% else %}
+                Erhöhen Sie die Sicherheit Ihres Accounts durch Zwei-Faktor-Authentifizierung.
+            {% endif %}
+        </span>
     </div>
     
     <a href="{{ url_for('setup_2fa') }}" class="btn" style="background: #28a745; color: white;">

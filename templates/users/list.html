@@ -58,6 +58,11 @@
                         <i class="bi bi-shield-x" style="font-size: 1.3rem;"></i>
                     </span>
                     {% endif %}
+                    {% if user.totp_required %}
+                    <br><span style="background: #ff9800; color: white; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.75rem; margin-top: 0.3rem; display: inline-block;" title="2FA ist Pflicht">
+                        Pflicht
+                    </span>
+                    {% endif %}
                 </td>
                 <td style="padding: 1rem; text-align: center;">
                     {% if user.is_active %}
@@ -110,6 +115,15 @@
                             </button>
                         </form>
                         {% endif %}
+                        
+                        <form method="POST" action="{{ url_for('toggle_user_2fa_required', user_id=user.id) }}" style="display: inline;">
+                            <button type="submit" 
+                                    class="btn btn-sm" 
+                                    style="background: {% if user.totp_required %}#6c757d{% else %}#ff9800{% endif %}; color: white; padding: 0.4rem 0.8rem; border: none; border-radius: 4px; cursor: pointer;"
+                                    title="{% if user.totp_required %}2FA-Pflicht aufheben{% else %}2FA verpflichtend machen{% endif %}">
+                                <i class="bi bi-{% if user.totp_required %}unlock{% else %}lock{% endif %}"></i>
+                            </button>
+                        </form>
                         
                         <form method="POST" action="{{ url_for('delete_user', user_id=user.id) }}" style="display: inline;">
                             <button type="submit" 

@@ -27,6 +27,7 @@ class User(UserMixin, db.Model):
     # 2FA (Two-Factor Authentication)
     totp_secret = db.Column(db.String(32), nullable=True)  # Base32-encoded secret für TOTP
     totp_enabled = db.Column(db.Boolean, default=False)
+    totp_required = db.Column(db.Boolean, default=False)  # Admin kann 2FA-Pflicht erzwingen
     backup_codes = db.Column(db.Text, nullable=True)  # JSON-Array mit Backup-Codes (gehashed)
     
     # API-Token für PWA

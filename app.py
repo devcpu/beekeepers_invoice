@@ -80,6 +80,17 @@ def create_app(config_name='default'):
                     flash('Ihr Account wurde deaktiviert.', 'danger')
                     return redirect(url_for('login'))
                 
+                # Prüfe 2FA-Pflicht
+                if user.totp_required and not user.totp_enabled:
+                    # 2FA ist Pflicht, aber noch nicht aktiviert
+                    login_user(user, remember=remember)
+                    user.last_login = datetime.utcnow()
+                    user.last_login_ip = request.remote_addr
+                    db.session.commit()
+                    
+                    flash('Ihr Administrator hat 2FA für Ihren Account verpflichtend gemacht. Bitte richten Sie 2FA jetzt ein.', 'warning')
+                    return redirect(url_for('setup_2fa'))
+                
                 # 2FA Check (wenn aktiviert)
                 if user.totp_enabled:
                     # 2FA-Token erforderlich
@@ -303,6 +314,11 @@ def create_app(config_name='default'):
     @login_required
     def disable_2fa():
         """2FA deaktivieren"""
+        # Prüfe ob 2FA Pflicht ist
+        if current_user.totp_required:
+            flash('2FA ist für Ihren Account verpflichtend und kann nicht deaktiviert werden.', 'danger')
+            return redirect(url_for('settings'))
+        
         password = request.form.get('password')
         
         if not current_user.check_password(password):
@@ -2280,6 +2296,9 @@ Mit freundlichen Grüßen
                 # Aktiv-Status
                 user.is_active = request.form.get('is_active') == 'on'
                 
+                # 2FA-Pflicht
+                user.totp_required = request.form.get('totp_required') == 'on'
+                
                 # Passwort ändern (optional)
                 new_password = request.form.get('new_password')
                 if new_password:
@@ -2327,6 +2346,23 @@ Mit freundlichen Grüßen
         db.session.commit()
         
         flash(f'2FA für "{user.username}" wurde zurückgesetzt.', 'warning')
+        return redirect(url_for('list_users'))
+    
+    @app.route('/settings/users/<int:user_id>/toggle-2fa-required', methods=['POST'])
+    @login_required
+    @role_required('admin')
+    def toggle_user_2fa_required(user_id):
+        """2FA-Pflicht für Benutzer umschalten"""
+        user = User.query.get_or_404(user_id)
+        
+        user.totp_required = not user.totp_required
+        db.session.commit()
+        
+        if user.totp_required:
+            flash(f'2FA ist jetzt Pflicht für "{user.username}". Der Benutzer muss 2FA beim nächsten Login einrichten.', 'success')
+        else:
+            flash(f'2FA-Pflicht für "{user.username}" wurde aufgehoben.', 'info')
+        
         return redirect(url_for('list_users'))
     
     @app.route('/settings/users/<int:user_id>/delete', methods=['POST'])

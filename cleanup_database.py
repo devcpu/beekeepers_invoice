@@ -47,11 +47,6 @@ def cleanup_database():
                 return
             
             print("\n🔧 Lösche Daten...")
-            print("   ℹ️  Deaktiviere Hash-Schutz-Trigger...")
-            
-            # Hash-Schutz-Trigger temporär deaktivieren
-            db.session.execute(text("DROP TRIGGER IF EXISTS trigger_protect_invoice_hash ON invoices;"))
-            db.session.commit()
             
             # Reihenfolge wichtig wegen Foreign Keys!
             
@@ -116,15 +111,6 @@ def cleanup_database():
                     print(f"   ✓ {table}_id_seq zurückgesetzt")
                 except Exception as e:
                     print(f"   ℹ️  {table}: Sequenz nicht gefunden (ok wenn Tabelle leer war)")
-            
-            # Hash-Schutz-Trigger wieder aktivieren
-            print("\n🔒 Aktiviere Hash-Schutz-Trigger wieder...")
-            db.session.execute(text("""
-                CREATE TRIGGER trigger_protect_invoice_hash
-                BEFORE UPDATE ON invoices
-                FOR EACH ROW
-                EXECUTE FUNCTION protect_invoice_hash();
-            """))
             
             db.session.commit()
             

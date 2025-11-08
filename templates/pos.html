@@ -21,18 +21,18 @@
             font-size: 14px;
         }
     }
-    
+
     .pos-grid {
         display: grid;
         gap: 1rem;
     }
-    
+
     @media (min-width: 769px) {
         .pos-grid {
             grid-template-columns: 1fr 1fr;
         }
     }
-    
+
     .product-item {
         display: flex;
         justify-content: space-between;
@@ -41,11 +41,11 @@
         border-bottom: 1px solid #ecf0f1;
         background: white;
     }
-    
+
     .product-item:nth-child(even) {
         background: #f8f9fa;
     }
-    
+
     .btn-counter {
         min-width: 45px;
         height: 45px;
@@ -56,33 +56,33 @@
         cursor: pointer;
         transition: all 0.2s;
     }
-    
+
     .btn-minus {
         background: #e74c3c;
         color: white;
     }
-    
+
     .btn-plus {
         background: #27ae60;
         color: white;
     }
-    
+
     .btn-counter:active {
         transform: scale(0.95);
     }
-    
+
     .btn-counter:disabled {
         opacity: 0.3;
         cursor: not-allowed;
     }
-    
+
     .counter-display {
         font-weight: bold;
         font-size: 1.5rem;
         min-width: 40px;
         text-align: center;
     }
-    
+
     .receipt-preview {
         background: white;
         border: 2px solid #2c3e50;
@@ -91,7 +91,7 @@
         font-family: 'Courier New', monospace;
         font-size: 0.9rem;
     }
-    
+
     @media (max-width: 768px) {
         .receipt-preview {
             position: fixed;
@@ -132,12 +132,12 @@
             🔄 Neu laden
         </button>
     </div>
-    
+
     <div class="pos-grid">
         <!-- Linke Seite: Produktliste -->
         <div class="card">
             <h2 style="margin-top: 0; font-size: 1.2rem;">Produkte</h2>
-            
+
             {% if products %}
                 <div id="products-list">
                     {% for product in products %}
@@ -154,14 +154,14 @@
                             </span>
                         </div>
                         <div style="display: flex; gap: 0.4rem; align-items: center;">
-                            <button onclick="removeFromCart({{ product.id }})" 
+                            <button onclick="removeFromCart({{ product.id }})"
                                     class="btn-counter btn-minus"
                                     id="btn-minus-{{ product.id }}"
                                     disabled>
                                 −
                             </button>
                             <span id="count-{{ product.id }}" class="counter-display">0</span>
-                            <button onclick="addToCart({{ product.id }})" 
+                            <button onclick="addToCart({{ product.id }})"
                                     class="btn-counter btn-plus"
                                     id="btn-plus-{{ product.id }}"
                                     {% if product.number <= 0 %}disabled{% endif %}>
@@ -178,7 +178,7 @@
                 </p>
             {% endif %}
         </div>
-        
+
         <!-- Rechte Seite: Rechnungsvorschau (Desktop) oder Sticky Bottom (Mobile) -->
         <div>
             <div class="receipt-preview" id="receipt">
@@ -188,18 +188,18 @@
                     <span style="font-size: 0.8rem;">{{ config.COMPANY_STREET }}, {{ config.COMPANY_ZIP }} {{ config.COMPANY_CITY }}</span><br>
                     <span style="font-size: 0.8rem;">Tel: {{ config.COMPANY_PHONE }}</span>
                 </div>
-                
+
                 <div style="margin: 0.5rem 0;">
                     <strong>Datum:</strong> <span id="receipt-date"></span><br>
                     <strong>Uhrzeit:</strong> <span id="receipt-time"></span>
                 </div>
-                
+
                 <div style="border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 0.5rem 0; margin: 0.5rem 0;" id="receipt-items">
                     <div style="text-align: center; color: #95a5a6; padding: 1rem;">
                         Warenkorb leer
                     </div>
                 </div>
-                
+
                 <div style="margin-top: 0.5rem;">
                     <div style="display: flex; justify-content: space-between; padding: 0.2rem 0;">
                         <span>Zwischensumme:</span>
@@ -214,24 +214,24 @@
                         <span><span id="receipt-total">0,00</span> €</span>
                     </div>
                 </div>
-                
+
                 <div style="margin-top: 1rem;">
-                    <button onclick="completeSale()" 
+                    <button onclick="completeSale()"
                             id="btn-complete"
-                            class="btn btn-primary" 
+                            class="btn btn-primary"
                             style="width: 100%; font-size: 1.1rem; padding: 0.8rem;"
                             disabled>
                         💰 Verkauf abschließen
                     </button>
-                    <button onclick="clearCart()" 
+                    <button onclick="clearCart()"
                             id="btn-clear"
-                            class="btn" 
+                            class="btn"
                             style="width: 100%; background: #95a5a6; color: white; margin-top: 0.5rem; font-size: 0.95rem; padding: 0.6rem;"
                             disabled>
                         🗑️ Warenkorb leeren
                     </button>
                 </div>
-                
+
                 <div style="margin-top: 1rem; padding-top: 0.5rem; border-top: 1px dashed #000; text-align: center; font-size: 0.75rem; color: #7f8c8d;">
                     Vielen Dank für Ihren Einkauf!<br>
                     {{ config.COMPANY_WEBSITE }}
@@ -264,17 +264,17 @@ function updateDateTime() {
 function addToCart(productId) {
     const availableStock = products[productId].stock;
     const currentCount = cart[productId] || 0;
-    
+
     if (currentCount >= availableStock) {
         alert('Nicht genug Bestand verfügbar!');
         return;
     }
-    
+
     if (!cart[productId]) {
         cart[productId] = 0;
     }
     cart[productId]++;
-    
+
     updateDisplay();
 }
 
@@ -282,12 +282,12 @@ function removeFromCart(productId) {
     if (!cart[productId] || cart[productId] <= 0) {
         return;
     }
-    
+
     cart[productId]--;
     if (cart[productId] === 0) {
         delete cart[productId];
     }
-    
+
     updateDisplay();
 }
 
@@ -296,27 +296,27 @@ function updateDisplay() {
     for (let productId in products) {
         const count = cart[productId] || 0;
         document.getElementById('count-' + productId).textContent = count;
-        
+
         // Minus-Button aktivieren/deaktivieren
         document.getElementById('btn-minus-' + productId).disabled = (count === 0);
     }
-    
+
     // Berechne Summen
     let subtotal = 0;
     let itemCount = 0;
-    
+
     for (let productId in cart) {
         subtotal += cart[productId] * products[productId].price;
         itemCount += cart[productId];
     }
-    
+
     const taxRate = 7.80; // Standard MwSt für Honig
     const taxAmount = subtotal * (taxRate / 100);
     const total = subtotal;
-    
+
     // Update Rechnungs-Items
     const itemsDiv = document.getElementById('receipt-items');
-    
+
     if (itemCount === 0) {
         itemsDiv.innerHTML = '<div style="text-align: center; color: #95a5a6; padding: 1rem;">Warenkorb leer</div>';
         document.getElementById('btn-complete').disabled = true;
@@ -327,7 +327,7 @@ function updateDisplay() {
             const quantity = cart[productId];
             const product = products[productId];
             const lineTotal = quantity * product.price;
-            
+
             html += `<div style="display: flex; justify-content: space-between; padding: 0.2rem 0;">
                 <span>${quantity}x ${product.name}</span>
                 <strong>${lineTotal.toFixed(2)} €</strong>
@@ -337,7 +337,7 @@ function updateDisplay() {
         document.getElementById('btn-complete').disabled = false;
         document.getElementById('btn-clear').disabled = false;
     }
-    
+
     // Update Summen
     document.getElementById('receipt-subtotal').textContent = subtotal.toFixed(2);
     document.getElementById('receipt-tax').textContent = taxAmount.toFixed(2);
@@ -348,7 +348,7 @@ function clearCart() {
     if (Object.keys(cart).length === 0) {
         return;
     }
-    
+
     if (confirm('Warenkorb wirklich leeren?')) {
         cart = {};
         updateDisplay();
@@ -359,21 +359,21 @@ function completeSale() {
     if (Object.keys(cart).length === 0) {
         return;
     }
-    
+
     const total = Object.keys(cart).reduce((sum, productId) => {
         return sum + (cart[productId] * products[productId].price);
     }, 0);
-    
+
     const itemCount = Object.values(cart).reduce((a, b) => a + b, 0);
-    
+
     if (!confirm(`Verkauf über ${total.toFixed(2)} € abschließen?\n\n${itemCount} Artikel\nBestand wird automatisch reduziert.`)) {
         return;
     }
-    
+
     // Button deaktivieren während des Vorgangs
     document.getElementById('btn-complete').disabled = true;
     document.getElementById('btn-complete').textContent = '⏳ Bitte warten...';
-    
+
     // Sende an Backend
     fetch('{{ url_for("complete_pos_sale") }}', {
         method: 'POST',
@@ -389,16 +389,16 @@ function completeSale() {
         if (data.success) {
             // Zeige Erfolg
             alert(`✅ Verkauf erfolgreich abgeschlossen!\n\nBelegnummer: ${data.receipt_number}\nGesamtsumme: ${total.toFixed(2)} €`);
-            
+
             // Aktualisiere Bestand lokal
             for (let productId in cart) {
                 products[productId].stock -= cart[productId];
             }
-            
+
             // Leere Warenkorb
             cart = {};
             updateDisplay();
-            
+
             // Seite neu laden um aktuellen Bestand zu zeigen
             setTimeout(() => {
                 window.location.reload();

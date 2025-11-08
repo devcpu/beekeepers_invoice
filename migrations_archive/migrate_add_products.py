@@ -1,15 +1,19 @@
 """
 Migrationsscript zum Hinzufügen der Products-Tabelle
 """
+
+from sqlalchemy import text
+
 from app import create_app
 from models import db
-from sqlalchemy import text
 
 app = create_app()
 
 with app.app_context():
     # Products-Tabelle erstellen
-    db.session.execute(text("""
+    db.session.execute(
+        text(
+            """
         CREATE TABLE IF NOT EXISTS products (
             id SERIAL PRIMARY KEY,
             name VARCHAR(200) NOT NULL,
@@ -21,7 +25,9 @@ with app.app_context():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
-    """))
+    """
+        )
+    )
     db.session.commit()
-    
+
     print("✓ Products-Tabelle erfolgreich erstellt!")

@@ -28,7 +28,7 @@
                 </span>
             </div>
         </div>
-        
+
         <table>
             <thead>
                 <tr>
@@ -47,7 +47,7 @@
                 {% for stock in stock_items %}
                 <tr id="row-{{ stock.id }}">
                     <td>
-                        <input type="checkbox" class="item-checkbox" name="product_id[]" value="{{ stock.product_id }}" 
+                        <input type="checkbox" class="item-checkbox" name="product_id[]" value="{{ stock.product_id }}"
                                onchange="updateTotals()">
                     </td>
                     <td>
@@ -60,12 +60,12 @@
                         <span class="current-qty" data-stock-id="{{ stock.id }}">{{ stock.quantity }}</span>
                     </td>
                     <td style="text-align: center;">
-                        <input type="number" 
-                               name="sold_quantity[]" 
-                               id="sold-{{ stock.product_id }}" 
-                               min="0" 
-                               max="{{ stock.quantity }}" 
-                               value="0" 
+                        <input type="number"
+                               name="sold_quantity[]"
+                               id="sold-{{ stock.product_id }}"
+                               min="0"
+                               max="{{ stock.quantity }}"
+                               value="0"
                                style="width: 80px; text-align: center;"
                                onchange="updateTotals()"
                                data-price="{{ stock.unit_price }}">
@@ -75,7 +75,7 @@
                         <strong>{{ "%.2f"|format(stock.quantity * stock.unit_price) }} €</strong>
                     </td>
                     <td style="text-align: center;">
-                        <button type="button" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.875rem; background: #f39c12; color: white;" 
+                        <button type="button" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.875rem; background: #f39c12; color: white;"
                                 onclick="openEditModal({{ stock.id }}, {{ stock.quantity }}, '{{ stock.product.name }}')">
                             Korrigieren
                         </button>
@@ -98,15 +98,15 @@
             </tfoot>
         </table>
     </div>
-    
+
     <div class="card" style="background: #f0fff4; border: 2px solid #27ae60;">
         <h2 style="color: #27ae60; margin-top: 0;">💰 Rechnung erstellen</h2>
-        
+
         <div style="margin-bottom: 1.5rem;">
             <p style="font-size: 1.1rem; margin-bottom: 1rem;">
                 Markieren Sie die verkauften Artikel und geben Sie die Menge an.
             </p>
-            
+
             <div style="background: white; padding: 1rem; border-radius: 4px; border: 1px solid #ddd;">
                 <table style="width: 100%; border: none;">
                     <tr>
@@ -120,7 +120,7 @@
                 </table>
             </div>
         </div>
-        
+
         <div class="form-group" style="margin-bottom: 1rem;">
             <label style="display: flex; align-items: center; cursor: pointer;">
                 <input type="checkbox" name="show_tax" style="margin-right: 0.5rem; width: auto;">
@@ -128,12 +128,12 @@
             </label>
             <small style="color: #7f8c8d; margin-left: 1.7rem;">Für steuerbefreite Reseller (Freie Berufe) nicht ankreuzen</small>
         </div>
-        
-        <button type="submit" class="btn btn-success" style="width: 100%; padding: 1rem; font-size: 1.1rem;" 
+
+        <button type="submit" class="btn btn-success" style="width: 100%; padding: 1rem; font-size: 1.1rem;"
                 onclick="return confirmInvoice()">
             📄 Rechnung jetzt erstellen
         </button>
-        
+
         <p style="margin-top: 1rem; font-size: 0.9rem; color: #7f8c8d; text-align: center;">
             <i>Der Bestand wird automatisch um die verkauften Mengen reduziert.</i>
         </p>
@@ -145,16 +145,16 @@
     <div style="background: white; padding: 2rem; border-radius: 8px; max-width: 500px; width: 90%;">
         <h2 style="margin-top: 0;">Bestand korrigieren</h2>
         <p id="modal-product-name" style="color: #7f8c8d;"></p>
-        
+
         <form method="POST" action="{{ url_for('update_consignment_stock', customer_id=customer.id) }}">
             <input type="hidden" name="stock_id" id="modal-stock-id">
-            
+
             <div class="form-group">
                 <label for="modal-quantity">Neuer Bestand:</label>
                 <input type="number" name="quantity" id="modal-quantity" min="0" required style="font-size: 1.2rem;">
                 <small style="color: #7f8c8d;">Aktueller Bestand: <span id="modal-current-qty"></span></small>
             </div>
-            
+
             <div style="margin-top: 1.5rem;">
                 <button type="submit" class="btn btn-primary">Speichern</button>
                 <button type="button" class="btn" style="background: #95a5a6; color: white; margin-left: 0.5rem;" onclick="closeEditModal()">Abbrechen</button>
@@ -189,31 +189,31 @@ function toggleAll(checkbox) {
 function updateTotals() {
     let selectedCount = 0;
     let totalAmount = 0;
-    
+
     document.querySelectorAll('.item-checkbox:checked').forEach(checkbox => {
         const row = checkbox.closest('tr');
         const soldInput = row.querySelector('input[name="sold_quantity[]"]');
         const quantity = parseInt(soldInput.value) || 0;
         const price = parseFloat(soldInput.dataset.price) || 0;
-        
+
         if (quantity > 0) {
             selectedCount++;
             totalAmount += quantity * price;
         }
     });
-    
+
     document.getElementById('selected-count').textContent = selectedCount;
     document.getElementById('invoice-total').textContent = totalAmount.toFixed(2).replace('.', ',') + ' €';
 }
 
 function confirmInvoice() {
     const selectedCount = document.querySelectorAll('.item-checkbox:checked').length;
-    
+
     if (selectedCount === 0) {
         alert('Bitte wählen Sie mindestens einen Artikel aus!');
         return false;
     }
-    
+
     // Prüfen ob Mengen > 0
     let hasQuantity = false;
     document.querySelectorAll('.item-checkbox:checked').forEach(checkbox => {
@@ -223,12 +223,12 @@ function confirmInvoice() {
             hasQuantity = true;
         }
     });
-    
+
     if (!hasQuantity) {
         alert('Bitte geben Sie die verkauften Mengen an!');
         return false;
     }
-    
+
     return confirm(`Rechnung für ${selectedCount} Artikel erstellen?\n\nDer Kommissionslager-Bestand wird automatisch reduziert.`);
 }
 

@@ -1,0 +1,36 @@
+# pyproject.toml - Python Projekt Konfiguration
+
+[tool.black]
+line-length = 120
+target-version = ['py310', 'py311', 'py312']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # Verzeichnisse
+    \.eggs
+  | \.git
+  | \.venv
+  | venv
+  | env
+  | build
+  | dist
+  | migrations/versions  # Alembic migrations nicht formatieren
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 120
+skip = [".venv", "venv", "env", "migrations/versions"]
+
+[tool.bandit]
+exclude_dirs = [".venv", "venv", "env", "tests"]
+skips = ["B311"]  # random.random() ist OK für nicht-kryptographische Zwecke
+
+[tool.bandit.assert_used]
+skips = ["*/test_*.py", "*/tests/*"]  # assert in Tests erlaubt
+
+[tool.flake8]
+max-line-length = 120
+extend-ignore = ["E203", "W503"]  # Kompatibilität mit black
+exclude = [".venv", "venv", "env", "__pycache__", "migrations/versions"]

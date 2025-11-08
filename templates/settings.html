@@ -24,7 +24,7 @@
 <div class="card">
     <h2>🔐 Zwei-Faktor-Authentifizierung (2FA)</h2>
     <p style="color: #7f8c8d; margin-bottom: 1.5rem;">Zusätzliche Sicherheit für Ihren Account.</p>
-    
+
     {% if current_user.totp_enabled %}
     <div style="padding: 1rem; background: #d4edda; border-left: 4px solid #28a745; border-radius: 4px; margin-bottom: 1rem;">
         <strong>✓ 2FA ist aktiviert</strong><br>
@@ -35,20 +35,20 @@
         </span>
         {% endif %}
     </div>
-    
+
     <div style="display: flex; gap: 1rem; margin-top: 1rem;">
         <form method="POST" action="{{ url_for('regenerate_backup_codes') }}" style="display: inline;">
-            <input type="password" name="password" placeholder="Passwort bestätigen" required 
+            <input type="password" name="password" placeholder="Passwort bestätigen" required
                    style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; margin-right: 0.5rem;">
             <button type="submit" class="btn" style="background: #17a2b8; color: white;">
                 🔄 Backup-Codes neu generieren
             </button>
         </form>
-        
+
         {% if not current_user.totp_required %}
-        <form method="POST" action="{{ url_for('disable_2fa') }}" style="display: inline;" 
+        <form method="POST" action="{{ url_for('disable_2fa') }}" style="display: inline;"
               onsubmit="return confirm('Sind Sie sicher, dass Sie 2FA deaktivieren möchten?');">
-            <input type="password" name="password" placeholder="Passwort bestätigen" required 
+            <input type="password" name="password" placeholder="Passwort bestätigen" required
                    style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; margin-right: 0.5rem;">
             <button type="submit" class="btn" style="background: #dc3545; color: white;">
                 ❌ 2FA deaktivieren
@@ -67,14 +67,14 @@
             {% endif %}
         </span>
     </div>
-    
+
     <a href="{{ url_for('setup_2fa') }}" class="btn" style="background: #28a745; color: white;">
         <i class="bi bi-shield-lock"></i> 2FA jetzt aktivieren
     </a>
-    
+
     <div style="margin-top: 1.5rem; padding: 1rem; background: #e3f2fd; border-left: 4px solid #2196f3; border-radius: 4px;">
         <strong>💡 Was ist 2FA?</strong><br>
-        Zwei-Faktor-Authentifizierung (2FA) schützt Ihren Account durch einen zweiten Faktor zusätzlich zum Passwort. 
+        Zwei-Faktor-Authentifizierung (2FA) schützt Ihren Account durch einen zweiten Faktor zusätzlich zum Passwort.
         Sie benötigen eine Authenticator-App wie Google Authenticator, Authy oder Microsoft Authenticator.
     </div>
     {% endif %}
@@ -83,20 +83,20 @@
 <div class="card">
     <h2>E-Mail-Konfiguration</h2>
     <p style="color: #7f8c8d; margin-bottom: 1.5rem;">SMTP (Versand) und IMAP (Empfang) Einstellungen.</p>
-    
+
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
         <div>
             <h3 style="margin-bottom: 1rem; color: #3498db;">📤 SMTP (Versand)</h3>
             <div style="display: grid; grid-template-columns: 120px 1fr; gap: 0.5rem; font-size: 0.9rem;">
                 <div><strong>Server:</strong></div>
                 <div>{{ config.MAIL_SERVER }}</div>
-                
+
                 <div><strong>Port:</strong></div>
                 <div>{{ config.MAIL_PORT }}</div>
-                
+
                 <div><strong>Username:</strong></div>
                 <div>{{ config.MAIL_USERNAME }}</div>
-                
+
                 <div><strong>SSL/TLS:</strong></div>
                 <div>
                     {% if config.MAIL_USE_SSL %}SSL
@@ -105,25 +105,25 @@
                 </div>
             </div>
         </div>
-        
+
         <div>
             <h3 style="margin-bottom: 1rem; color: #27ae60;">📥 IMAP (Empfang)</h3>
             <div style="display: grid; grid-template-columns: 120px 1fr; gap: 0.5rem; font-size: 0.9rem;">
                 <div><strong>Server:</strong></div>
                 <div>{{ config.IMAP_SERVER }}</div>
-                
+
                 <div><strong>Port:</strong></div>
                 <div>{{ config.IMAP_PORT }}</div>
-                
+
                 <div><strong>Username:</strong></div>
                 <div>{{ config.IMAP_USERNAME }}</div>
-                
+
                 <div><strong>SSL:</strong></div>
                 <div>{% if config.IMAP_USE_SSL %}Ja{% else %}Nein{% endif %}</div>
             </div>
         </div>
     </div>
-    
+
     <div style="margin-top: 1.5rem; padding: 1rem; background: #e8f5e9; border-left: 4px solid #4caf50; border-radius: 4px;">
         <strong>💡 Tipp:</strong> Klicken Sie auf "E-Mail überprüfen", um die Verbindung zu SMTP und IMAP zu testen.
     </div>
@@ -132,34 +132,34 @@
 <div class="card">
     <h2>Firmendaten</h2>
     <p style="color: #7f8c8d; margin-bottom: 1.5rem;">Diese Daten erscheinen auf Ihren Rechnungen und PDFs.</p>
-    
+
     <div style="display: grid; grid-template-columns: 200px 1fr; gap: 1rem; margin-bottom: 2rem;">
         <div><strong>Firmenname:</strong></div>
         <div>{{ company.name }}</div>
-        
+
         {% if company.holder %}
         <div><strong>Inhaber:</strong></div>
         <div>{{ company.holder }}</div>
         {% endif %}
-        
+
         <div><strong>Straße:</strong></div>
         <div>{{ company.street }}</div>
-        
+
         <div><strong>PLZ / Ort:</strong></div>
         <div>{{ company.zip }} {{ company.city }}</div>
-        
+
         <div><strong>Land:</strong></div>
         <div>{{ company.country }}</div>
-        
+
         <div><strong>E-Mail:</strong></div>
         <div><a href="mailto:{{ company.email }}">{{ company.email }}</a></div>
-        
+
         <div><strong>Telefon:</strong></div>
         <div>{{ company.phone }}</div>
-        
+
         <div><strong>Steuernummer:</strong></div>
         <div>{{ company.tax_id }}</div>
-        
+
         <div><strong>Website:</strong></div>
         <div>{{ company.website }}</div>
     </div>
@@ -168,7 +168,7 @@
 <div class="card">
     <h2>Steuersatz</h2>
     <p style="color: #7f8c8d; margin-bottom: 1.5rem;">Standard-Mehrwertsteuersatz für neue Rechnungen.</p>
-    
+
     <div style="display: grid; grid-template-columns: 200px 1fr; gap: 1rem;">
         <div><strong>Standard MwSt.:</strong></div>
         <div>
@@ -183,14 +183,14 @@
 <div class="card">
     <h2>Bankverbindung</h2>
     <p style="color: #7f8c8d; margin-bottom: 1.5rem;">Diese Daten erscheinen auf Ihren Rechnungs-PDFs.</p>
-    
+
     <div style="display: grid; grid-template-columns: 200px 1fr; gap: 1rem;">
         <div><strong>Bank:</strong></div>
         <div>{{ bank.name }}</div>
-        
+
         <div><strong>IBAN:</strong></div>
         <div><code style="background: #f8f9fa; padding: 0.3rem 0.6rem; border-radius: 4px;">{{ bank.iban }}</code></div>
-        
+
         <div><strong>BIC:</strong></div>
         <div><code style="background: #f8f9fa; padding: 0.3rem 0.6rem; border-radius: 4px;">{{ bank.bic }}</code></div>
     </div>
@@ -198,12 +198,12 @@
 
 <div class="card">
     <h2>📝 So ändern Sie Ihre Daten</h2>
-    
+
     <ol style="line-height: 2;">
         <li>Öffnen Sie die Datei <code>.env</code> im Projektverzeichnis:
             <pre style="background: #2c3e50; color: #ecf0f1; padding: 1rem; border-radius: 4px; margin: 0.5rem 0;">nano .env</pre>
         </li>
-        
+
         <li>Bearbeiten Sie die folgenden Zeilen:
             <pre style="background: #f8f9fa; padding: 1rem; border-radius: 4px; margin: 0.5rem 0; overflow-x: auto;">COMPANY_NAME=Ihre Firma GmbH
 COMPANY_HOLDER=Max Mustermann
@@ -221,14 +221,14 @@ BANK_NAME=Ihre Bank
 BANK_IBAN=DE00 0000 0000 0000 0000 00
 BANK_BIC=BANKDEFF</pre>
         </li>
-        
+
         <li>Speichern Sie die Datei (<kbd>Strg+O</kbd>, dann <kbd>Enter</kbd>, dann <kbd>Strg+X</kbd>)</li>
-        
+
         <li>Starten Sie die Anwendung neu:
             <pre style="background: #2c3e50; color: #ecf0f1; padding: 1rem; border-radius: 4px; margin: 0.5rem 0;">python app.py --port 5001</pre>
         </li>
     </ol>
-    
+
     <div style="margin-top: 1.5rem; padding: 1rem; background: #e3f2fd; border-left: 4px solid #2196f3; border-radius: 4px;">
         <strong>💡 Tipp:</strong> Laden Sie nach dem Neustart diese Seite neu, um die aktualisierten Daten zu sehen.
     </div>

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>{% block title %}Rechnungsverwaltung{% endblock %}</title>
-    
+
     <!-- PWA Meta Tags -->
     <meta name="description" content="GoBD-konforme Rechnungsverwaltung mit JWT-API, Offline-Unterstützung und manipulationssicherer Datenspeicherung">
     <meta name="application-name" content="Rechnungsverwaltung">
@@ -13,26 +13,26 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Rechnungen">
-    
+
     <!-- Web App Manifest -->
     <link rel="manifest" href="/static/manifest.json">
-    
+
     <!-- Favicons -->
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
     <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16x16.png">
     <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="48x48" href="/static/icons/favicon-48x48.png">
-    
+
     <!-- Apple Touch Icons -->
     <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
     <link rel="apple-touch-icon" sizes="120x120" href="/static/icons/apple-touch-icon-120x120.png">
     <link rel="apple-touch-icon" sizes="152x152" href="/static/icons/apple-touch-icon-152x152.png">
     <link rel="apple-touch-icon" sizes="167x167" href="/static/icons/apple-touch-icon-167x167.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/static/icons/apple-touch-icon-180x180.png">
-    
+
     <!-- iOS Splash Screens (optional) -->
     <link rel="apple-touch-startup-image" href="/static/icons/icon-512x512.png">
-    
+
     <!-- Microsoft Tiles -->
     <meta name="msapplication-TileColor" content="#0d6efd">
     <meta name="msapplication-TileImage" content="/static/icons/icon-144x144.png">
@@ -42,26 +42,26 @@
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             line-height: 1.6;
             color: #333;
             background: #f5f5f5;
         }
-        
+
         .navbar {
             background: #2c3e50;
             color: white;
             padding: 1rem 2rem;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        
+
         .navbar h1 {
             font-size: 1.5rem;
             margin-bottom: 0.5rem;
         }
-        
+
         .navbar nav a {
             color: white;
             text-decoration: none;
@@ -69,17 +69,17 @@
             opacity: 0.9;
             transition: opacity 0.3s;
         }
-        
+
         .navbar nav a:hover {
             opacity: 1;
         }
-        
+
         .container {
             max-width: 1200px;
             margin: 2rem auto;
             padding: 0 2rem;
         }
-        
+
         .card {
             background: white;
             border-radius: 8px;
@@ -87,40 +87,40 @@
             margin-bottom: 2rem;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
-        
+
         .card h2 {
             margin-bottom: 1.5rem;
             color: #2c3e50;
         }
-        
+
         .flash-messages {
             margin-bottom: 1rem;
         }
-        
+
         .flash {
             padding: 1rem;
             border-radius: 4px;
             margin-bottom: 0.5rem;
         }
-        
+
         .flash.success {
             background: #d4edda;
             color: #155724;
             border: 1px solid #c3e6cb;
         }
-        
+
         .flash.error {
             background: #f8d7da;
             color: #721c24;
             border: 1px solid #f5c6cb;
         }
-        
+
         .flash.warning {
             background: #fff3cd;
             color: #856404;
             border: 1px solid #ffeaa7;
         }
-        
+
         .btn {
             display: inline-block;
             padding: 0.6rem 1.2rem;
@@ -131,68 +131,68 @@
             font-size: 1rem;
             transition: background 0.3s;
         }
-        
+
         .btn-primary {
             background: #3498db;
             color: white;
         }
-        
+
         .btn-primary:hover {
             background: #2980b9;
         }
-        
+
         .btn-success {
             background: #27ae60;
             color: white;
         }
-        
+
         .btn-success:hover {
             background: #229954;
         }
-        
+
         .btn-danger {
             background: #e74c3c;
             color: white;
         }
-        
+
         .btn-danger:hover {
             background: #c0392b;
         }
-        
+
         table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 1rem;
         }
-        
+
         table th,
         table td {
             padding: 0.75rem;
             text-align: left;
             border-bottom: 1px solid #ddd;
         }
-        
+
         table th {
             background: #f8f9fa;
             font-weight: 600;
             color: #2c3e50;
         }
-        
+
         table tr:hover {
             background: #f8f9fa;
         }
-        
+
         .form-group {
             margin-bottom: 1.5rem;
         }
-        
+
         .form-group label {
             display: block;
             margin-bottom: 0.5rem;
             font-weight: 500;
             color: #2c3e50;
         }
-        
+
         .form-group input,
         .form-group textarea,
         .form-group select {
@@ -202,18 +202,18 @@
             border-radius: 4px;
             font-size: 1rem;
         }
-        
+
         .form-group textarea {
             min-height: 100px;
             resize: vertical;
         }
-        
+
         .form-row {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 1rem;
         }
-        
+
         .badge {
             display: inline-block;
             padding: 0.3rem 0.6rem;
@@ -221,47 +221,47 @@
             font-size: 0.875rem;
             font-weight: 500;
         }
-        
+
         .badge-draft {
             background: #f39c12;
             color: white;
         }
-        
+
         .badge-sent {
             background: #3498db;
             color: white;
         }
-        
+
         .badge-paid {
             background: #27ae60;
             color: white;
         }
-        
+
         .badge-cancelled {
             background: #95a5a6;
             color: white;
         }
-        
+
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 1rem;
             margin-bottom: 2rem;
         }
-        
+
         .stat-card {
             background: white;
             padding: 1.5rem;
             border-radius: 8px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
-        
+
         .stat-card h3 {
             font-size: 2rem;
             margin-bottom: 0.5rem;
             color: #3498db;
         }
-        
+
         .stat-card p {
             color: #7f8c8d;
             font-size: 0.9rem;
@@ -310,7 +310,7 @@
             {% endif %}
         </div>
     </div>
-    
+
     <div class="container">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
@@ -321,12 +321,12 @@
                 </div>
             {% endif %}
         {% endwith %}
-        
+
         {% block content %}{% endblock %}
     </div>
-    
+
     {% block extra_js %}{% endblock %}
-    
+
     <!-- PWA Service Worker Registration -->
     <script>
         // Service Worker Registration
@@ -335,12 +335,12 @@
                 navigator.serviceWorker.register('/static/service-worker.js')
                     .then((registration) => {
                         console.log('✅ Service Worker registered:', registration.scope);
-                        
+
                         // Check for updates
                         registration.addEventListener('updatefound', () => {
                             const newWorker = registration.installing;
                             console.log('🔄 Service Worker update found');
-                            
+
                             newWorker.addEventListener('statechange', () => {
                                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                                     // Neuer SW installiert, aber alter noch aktiv
@@ -352,27 +352,27 @@
                     .catch((error) => {
                         console.error('❌ Service Worker registration failed:', error);
                     });
-                
+
                 // Handle Service Worker Messages
                 navigator.serviceWorker.addEventListener('message', (event) => {
                     console.log('📨 Message from SW:', event.data);
-                    
+
                     if (event.data.type === 'sync-complete') {
                         showNotification('✅ ' + event.data.message, 'success');
                     }
                 });
             });
         }
-        
+
         // PWA Install Prompt
         let deferredPrompt;
         const installButton = document.getElementById('pwa-install-btn');
-        
+
         window.addEventListener('beforeinstallprompt', (e) => {
             console.log('💾 PWA installierbar');
             e.preventDefault();
             deferredPrompt = e;
-            
+
             // Zeige Install-Button
             if (installButton) {
                 installButton.style.display = 'block';
@@ -381,7 +381,7 @@
                 showInstallPrompt();
             }
         });
-        
+
         function showInstallPrompt() {
             const prompt = document.createElement('div');
             prompt.id = 'pwa-install-prompt';
@@ -400,7 +400,7 @@
                 gap: 1rem;
                 animation: slideIn 0.3s ease-out;
             `;
-            
+
             prompt.innerHTML = `
                 <div>
                     <strong>📱 Als App installieren?</strong><br>
@@ -424,15 +424,15 @@
                     cursor: pointer;
                 ">Später</button>
             `;
-            
+
             document.body.appendChild(prompt);
-            
+
             document.getElementById('pwa-install-btn').addEventListener('click', installPWA);
             document.getElementById('pwa-dismiss-btn').addEventListener('click', () => {
                 prompt.remove();
                 localStorage.setItem('pwa-install-dismissed', Date.now());
             });
-            
+
             // Verstecke nach 10 Sekunden automatisch
             setTimeout(() => {
                 if (document.getElementById('pwa-install-prompt')) {
@@ -440,32 +440,32 @@
                 }
             }, 10000);
         }
-        
+
         async function installPWA() {
             if (!deferredPrompt) return;
-            
+
             deferredPrompt.prompt();
             const { outcome } = await deferredPrompt.userChoice;
-            
+
             console.log(`PWA install outcome: ${outcome}`);
-            
+
             if (outcome === 'accepted') {
                 showNotification('✅ App erfolgreich installiert!', 'success');
             }
-            
+
             deferredPrompt = null;
-            
+
             const prompt = document.getElementById('pwa-install-prompt');
             if (prompt) prompt.remove();
         }
-        
+
         // PWA Installation erfolgt
         window.addEventListener('appinstalled', () => {
             console.log('✅ PWA installed');
             showNotification('✅ App wurde installiert!', 'success');
             deferredPrompt = null;
         });
-        
+
         // Service Worker Update-Benachrichtigung
         function showUpdateNotification() {
             const notification = document.createElement('div');
@@ -483,7 +483,7 @@
                 align-items: center;
                 gap: 1rem;
             `;
-            
+
             notification.innerHTML = `
                 <div>
                     <strong>🔄 Update verfügbar</strong><br>
@@ -499,30 +499,30 @@
                     font-weight: bold;
                 ">Aktualisieren</button>
             `;
-            
+
             document.body.appendChild(notification);
-            
+
             document.getElementById('sw-update-btn').addEventListener('click', () => {
                 navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
                 window.location.reload();
             });
         }
-        
+
         // Benachrichtigungs-Helper
         function showNotification(message, type = 'info') {
             const flashContainer = document.querySelector('.flash-messages') || createFlashContainer();
-            
+
             const flash = document.createElement('div');
             flash.className = `flash ${type}`;
             flash.textContent = message;
-            
+
             flashContainer.appendChild(flash);
-            
+
             setTimeout(() => {
                 flash.remove();
             }, 5000);
         }
-        
+
         function createFlashContainer() {
             const container = document.createElement('div');
             container.className = 'flash-messages';
@@ -532,18 +532,18 @@
             );
             return container;
         }
-        
+
         // Online/Offline Status
         window.addEventListener('online', () => {
             console.log('🌐 Online');
             showNotification('🌐 Verbindung wiederhergestellt', 'success');
         });
-        
+
         window.addEventListener('offline', () => {
             console.log('📴 Offline');
             showNotification('📴 Offline-Modus aktiv', 'warning');
         });
-        
+
         // CSS für Animationen
         const style = document.createElement('style');
         style.textContent = `
@@ -557,7 +557,7 @@
                     opacity: 1;
                 }
             }
-            
+
             .flash.warning {
                 background: #ffc107;
                 color: #000;

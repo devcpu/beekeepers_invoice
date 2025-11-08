@@ -2,7 +2,7 @@
 source: app
 labels:
   type: app_logs
-  
+
 # Log-Format Parser
 ---
 filter: "evt.Parsed.program == 'rechnungen'"

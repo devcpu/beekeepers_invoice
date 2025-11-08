@@ -10,7 +10,7 @@
 
 <div class="card">
     <h2>Rechnungsinformation</h2>
-    
+
     <div style="margin-bottom: 2rem;">
         <table style="width: auto;">
             <tr>
@@ -49,7 +49,7 @@
             </tr>
         </table>
     </div>
-    
+
     {% if existing_reminders %}
     <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 1rem; border-radius: 4px; margin-bottom: 2rem;">
         <strong>⚠️ Bisherige Mahnungen:</strong>
@@ -68,9 +68,9 @@
         </ul>
     </div>
     {% endif %}
-    
+
     <h2>{{ next_level }}. Mahnung erstellen</h2>
-    
+
     <p style="margin-bottom: 2rem;">
         {% if next_level == 1 %}
             Dies ist die erste Mahnung für diese Rechnung. Es wird eine Mahngebühr von <strong>5,00 €</strong> berechnet.
@@ -82,7 +82,7 @@
             Dies ist die {{ next_level }}. Mahnung. Die Mahngebühr beträgt <strong>10,00 €</strong>.
         {% endif %}
     </p>
-    
+
     <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 4px; margin-bottom: 2rem;">
         <h3 style="margin-top: 0;">Gesamtforderung:</h3>
         <table style="width: auto; font-size: 1.1rem;">
@@ -112,9 +112,9 @@
             </tr>
         </table>
     </div>
-    
+
     <h3>Mahnung versenden</h3>
-    
+
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
         <!-- Als PDF herunterladen -->
         <div style="border: 2px solid #3498db; border-radius: 8px; padding: 1.5rem; background: #f0f8ff;">
@@ -129,7 +129,7 @@
                 </button>
             </form>
         </div>
-        
+
         <!-- Per E-Mail versenden -->
         <div style="border: 2px solid #27ae60; border-radius: 8px; padding: 1.5rem; background: #f0fff4;">
             <h4 style="color: #27ae60; margin-top: 0;">📧 Per E-Mail versenden</h4>
@@ -153,12 +153,12 @@
             {% endif %}
         </div>
     </div>
-    
+
     {% if next_level >= 3 %}
     <div style="background: #f8d7da; border: 2px solid #e74c3c; padding: 1rem; border-radius: 4px; margin-top: 2rem;">
         <strong style="color: #721c24;">⚠️ Hinweis:</strong>
         <p style="color: #721c24; margin: 0.5rem 0 0 0;">
-            Dies ist eine späte Mahnstufe. Erwägen Sie rechtliche Schritte oder die Beauftragung eines Inkassobüros, 
+            Dies ist eine späte Mahnstufe. Erwägen Sie rechtliche Schritte oder die Beauftragung eines Inkassobüros,
             falls keine Zahlung erfolgt.
         </p>
     </div>

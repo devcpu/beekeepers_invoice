@@ -21,7 +21,7 @@
         <a href="{{ url_for('list_invoices', filter='open') }}" style="margin-left: 0.5rem; color: #f39c12;">Offen</a>
         <a href="{{ url_for('list_invoices', filter='overdue') }}" style="margin-left: 1rem; color: #e74c3c;">Überfällig</a>
     </div>
-    
+
     {% if invoices %}
         <table>
             <thead>

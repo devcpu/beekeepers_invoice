@@ -11,19 +11,19 @@
                     <h2 class="text-center mb-4">
                         <i class="bi bi-shield-check"></i> 2FA-Verifizierung
                     </h2>
-                    
+
                     <p class="text-center text-muted mb-4">
                         Geben Sie den 6-stelligen Code aus Ihrer Authenticator-App ein.
                     </p>
-                    
+
                     <form method="POST" action="{{ url_for('verify_2fa') }}">
                         <div class="mb-4">
                             <label for="token" class="form-label">2FA-Code</label>
-                            <input type="text" 
-                                   class="form-control form-control-lg text-center" 
-                                   id="token" 
-                                   name="token" 
-                                   required 
+                            <input type="text"
+                                   class="form-control form-control-lg text-center"
+                                   id="token"
+                                   name="token"
+                                   required
                                    autofocus
                                    autocomplete="one-time-code"
                                    pattern="[0-9]*"
@@ -31,16 +31,16 @@
                                    placeholder="000000"
                                    style="letter-spacing: 0.5em; font-size: 1.5rem;">
                         </div>
-                        
+
                         <div class="d-grid">
                             <button type="submit" class="btn btn-primary btn-lg">
                                 <i class="bi bi-check-circle"></i> Verifizieren
                             </button>
                         </div>
                     </form>
-                    
+
                     <hr class="my-4">
-                    
+
                     <div class="text-center">
                         <p class="text-muted small mb-2">
                             <i class="bi bi-info-circle"></i> Kein Zugriff auf Authenticator-App?
@@ -63,22 +63,22 @@
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         min-height: 100vh;
     }
-    
+
     .card {
         border: none;
         border-radius: 1rem;
     }
-    
+
     .form-control:focus {
         border-color: #667eea;
         box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
     }
-    
+
     .btn-primary {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         border: none;
     }
-    
+
     .btn-primary:hover {
         background: linear-gradient(135deg, #5568d3 0%, #63408b 100%);
     }

@@ -16,7 +16,7 @@
             <a href="{{ url_for('list_products', show_inactive='true') }}" style="margin-left: 1rem;">Alle Produkte</a>
         </div>
     </div>
-    
+
     {% if products %}
         <table>
             <thead>
@@ -57,7 +57,7 @@
                 {% endfor %}
             </tbody>
         </table>
-        
+
         <div style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 4px;">
             <strong>Legende:</strong>
             <span style="color: #e74c3c; margin-left: 1rem;">● Rot = Ausverkauft (0)</span>

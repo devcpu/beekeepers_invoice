@@ -14,46 +14,46 @@
             <label for="name">Produktname *</label>
             <input type="text" name="name" id="name" value="{{ product.name }}" required>
         </div>
-        
+
         <div class="form-row">
             <div class="form-group">
                 <label for="quantity">Menge/Größe</label>
                 <input type="text" name="quantity" id="quantity" value="{{ product.quantity or '' }}" placeholder="z.B. 250g, 500g, 20ml">
                 <small style="color: #7f8c8d;">Einheit oder Gebindegröße</small>
             </div>
-            
+
             <div class="form-group">
                 <label for="number">Lagerbestand *</label>
                 <input type="number" name="number" id="number" value="{{ product.number }}" required min="0">
                 <small style="color: #7f8c8d;">Anzahl vorhandener Einheiten</small>
             </div>
         </div>
-        
+
         <div class="form-row">
             <div class="form-group">
                 <label for="price">Endkundenpreis (€) *</label>
                 <input type="number" name="price" id="price" value="{{ product.price }}" step="0.01" required>
                 <small style="color: #7f8c8d;">Regulärer Verkaufspreis</small>
             </div>
-            
+
             <div class="form-group">
                 <label for="reseller_price">Wiederverkäuferpreis (€)</label>
                 <input type="number" name="reseller_price" id="reseller_price" value="{{ product.reseller_price or '' }}" step="0.01" placeholder="0.00">
                 <small style="color: #7f8c8d;">Preis für Wiederverkäufer (optional)</small>
             </div>
         </div>
-        
+
         <div class="form-group">
             <label for="tax_rate">MwSt-Satz (%) *</label>
             <input type="number" name="tax_rate" id="tax_rate" value="{{ product.tax_rate or 7.80 }}" step="0.01" required>
             <small style="color: #7f8c8d;">Standard: 7,80% für landw. Urproduktion, 19,00% für andere Produkte</small>
         </div>
-        
+
         <div class="form-group">
             <label for="lot_number">Chargennummer / Los-Nr.</label>
             <input type="text" name="lot_number" id="lot_number" value="{{ product.lot_number or '' }}">
         </div>
-        
+
         <div class="form-group">
             <label style="display: flex; align-items: center; cursor: pointer;">
                 <input type="checkbox" name="active" {% if product.active %}checked{% endif %} style="margin-right: 0.5rem; width: auto;">
@@ -61,7 +61,7 @@
             </label>
             <small style="color: #7f8c8d; margin-left: 1.7rem;">Inaktive Produkte werden nicht in Rechnungen angezeigt</small>
         </div>
-        
+
         <div style="margin-top: 2rem;">
             <button type="submit" class="btn btn-primary">Änderungen speichern</button>
             <a href="{{ url_for('view_product', product_id=product.id) }}" class="btn" style="background: #95a5a6; color: white; margin-left: 0.5rem;">Abbrechen</a>
@@ -71,54 +71,54 @@
 
 <div class="card" style="margin-top: 2rem;">
     <h2 style="margin-bottom: 1rem;">Schnelle Bestandskorrektur</h2>
-    
+
     <p style="color: #7f8c8d; margin-bottom: 1.5rem;">
         Aktueller Bestand: <strong id="current-stock" style="font-size: 1.2rem; color: #2c3e50;">{{ product.number }}</strong> Stück
         <br><small>Für detaillierte Bestandsverwaltung nutzen Sie den <a href="{{ url_for('stock_management') }}">Bestandsverwaltung</a> Menüpunkt.</small>
     </p>
-    
+
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
         <!-- Zugang -->
         <div style="border: 2px solid #27ae60; border-radius: 8px; padding: 1.5rem; background: #f0fff4;">
             <h3 style="color: #27ae60; margin-bottom: 1rem;">➕ Zugang</h3>
-            
+
             <div class="form-group">
                 <label for="add_amount">Menge *</label>
                 <input type="number" id="add_amount" min="1" placeholder="Anzahl hinzufügen" required>
             </div>
-            
+
             <button type="button" class="btn btn-success" onclick="addStock()" style="width: 100%; background: #27ae60;">
                 + Bestand erhöhen
             </button>
         </div>
-        
+
         <!-- Abgang -->
         <div style="border: 2px solid #e74c3c; border-radius: 8px; padding: 1.5rem; background: #fff5f5;">
             <h3 style="color: #e74c3c; margin-bottom: 1rem;">➖ Abgang</h3>
-            
+
             <div class="form-group">
                 <label for="reduce_amount">Menge *</label>
                 <input type="number" id="reduce_amount" min="1" placeholder="Anzahl abziehen" required>
             </div>
-            
+
             <button type="button" class="btn" onclick="reduceStock()" style="width: 100%; background: #e74c3c; color: white;">
                 - Bestand verringern
             </button>
         </div>
     </div>
-    
+
     <div id="stock-message" style="margin-top: 1rem; padding: 1rem; border-radius: 4px; display: none;"></div>
 </div>
 
 <script>
 function addStock() {
     const amount = parseInt(document.getElementById('add_amount').value);
-    
+
     if (!amount || amount <= 0) {
         showMessage('Bitte gültige Menge eingeben', 'error');
         return;
     }
-    
+
     fetch('/api/products/{{ product.id }}/stock/add', {
         method: 'POST',
         headers: {
@@ -146,12 +146,12 @@ function addStock() {
 
 function reduceStock() {
     const amount = parseInt(document.getElementById('reduce_amount').value);
-    
+
     if (!amount || amount <= 0) {
         showMessage('Bitte gültige Menge eingeben', 'error');
         return;
     }
-    
+
     fetch('/api/products/{{ product.id }}/stock/reduce', {
         method: 'POST',
         headers: {
@@ -181,7 +181,7 @@ function showMessage(message, type) {
     const msgDiv = document.getElementById('stock-message');
     msgDiv.textContent = message;
     msgDiv.style.display = 'block';
-    
+
     if (type === 'success') {
         msgDiv.style.background = '#d4edda';
         msgDiv.style.color = '#155724';
@@ -191,7 +191,7 @@ function showMessage(message, type) {
         msgDiv.style.color = '#721c24';
         msgDiv.style.border = '1px solid #f5c6cb';
     }
-    
+
     // Nachricht nach 5 Sekunden ausblenden
     setTimeout(() => {
         msgDiv.style.display = 'none';

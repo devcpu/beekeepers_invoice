@@ -16,21 +16,21 @@ services:
       # Database - Shared PostgreSQL im intern-service Netzwerk
       # Format: postgresql://user:password@hostname:5432/dbname
       DATABASE_URL: ${DATABASE_URL}
-      
+
       # Session Storage
       # VARIANTE 1: File-based (Standard, <1000 User)
       SESSION_TYPE: ${SESSION_TYPE:-filesystem}
       SESSION_FILE_DIR: /app/flask_session
-      
+
       # VARIANTE 2: Shared Redis im intern-service Netzwerk
       # SESSION_TYPE: redis
       # SESSION_REDIS: ${REDIS_URL:-redis://redis:6379/0}
-      
+
       # Flask
       FLASK_ENV: production
       SECRET_KEY: ${SECRET_KEY}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-${SECRET_KEY}}
-      
+
       # Company Data
       COMPANY_NAME: ${COMPANY_NAME}
       COMPANY_HOLDER: ${COMPANY_HOLDER}
@@ -42,64 +42,64 @@ services:
       COMPANY_PHONE: ${COMPANY_PHONE}
       COMPANY_TAX_ID: ${COMPANY_TAX_ID}
       COMPANY_WEBSITE: ${COMPANY_WEBSITE}
-      
+
       # Bank
       BANK_NAME: ${BANK_NAME}
       BANK_IBAN: ${BANK_IBAN}
       BANK_BIC: ${BANK_BIC}
-      
+
       # SMTP für Passwort-Reset
       SMTP_SERVER: ${SMTP_SERVER}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USERNAME: ${SMTP_USERNAME}
       SMTP_PASSWORD: ${SMTP_PASSWORD}
       SMTP_USE_TLS: ${SMTP_USE_TLS:-True}
-      
+
       # IMAP (optional für Shop-Integration)
       IMAP_SERVER: ${IMAP_SERVER}
       IMAP_PORT: ${IMAP_PORT}
       IMAP_USERNAME: ${IMAP_USERNAME}
       IMAP_PASSWORD: ${IMAP_PASSWORD}
       IMAP_USE_SSL: ${IMAP_USE_SSL:-true}
-      
+
       # Steuer
       DEFAULT_TAX_RATE: ${DEFAULT_TAX_RATE:-19.00}
-      
+
       # 2FA
       TOTP_ISSUER_NAME: ${TOTP_ISSUER_NAME:-Rechnungsverwaltung}
-      
+
       # Domain für Traefik
       DOMAIN: ${DOMAIN}
-    
+
     volumes:
       - ./invoices:/app/invoices
       - ./uploads:/app/uploads
       - ./logs:/app/logs
       - ./flask_session:/app/flask_session
-    
+
     networks:
       # Externe Netzwerke (müssen bereits existieren!)
       - traefik-proxy
       - crowdsec
       - intern-service
-    
+
     labels:
       # Traefik 3 Labels
       - "traefik.enable=true"
       - "traefik.docker.network=traefik-proxy"
-      
+
       # HTTP Router
       - "traefik.http.routers.rechnungen.rule=Host(`${DOMAIN}`)"
       - "traefik.http.routers.rechnungen.entrypoints=websecure"
       - "traefik.http.routers.rechnungen.tls=true"
       - "traefik.http.routers.rechnungen.tls.certresolver=letsencrypt"
-      
+
       # Service
       - "traefik.http.services.rechnungen.loadbalancer.server.port=8000"
-      
+
       # CrowdSec Bouncer (falls als Traefik-Middleware konfiguriert)
       - "traefik.http.routers.rechnungen.middlewares=crowdsec-bouncer@file"
-      
+
       # CrowdSec Labels für Log-Parsing
       - "crowdsec.enable=true"
       - "crowdsec.application=rechnungen"
@@ -111,11 +111,11 @@ networks:
   traefik-proxy:
     external: true
     name: traefik-proxy
-  
+
   crowdsec:
     external: true
     name: crowdsec
-  
+
   intern-service:
     external: true
     name: intern-service

@@ -43,13 +43,13 @@
         </table>
         {% if low_stock_products|length > 5 %}
         <p style="margin-top: 1rem; font-size: 0.9rem; color: #7f8c8d;">
-            ... und {{ low_stock_products|length - 5 }} weitere Produkte. 
+            ... und {{ low_stock_products|length - 5 }} weitere Produkte.
             <a href="{{ url_for('list_products') }}">Alle Produkte anzeigen</a>
         </p>
         {% endif %}
     </div>
     {% endif %}
-    
+
     <!-- Überfällige Rechnungen -->
     {% if overdue_invoices %}
     <div class="card" style="border-left: 4px solid #e74c3c; background: #ffebee;">
@@ -91,7 +91,7 @@
         </table>
         {% if overdue_invoices|length > 5 %}
         <p style="margin-top: 1rem; font-size: 0.9rem; color: #7f8c8d;">
-            ... und {{ overdue_invoices|length - 5 }} weitere überfällige Rechnungen. 
+            ... und {{ overdue_invoices|length - 5 }} weitere überfällige Rechnungen.
             <a href="{{ url_for('list_invoices', filter='overdue') }}">Alle anzeigen</a>
         </p>
         {% endif %}
@@ -129,7 +129,7 @@
 
 <div class="card">
     <h2>Letzte Rechnungen</h2>
-    
+
     {% if invoices %}
         <table>
             <thead>

@@ -1,0 +1,102 @@
+# Pre-commit hooks für Rechnungs-System
+# Installation: pip install pre-commit && pre-commit install
+
+repos:
+  # Python Code Formatting & Linting
+  - repo: https://github.com/psf/black
+    rev: 24.10.0
+    hooks:
+      - id: black
+        language_version: python3
+        args: ['--line-length=120']
+        exclude: 'regenerate_hashes\.py'  # Syntax error - manuell fixen
+
+  - repo: https://github.com/pycqa/flake8
+    rev: 7.1.1
+    hooks:
+      - id: flake8
+        args: ['--max-line-length=120', '--extend-ignore=E203,W503,E501,C901,F401,F841']
+        exclude: 'regenerate_hashes\.py'
+
+  - repo: https://github.com/pycqa/isort
+    rev: 7.0.0
+    hooks:
+      - id: isort
+        args: ['--profile=black', '--line-length=120']
+
+  # Jinja2 Template Syntax Checking (via djlint - bessere Alternative)
+  - repo: https://github.com/Riverside-Healthcare/djLint
+    rev: v1.36.4
+    hooks:
+      - id: djlint-jinja
+        files: \.(html|jinja|jinja2)$
+        args: ['--check', '--quiet', '--ignore=H006,H030,H031']  # Nur kritische Fehler
+
+  # HTML Validation & Linting
+  - repo: https://github.com/Lucas-C/pre-commit-hooks-markup
+    rev: v1.0.1
+    hooks:
+      - id: rst-linter
+        exclude: \.html$  # RST nur für .rst Dateien
+
+  - repo: https://github.com/thibaudcolas/curlylint
+    rev: v0.13.1
+    hooks:
+      - id: curlylint
+        files: \.(html|jinja|jinja2)$
+        exclude: 'templates/index\.html'  # Parse error - später fixen
+        # Curlylint prüft HTML + Jinja2 Templates auf Best Practices
+
+  # Allgemeine Checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: \.md$
+      - id: end-of-file-fixer
+      - id: check-yaml
+        exclude: 'crowdsec/parsers\.yaml'  # Multi-document YAML (valid)
+      - id: check-json
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: mixed-line-ending
+        args: ['--fix=lf']
+      - id: detect-private-key
+
+  # SQL Linting
+  - repo: https://github.com/sqlfluff/sqlfluff
+    rev: 4.0.0a1
+    hooks:
+      - id: sqlfluff-lint
+        files: \.(sql)$
+        args: ['--dialect=postgres']
+      - id: sqlfluff-fix
+        files: \.(sql)$
+        args: ['--dialect=postgres']
+
+  # Security Checks
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.10
+    hooks:
+      - id: bandit
+        args: ['-c', 'pyproject.toml', '--skip', 'B201,B110,B404,B603,B608']
+        additional_dependencies: ['bandit[toml]']
+        exclude: 'regenerate_hashes\.py'
+
+  # Requirements.txt Check
+  - repo: https://github.com/Lucas-C/pre-commit-hooks-safety
+    rev: v1.4.2
+    hooks:
+      - id: python-safety-dependencies-check
+        files: requirements.txt
+
+# CI Mode: Schnellere Checks
+ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] auto fixes from pre-commit.com hooks
+  autofix_prs: true
+  autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
+  autoupdate_schedule: weekly
+  skip: [python-safety-dependencies-check]  # Oft zu langsam für CI

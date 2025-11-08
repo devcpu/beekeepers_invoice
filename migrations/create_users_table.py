@@ -14,7 +14,8 @@ from datetime import datetime
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app import create_app
-from models import db, User
+from models import User, db
+
 
 def create_users_table():
     """Erstellt die users Tabelle"""
@@ -23,32 +24,28 @@ def create_users_table():
         print("=" * 60)
         print("Creating users table...")
         print("=" * 60)
-        
+
         # Tabelle erstellen
         db.create_all()
         print("✓ users table created successfully")
-        
+
         # Standard-Admin erstellen (falls noch keiner existiert)
-        admin = User.query.filter_by(username='admin').first()
+        admin = User.query.filter_by(username="admin").first()
         if not admin:
             print("\nCreating default admin user...")
-            admin = User(
-                username='admin',
-                email='admin@example.com',
-                role='admin',
-                is_active=True
-            )
-            admin.set_password('admin123')  # WICHTIG: Später ändern!
+            admin = User(username="admin", email="admin@example.com", role="admin", is_active=True)
+            admin.set_password("admin123")  # WICHTIG: Später ändern!
             db.session.add(admin)
             db.session.commit()
             print(f"✓ Admin user created: username='admin', password='admin123'")
             print("  ⚠️  WICHTIG: Bitte Passwort nach erstem Login ändern!")
         else:
             print(f"\n✓ Admin user already exists: {admin.username}")
-        
+
         print("\n" + "=" * 60)
         print("Migration completed successfully!")
         print("=" * 60)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     create_users_table()

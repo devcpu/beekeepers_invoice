@@ -18,7 +18,7 @@ entryPoints:
           to: websecure
           scheme: https
           permanent: true
-  
+
   websecure:
     address: ":443"
     http:
@@ -40,7 +40,7 @@ certificatesResolvers:
       caServer: "https://acme-v02.api.letsencrypt.org/directory"
       # Staging (zum Testen)
       # caServer: "https://acme-staging-v02.api.letsencrypt.org/directory"
-      
+
       # DNS Challenge (empfohlen für Wildcards)
       dnsChallenge:
         provider: cloudflare
@@ -48,7 +48,7 @@ certificatesResolvers:
         resolvers:
           - "1.1.1.1:53"
           - "8.8.8.8:53"
-      
+
       # Alternativ: HTTP Challenge
       # httpChallenge:
       #   entryPoint: web
@@ -59,7 +59,7 @@ providers:
     endpoint: "unix:///var/run/docker.sock"
     exposedByDefault: false
     network: traefik
-  
+
   file:
     directory: "/etc/traefik/dynamic"
     watch: true

@@ -1,0 +1,14 @@
+# Jinjalint Konfiguration
+# Nur Syntax-Prüfung, keine Style-Enforcement
+
+# Jinja2-Syntax-Zeichen
+jinja-statements-delimiter: "%"
+jinja-variables-delimiter: "="
+jinja-comments-delimiter: "#"
+
+# Keine Style-Rules (zu streng für existierenden Code)
+check-line-length: false
+check-indentation: false
+
+# Nur kritische Fehler
+check-syntax: true

@@ -10,9 +10,9 @@
 <div class="card">
     <form method="GET" style="margin-bottom: 2rem;">
         <div style="display: flex; gap: 1rem;">
-            <input type="text" 
-                   name="search" 
-                   placeholder="Suche nach Firma, Name oder E-Mail..." 
+            <input type="text"
+                   name="search"
+                   placeholder="Suche nach Firma, Name oder E-Mail..."
                    value="{{ search_query or '' }}"
                    style="flex: 1; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem;">
             <button type="submit" class="btn btn-primary" style="white-space: nowrap;">🔍 Suchen</button>
@@ -21,13 +21,13 @@
             {% endif %}
         </div>
     </form>
-    
+
     {% if search_query %}
         <p style="margin-bottom: 1rem; color: #7f8c8d;">
             <strong>Suchergebnis für "{{ search_query }}":</strong> {{ customers|length }} Kunde(n) gefunden
         </p>
     {% endif %}
-    
+
     {% if customers %}
         <table>
             <thead>

@@ -40,7 +40,7 @@
                 </td>
                 <td style="padding: 1rem;">
                     {% if check.invoice_id %}
-                        <a href="{{ url_for('view_invoice', invoice_id=check.invoice_id) }}" 
+                        <a href="{{ url_for('view_invoice', invoice_id=check.invoice_id) }}"
                            style="color: #3498db; text-decoration: none; font-weight: bold;">
                             {{ check.invoice_number }}
                         </a>
@@ -58,7 +58,7 @@
                 <td style="padding: 1rem; text-align: right; font-weight: bold;">
                     {{ "%.2f"|format(check.amount_received) }} €
                 </td>
-                <td style="padding: 1rem; text-align: right; font-weight: bold; 
+                <td style="padding: 1rem; text-align: right; font-weight: bold;
                     {% if check.difference %}
                         {% if check.difference > 0 %}color: #27ae60;{% elif check.difference < 0 %}color: #e74c3c;{% endif %}
                     {% endif %}">
@@ -94,7 +94,7 @@
                             </button>
                         </form>
                         {% endif %}
-                        
+
                         <form method="POST" action="{{ url_for('resolve_payment_check', check_id=check.id) }}" style="margin: 0;">
                             <input type="hidden" name="action" value="ignore">
                             <button type="submit" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; background: #95a5a6; color: white;"

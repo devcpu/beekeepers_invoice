@@ -50,7 +50,7 @@
                         <!-- Menge -->
                         <div class="mb-3">
                             <label for="quantity" class="form-label">Menge *</label>
-                            <input type="number" name="quantity" id="quantity" class="form-control" required 
+                            <input type="number" name="quantity" id="quantity" class="form-control" required
                                    placeholder="Negativ für Abgang, Positiv für Zugang" onchange="updatePreview()">
                             <small class="form-text text-muted">
                                 Negativ für Abgang (z.B. -5), Positiv für Zugang (z.B. +10)
@@ -61,7 +61,7 @@
                         <!-- Grund -->
                         <div class="mb-3">
                             <label for="reason" class="form-label">Grund / Bemerkung *</label>
-                            <textarea name="reason" id="reason" class="form-control" rows="3" required 
+                            <textarea name="reason" id="reason" class="form-control" rows="3" required
                                       placeholder="Detaillierte Beschreibung für die Dokumentation (GoBD-Pflicht)"></textarea>
                             <small class="form-text text-muted">
                                 Pflichtfeld für GoBD-Konformität. Beschreiben Sie den Grund für die Bestandsänderung.
@@ -100,7 +100,7 @@ function updateCurrentStock() {
     const option = select.options[select.selectedIndex];
     const stock = option.dataset.stock;
     const infoDiv = document.getElementById('current-stock-info');
-    
+
     if (stock !== undefined) {
         infoDiv.innerHTML = `<div class="alert alert-info mb-0"><strong>Aktueller Bestand:</strong> ${stock} Stück</div>`;
         updatePreview();
@@ -116,11 +116,11 @@ function updatePreview() {
     const quantity = parseInt(document.getElementById('quantity').value) || 0;
     const newStock = currentStock + quantity;
     const previewDiv = document.getElementById('stock-preview');
-    
+
     if (quantity !== 0 && option.value) {
         let alertClass = 'alert-info';
         let icon = '📊';
-        
+
         if (newStock < 0) {
             alertClass = 'alert-danger';
             icon = '❌';
@@ -131,10 +131,10 @@ function updatePreview() {
             alertClass = 'alert-success';
             icon = '📈';
         }
-        
+
         previewDiv.innerHTML = `
             <div class="alert ${alertClass} mb-0">
-                ${icon} <strong>Vorschau:</strong> ${currentStock} → ${newStock} Stück 
+                ${icon} <strong>Vorschau:</strong> ${currentStock} → ${newStock} Stück
                 ${quantity > 0 ? `(+${quantity})` : `(${quantity})`}
             </div>
         `;

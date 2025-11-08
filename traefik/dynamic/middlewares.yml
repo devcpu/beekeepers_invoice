@@ -13,7 +13,7 @@ http:
             - "10.0.0.0/8"
             - "172.16.0.0/12"
             - "192.168.0.0/16"
-    
+
     # Security Headers
     security-headers:
       headers:
@@ -30,14 +30,14 @@ http:
           X-Permitted-Cross-Domain-Policies: "none"
           Referrer-Policy: "strict-origin-when-cross-origin"
           Permissions-Policy: "geolocation=(), microphone=(), camera=()"
-    
+
     # Rate Limiting
     rate-limit:
       rateLimit:
         average: 100
         burst: 50
         period: 1m
-    
+
     # Authentifizierung für Traefik Dashboard
     auth:
       basicAuth:
@@ -45,7 +45,7 @@ http:
           # admin:admin (ändere das Passwort!)
           # Generiere mit: echo $(htpasswd -nB admin) | sed -e s/\\$/\\$\\$/g
           - "admin:$$2y$$05$$BfN9CqjF.RjXJQz6VxJzFO8x8JHZqNjZKvVl9bFLJQCPxQYfqJ2O6"
-    
+
     # Compression
     compress:
       compress: {}

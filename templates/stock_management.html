@@ -7,7 +7,7 @@
     .autocomplete-container {
         position: relative;
     }
-    
+
     .autocomplete-results {
         position: absolute;
         top: 100%;
@@ -21,27 +21,27 @@
         z-index: 1000;
         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     }
-    
+
     .autocomplete-item {
         padding: 0.75rem;
         cursor: pointer;
         border-bottom: 1px solid #f0f0f0;
     }
-    
+
     .autocomplete-item:hover {
         background: #f8f9fa;
     }
-    
+
     .autocomplete-item strong {
         color: #2c3e50;
     }
-    
+
     .autocomplete-item small {
         color: #7f8c8d;
         display: block;
         margin-top: 0.25rem;
     }
-    
+
     .stock-info {
         display: inline-block;
         padding: 0.25rem 0.5rem;
@@ -49,17 +49,17 @@
         font-size: 0.875rem;
         margin-left: 0.5rem;
     }
-    
+
     .stock-ok {
         background: #d4edda;
         color: #155724;
     }
-    
+
     .stock-low {
         background: #fff3cd;
         color: #856404;
     }
-    
+
     .stock-out {
         background: #f8d7da;
         color: #721c24;
@@ -72,12 +72,12 @@
 
 <div class="card">
     <h2>Produkt auswählen</h2>
-    
+
     <div class="form-group autocomplete-container">
         <label for="product-search">Produkt suchen</label>
-        <input 
-            type="text" 
-            id="product-search" 
+        <input
+            type="text"
+            id="product-search"
             placeholder="Produktname oder Chargennummer eingeben..."
             autocomplete="off">
         <div id="product-results" class="autocomplete-results" style="display: none;"></div>
@@ -87,7 +87,7 @@
 <div id="stock-control" style="display: none;">
     <div class="card" style="margin-top: 2rem;">
         <h2 id="selected-product-name"></h2>
-        
+
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
             <div class="stat-card">
                 <h3 id="current-stock" style="font-size: 2.5rem; color: #3498db;">-</h3>
@@ -102,49 +102,49 @@
                 <p>Chargennummer</p>
             </div>
         </div>
-        
+
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
             <!-- Zugang -->
             <div style="border: 2px solid #27ae60; border-radius: 8px; padding: 1.5rem; background: #f0fff4;">
                 <h3 style="color: #27ae60; margin-bottom: 1rem;">➕ Zugang buchen</h3>
-                
+
                 <div class="form-group">
                     <label for="add_lot_number">Chargennummer</label>
                     <input type="text" id="add_lot_number" placeholder="z.B. 2024-001">
                     <small style="color: #7f8c8d;">Optional: Neue oder bestehende Charge</small>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="add_amount">Menge *</label>
                     <input type="number" id="add_amount" min="1" placeholder="Anzahl hinzufügen" required>
                 </div>
-                
+
                 <button type="button" class="btn btn-success" onclick="addStock()" style="width: 100%; background: #27ae60;">
                     + Bestand erhöhen
                 </button>
             </div>
-            
+
             <!-- Abgang -->
             <div style="border: 2px solid #e74c3c; border-radius: 8px; padding: 1.5rem; background: #fff5f5;">
                 <h3 style="color: #e74c3c; margin-bottom: 1rem;">➖ Abgang buchen</h3>
-                
+
                 <div class="form-group">
                     <label for="reduce_lot_number">Chargennummer</label>
                     <input type="text" id="reduce_lot_number" placeholder="z.B. 2024-001">
                     <small style="color: #7f8c8d;">Optional: Für Tracking</small>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="reduce_amount">Menge *</label>
                     <input type="number" id="reduce_amount" min="1" placeholder="Anzahl abziehen" required>
                 </div>
-                
+
                 <button type="button" class="btn" onclick="reduceStock()" style="width: 100%; background: #e74c3c; color: white;">
                     - Bestand verringern
                 </button>
             </div>
         </div>
-        
+
         <div id="stock-message" style="margin-top: 1rem; padding: 1rem; border-radius: 4px; display: none;"></div>
     </div>
 </div>
@@ -156,30 +156,30 @@ let searchTimeout = null;
 // Autocomplete für Produktsuche
 document.getElementById('product-search').addEventListener('input', function(e) {
     const query = e.target.value.trim();
-    
+
     clearTimeout(searchTimeout);
-    
+
     if (query.length < 2) {
         document.getElementById('product-results').style.display = 'none';
         return;
     }
-    
+
     searchTimeout = setTimeout(() => {
         fetch(`/api/products/search?q=${encodeURIComponent(query)}`)
             .then(response => response.json())
             .then(products => {
                 const resultsDiv = document.getElementById('product-results');
-                
+
                 if (products.length === 0) {
                     resultsDiv.innerHTML = '<div class="autocomplete-item">Keine Produkte gefunden</div>';
                     resultsDiv.style.display = 'block';
                     return;
                 }
-                
+
                 resultsDiv.innerHTML = products.map(product => {
                     let stockClass = 'stock-ok';
                     let stockText = `${product.number} Stück`;
-                    
+
                     if (product.number === 0) {
                         stockClass = 'stock-out';
                         stockText = 'Nicht verfügbar';
@@ -187,9 +187,9 @@ document.getElementById('product-search').addEventListener('input', function(e) 
                         stockClass = 'stock-low';
                         stockText = `${product.number} Stück (Niedrig)`;
                     }
-                    
+
                     let lotInfo = product.lot_number ? ` | Charge: ${product.lot_number}` : '';
-                    
+
                     return `
                         <div class="autocomplete-item" onclick="selectProduct(${product.id}, '${product.name.replace(/'/g, "\\'")}', ${product.number}, ${product.price}, '${product.lot_number || ''}')">
                             <strong>${product.name}</strong>
@@ -198,7 +198,7 @@ document.getElementById('product-search').addEventListener('input', function(e) 
                         </div>
                     `;
                 }).join('');
-                
+
                 resultsDiv.style.display = 'block';
             })
             .catch(error => {
@@ -216,17 +216,17 @@ document.addEventListener('click', function(e) {
 
 function selectProduct(id, name, stock, price, lotNumber) {
     selectedProductId = id;
-    
+
     document.getElementById('product-search').value = name;
     document.getElementById('product-results').style.display = 'none';
-    
+
     document.getElementById('selected-product-name').textContent = name;
     document.getElementById('current-stock').textContent = stock;
     document.getElementById('product-price').textContent = `€ ${parseFloat(price).toFixed(2)}`;
     document.getElementById('product-lot').textContent = lotNumber || 'Keine';
-    
+
     document.getElementById('stock-control').style.display = 'block';
-    
+
     // Felder zurücksetzen
     document.getElementById('add_lot_number').value = lotNumber || '';
     document.getElementById('reduce_lot_number').value = lotNumber || '';
@@ -240,15 +240,15 @@ function addStock() {
         showMessage('Bitte wählen Sie zuerst ein Produkt aus', 'error');
         return;
     }
-    
+
     const lotNumber = document.getElementById('add_lot_number').value.trim();
     const amount = parseInt(document.getElementById('add_amount').value);
-    
+
     if (!amount || amount <= 0) {
         showMessage('Bitte gültige Menge eingeben', 'error');
         return;
     }
-    
+
     fetch(`/api/products/${selectedProductId}/stock/add`, {
         method: 'POST',
         headers: {
@@ -285,15 +285,15 @@ function reduceStock() {
         showMessage('Bitte wählen Sie zuerst ein Produkt aus', 'error');
         return;
     }
-    
+
     const lotNumber = document.getElementById('reduce_lot_number').value.trim();
     const amount = parseInt(document.getElementById('reduce_amount').value);
-    
+
     if (!amount || amount <= 0) {
         showMessage('Bitte gültige Menge eingeben', 'error');
         return;
     }
-    
+
     fetch(`/api/products/${selectedProductId}/stock/reduce`, {
         method: 'POST',
         headers: {
@@ -329,7 +329,7 @@ function showMessage(message, type) {
     const msgDiv = document.getElementById('stock-message');
     msgDiv.textContent = message;
     msgDiv.style.display = 'block';
-    
+
     if (type === 'success') {
         msgDiv.style.background = '#d4edda';
         msgDiv.style.color = '#155724';
@@ -339,7 +339,7 @@ function showMessage(message, type) {
         msgDiv.style.color = '#721c24';
         msgDiv.style.border = '1px solid #f5c6cb';
     }
-    
+
     setTimeout(() => {
         msgDiv.style.display = 'none';
     }, 5000);

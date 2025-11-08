@@ -8,8 +8,8 @@
         <h1>📊 Jahresübersicht Einnahmen</h1>
         <div class="d-flex gap-2">
             <!-- PDF-Export -->
-            <a href="{{ url_for('annual_revenue_report_pdf', year=stats.year) }}" 
-               class="btn btn-danger" 
+            <a href="{{ url_for('annual_revenue_report_pdf', year=stats.year) }}"
+               class="btn btn-danger"
                target="_blank">
                 📄 PDF exportieren
             </a>
@@ -99,11 +99,11 @@
                         <td>
                             <div class="progress">
                                 {% set percentage = (type_data.revenue / stats.total_revenue) * 100 if stats.total_revenue > 0 else 0 %}
-                                <div class="progress-bar {% if type_key == 'bar' %}bg-warning{% elif type_key == 'endkunde' %}bg-success{% else %}bg-primary{% endif %}" 
-                                     role="progressbar" 
+                                <div class="progress-bar {% if type_key == 'bar' %}bg-warning{% elif type_key == 'endkunde' %}bg-success{% else %}bg-primary{% endif %}"
+                                     role="progressbar"
                                      style="width: {{ percentage }}%"
-                                     aria-valuenow="{{ percentage }}" 
-                                     aria-valuemin="0" 
+                                     aria-valuenow="{{ percentage }}"
+                                     aria-valuemin="0"
                                      aria-valuemax="100">
                                 </div>
                             </div>
@@ -157,8 +157,8 @@
                             {% if month_data.revenue > 0 %}
                             <div class="progress">
                                 {% set percentage = (month_data.revenue / stats.max_month_revenue) * 100 if stats.max_month_revenue > 0 else 0 %}
-                                <div class="progress-bar bg-info" 
-                                     role="progressbar" 
+                                <div class="progress-bar bg-info"
+                                     role="progressbar"
                                      style="width: {{ percentage }}%">
                                 </div>
                             </div>

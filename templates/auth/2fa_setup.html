@@ -14,7 +14,7 @@
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle"></i> Mit 2FA wird Ihr Account durch einen zweiten Faktor zusätzlich abgesichert.
                     </div>
-                    
+
                     <h5 class="mt-4">Schritt 1: Authenticator-App installieren</h5>
                     <p>Installieren Sie eine der folgenden Apps auf Ihrem Smartphone:</p>
                     <ul>
@@ -22,33 +22,33 @@
                         <li><strong>Authy</strong> (iOS/Android/Desktop)</li>
                         <li><strong>Microsoft Authenticator</strong> (iOS/Android)</li>
                     </ul>
-                    
+
                     <hr>
-                    
+
                     <h5>Schritt 2: QR-Code scannen</h5>
                     <p>Scannen Sie diesen QR-Code mit Ihrer Authenticator-App:</p>
-                    
+
                     <div class="text-center my-4">
                         <img src="data:image/png;base64,{{ qr_code }}" alt="2FA QR-Code" class="img-fluid" style="max-width: 300px;">
                     </div>
-                    
+
                     <div class="alert alert-warning">
                         <strong>Manueller Setup-Key (falls QR-Code nicht funktioniert):</strong><br>
                         <code class="fs-5">{{ totp_secret }}</code>
                     </div>
-                    
+
                     <hr>
-                    
+
                     <h5>Schritt 3: Code eingeben</h5>
                     <p>Geben Sie den 6-stelligen Code aus Ihrer Authenticator-App ein:</p>
-                    
+
                     <form method="POST" action="{{ url_for('setup_2fa') }}">
                         <div class="mb-3">
                             <label for="token" class="form-label">6-stelliger Code</label>
-                            <input type="text" 
-                                   class="form-control form-control-lg text-center" 
-                                   id="token" 
-                                   name="token" 
+                            <input type="text"
+                                   class="form-control form-control-lg text-center"
+                                   id="token"
+                                   name="token"
                                    placeholder="123 456"
                                    maxlength="7"
                                    pattern="[0-9 ]{6,7}"
@@ -57,7 +57,7 @@
                                    style="letter-spacing: 0.5em; font-size: 2rem;">
                             <div class="form-text">Der Code ändert sich alle 30 Sekunden.</div>
                         </div>
-                        
+
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-primary btn-lg">
                                 <i class="bi bi-check-circle"></i> 2FA aktivieren

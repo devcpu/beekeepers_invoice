@@ -10,23 +10,23 @@
 <form method="POST" action="{{ url_for('edit_user', user_id=user.id) }}">
     <div class="card">
         <h2>Benutzerdaten</h2>
-        
+
         <div class="form-grid">
             <div>
                 <label>Benutzername</label>
-                <input type="text" value="{{ user.username }}" disabled 
+                <input type="text" value="{{ user.username }}" disabled
                        style="background: #e9ecef; cursor: not-allowed;">
                 <small style="color: #6c757d;">Benutzername kann nicht geändert werden</small>
             </div>
-            
+
             <div>
                 <label for="email" class="required">E-Mail</label>
-                <input type="email" id="email" name="email" required 
+                <input type="email" id="email" name="email" required
                        value="{{ user.email }}"
                        placeholder="max.mustermann@firma.de">
             </div>
         </div>
-        
+
         <div class="form-grid">
             <div>
                 <label for="role" class="required">Rolle</label>
@@ -42,10 +42,10 @@
                     </option>
                 </select>
             </div>
-            
+
             <div>
                 <label for="is_active">
-                    <input type="checkbox" id="is_active" name="is_active" 
+                    <input type="checkbox" id="is_active" name="is_active"
                            {% if user.is_active %}checked{% endif %}
                            style="width: auto; margin-right: 0.5rem;">
                     Account aktiv
@@ -55,10 +55,10 @@
                 </small>
             </div>
         </div>
-        
+
         <div>
             <label for="totp_required">
-                <input type="checkbox" id="totp_required" name="totp_required" 
+                <input type="checkbox" id="totp_required" name="totp_required"
                        {% if user.totp_required %}checked{% endif %}
                        style="width: auto; margin-right: 0.5rem;">
                 2FA verpflichtend
@@ -67,13 +67,13 @@
                 Benutzer muss 2FA aktivieren und kann es nicht deaktivieren
             </small>
         </div>
-        
+
         <div id="reseller-field" style="display: {% if user.role == 'reseller' %}block{% else %}none{% endif %};">
             <label for="reseller_customer_id">Zugehöriger Kunde (Reseller)</label>
             <select id="reseller_customer_id" name="reseller_customer_id">
                 <option value="">-- Bitte wählen --</option>
                 {% for customer in customers %}
-                <option value="{{ customer.id }}" 
+                <option value="{{ customer.id }}"
                         {% if user.reseller_customer_id == customer.id %}selected{% endif %}>
                     {{ customer.company_name or (customer.first_name + ' ' + customer.last_name) }}
                 </option>
@@ -82,27 +82,27 @@
             <small style="color: #6c757d;">Optional: Verknüpfung mit Kundendaten für Kommissionslager</small>
         </div>
     </div>
-    
+
     <div class="card">
         <h2>Passwort ändern</h2>
         <p style="color: #6c757d; margin-bottom: 1.5rem;">Lassen Sie das Feld leer, um das Passwort nicht zu ändern.</p>
-        
+
         <div>
             <label for="new_password">Neues Passwort</label>
-            <input type="password" id="new_password" name="new_password" 
+            <input type="password" id="new_password" name="new_password"
                    minlength="8"
                    placeholder="Mindestens 8 Zeichen (optional)">
             <small style="color: #6c757d;">Nur ausfüllen, wenn Sie das Passwort ändern möchten</small>
         </div>
     </div>
-    
+
     <div class="card">
         <h2>Statistiken</h2>
-        
+
         <div style="display: grid; grid-template-columns: 200px 1fr; gap: 1rem;">
             <div><strong>Erstellt am:</strong></div>
             <div>{{ user.created_at.strftime('%d.%m.%Y %H:%M') if user.created_at else 'Unbekannt' }}</div>
-            
+
             <div><strong>Letzter Login:</strong></div>
             <div>
                 {% if user.last_login %}
@@ -114,7 +114,7 @@
                 <span style="color: #6c757d;">Nie</span>
                 {% endif %}
             </div>
-            
+
             <div><strong>2FA Status:</strong></div>
             <div>
                 {% if user.totp_enabled %}
@@ -130,7 +130,7 @@
             </div>
         </div>
     </div>
-    
+
     <div style="display: flex; gap: 1rem; margin-top: 2rem;">
         <button type="submit" class="btn" style="background: #007bff; color: white;">
             <i class="bi bi-check-circle"></i> Änderungen speichern

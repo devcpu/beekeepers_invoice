@@ -26,7 +26,7 @@ const API_CACHE_URLS = [
 // Install Event - Cache vorbereiten
 self.addEventListener('install', (event) => {
   console.log('[SW] Installing Service Worker...', CACHE_VERSION);
-  
+
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
@@ -46,7 +46,7 @@ self.addEventListener('install', (event) => {
 // Activate Event - Alte Caches löschen
 self.addEventListener('activate', (event) => {
   console.log('[SW] Activating Service Worker...', CACHE_VERSION);
-  
+
   event.waitUntil(
     caches.keys()
       .then((cacheNames) => {
@@ -54,7 +54,7 @@ self.addEventListener('activate', (event) => {
           cacheNames
             .filter((cacheName) => {
               // Lösche alle Caches außer dem aktuellen
-              return cacheName.startsWith('rechnungen-cache-') && 
+              return cacheName.startsWith('rechnungen-cache-') &&
                      cacheName !== CACHE_NAME;
             })
             .map((cacheName) => {
@@ -74,12 +74,12 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
-  
+
   // Ignoriere Chrome-Extensions und andere Protokolle
   if (!url.protocol.startsWith('http')) {
     return;
   }
-  
+
   // Strategie basierend auf Request-Typ
   if (request.method === 'GET') {
     // HTML-Seiten: Network-First (aktuelle Daten bevorzugen)
@@ -124,7 +124,7 @@ self.addEventListener('fetch', (event) => {
                 );
               });
           }
-          
+
           return new Response(
             JSON.stringify({
               success: false,
@@ -145,30 +145,30 @@ async function networkFirstStrategy(request) {
   try {
     // Versuche Netzwerk-Request
     const networkResponse = await fetch(request);
-    
+
     // Bei Erfolg: Response klonen und cachen
     if (networkResponse.ok) {
       const cache = await caches.open(CACHE_NAME);
       cache.put(request, networkResponse.clone());
     }
-    
+
     return networkResponse;
   } catch (error) {
     console.log('[SW] Network failed, trying cache:', request.url);
-    
+
     // Fallback zu Cache
     const cachedResponse = await caches.match(request);
-    
+
     if (cachedResponse) {
       return cachedResponse;
     }
-    
+
     // Kein Cache vorhanden: Offline-Seite für HTML, Fehler für API
     if (request.headers.get('accept').includes('text/html')) {
       const offlineResponse = await caches.match(OFFLINE_URL);
       return offlineResponse || new Response('Offline', { status: 503 });
     }
-    
+
     // API-Fehler
     return new Response(
       JSON.stringify({
@@ -187,7 +187,7 @@ async function networkFirstStrategy(request) {
 // Cache-First Strategy (für Static Assets)
 async function cacheFirstStrategy(request) {
   const cachedResponse = await caches.match(request);
-  
+
   if (cachedResponse) {
     // Im Hintergrund Update holen
     fetch(request).then((networkResponse) => {
@@ -199,19 +199,19 @@ async function cacheFirstStrategy(request) {
     }).catch(() => {
       // Ignoriere Netzwerkfehler
     });
-    
+
     return cachedResponse;
   }
-  
+
   // Nicht im Cache: Hole vom Netzwerk
   try {
     const networkResponse = await fetch(request);
-    
+
     if (networkResponse.ok) {
       const cache = await caches.open(CACHE_NAME);
       cache.put(request, networkResponse.clone());
     }
-    
+
     return networkResponse;
   } catch (error) {
     return new Response('Offline', { status: 503 });
@@ -227,7 +227,7 @@ async function saveForBackgroundSync(request) {
     body: await request.text(),
     timestamp: Date.now()
   };
-  
+
   // Speichere in IndexedDB (hier vereinfacht)
   return self.registration.sync.register('sync-invoices');
 }
@@ -235,7 +235,7 @@ async function saveForBackgroundSync(request) {
 // Background Sync Event
 self.addEventListener('sync', (event) => {
   console.log('[SW] Background sync triggered:', event.tag);
-  
+
   if (event.tag === 'sync-invoices') {
     event.waitUntil(syncInvoices());
   }
@@ -244,7 +244,7 @@ self.addEventListener('sync', (event) => {
 async function syncInvoices() {
   // Hole gespeicherte Requests aus IndexedDB und sende sie
   console.log('[SW] Syncing offline invoices...');
-  
+
   // Hier würde die IndexedDB-Logik kommen
   // Für jetzt: Benachrichtige Client über erfolgreiche Sync
   const clients = await self.clients.matchAll();
@@ -259,7 +259,7 @@ async function syncInvoices() {
 // Push Notifications (optional)
 self.addEventListener('push', (event) => {
   const data = event.data ? event.data.json() : {};
-  
+
   const title = data.title || 'Rechnungsverwaltung';
   const options = {
     body: data.body || 'Neue Benachrichtigung',
@@ -278,7 +278,7 @@ self.addEventListener('push', (event) => {
       }
     ]
   };
-  
+
   event.waitUntil(
     self.registration.showNotification(title, options)
   );
@@ -287,10 +287,10 @@ self.addEventListener('push', (event) => {
 // Notification Click
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  
+
   if (event.action === 'open' || !event.action) {
     const urlToOpen = event.notification.data?.url || '/';
-    
+
     event.waitUntil(
       clients.matchAll({ type: 'window', includeUncontrolled: true })
         .then((clientList) => {
@@ -300,7 +300,7 @@ self.addEventListener('notificationclick', (event) => {
               return client.focus();
             }
           }
-          
+
           // Sonst öffne neuen Tab
           if (clients.openWindow) {
             return clients.openWindow(urlToOpen);
@@ -313,11 +313,11 @@ self.addEventListener('notificationclick', (event) => {
 // Message Handler (Kommunikation mit App)
 self.addEventListener('message', (event) => {
   console.log('[SW] Message received:', event.data);
-  
+
   if (event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
-  
+
   if (event.data.type === 'CACHE_URLS') {
     event.waitUntil(
       caches.open(CACHE_NAME).then((cache) => {

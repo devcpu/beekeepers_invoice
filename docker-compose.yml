@@ -52,20 +52,20 @@ services:
     environment:
       # Database
       DATABASE_URL: postgresql://${DB_USER:-rechnungen_user}:${DB_PASSWORD}@db:5432/${DB_NAME:-rechnungen}
-      
+
       # Session Storage (File-based - ausreichend für die meisten Setups)
       # Für Redis: Kommentiere die nächsten zwei Zeilen aus und aktiviere Redis-Service
       SESSION_TYPE: filesystem
       SESSION_FILE_DIR: /app/flask_session
-      
+
       # Redis Session (nur wenn Redis-Service aktiviert)
       # SESSION_TYPE: redis
       # SESSION_REDIS: redis://redis:6379/0
-      
+
       # Flask
       FLASK_ENV: production
       SECRET_KEY: ${SECRET_KEY}
-      
+
       # Company Data (aus .env)
       COMPANY_NAME: ${COMPANY_NAME}
       COMPANY_HOLDER: ${COMPANY_HOLDER}
@@ -77,12 +77,12 @@ services:
       COMPANY_PHONE: ${COMPANY_PHONE}
       COMPANY_TAX_ID: ${COMPANY_TAX_ID}
       COMPANY_WEBSITE: ${COMPANY_WEBSITE}
-      
+
       # Bank
       BANK_NAME: ${BANK_NAME}
       BANK_IBAN: ${BANK_IBAN}
       BANK_BIC: ${BANK_BIC}
-      
+
       # Mail
       MAIL_SERVER: ${MAIL_SERVER}
       MAIL_PORT: ${MAIL_PORT}
@@ -90,20 +90,20 @@ services:
       MAIL_PASSWORD: ${MAIL_PASSWORD}
       MAIL_USE_TLS: ${MAIL_USE_TLS:-true}
       MAIL_USE_SSL: ${MAIL_USE_SSL:-false}
-      
+
       # IMAP
       IMAP_SERVER: ${IMAP_SERVER}
       IMAP_PORT: ${IMAP_PORT}
       IMAP_USERNAME: ${IMAP_USERNAME}
       IMAP_PASSWORD: ${IMAP_PASSWORD}
       IMAP_USE_SSL: ${IMAP_USE_SSL:-true}
-      
+
       # Steuer
       DEFAULT_TAX_RATE: ${DEFAULT_TAX_RATE:-19.00}
-      
+
       # 2FA
       TOTP_ISSUER_NAME: ${TOTP_ISSUER_NAME:-Rechnungsverwaltung}
-      
+
     volumes:
       - ./invoices:/app/invoices
       - ./uploads:/app/uploads
@@ -116,19 +116,19 @@ services:
       # Traefik Labels
       - "traefik.enable=true"
       - "traefik.docker.network=traefik"
-      
+
       # HTTP Router
       - "traefik.http.routers.rechnungen.rule=Host(`${DOMAIN}`)"
       - "traefik.http.routers.rechnungen.entrypoints=websecure"
       - "traefik.http.routers.rechnungen.tls=true"
       - "traefik.http.routers.rechnungen.tls.certresolver=letsencrypt"
-      
+
       # Middleware: CrowdSec + Security Headers
       - "traefik.http.routers.rechnungen.middlewares=crowdsec-bouncer@file,security-headers@file,rate-limit@file"
-      
+
       # Service
       - "traefik.http.services.rechnungen.loadbalancer.server.port=8000"
-      
+
       # CrowdSec Labels (für Parsing)
       - "crowdsec.enable=true"
       - "crowdsec.application=rechnungen"

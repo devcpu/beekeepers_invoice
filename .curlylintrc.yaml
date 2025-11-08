@@ -1,0 +1,51 @@
+# Curlylint Konfiguration für HTML + Jinja2 Templates
+# Docs: https://www.curlylint.org/docs/
+
+rules:
+  # Jinja2 Syntax & Best Practices
+  image_alt: true  # <img> muss alt-Attribut haben
+  indent: 2  # 2 Spaces Einrückung (oder 4 wenn du das bevorzugst)
+
+  # HTML Attribute Regeln
+  html_has_lang: true  # <html> muss lang-Attribut haben
+  aria_role: true  # ARIA roles validieren
+
+  # Jinja2 spezifisch
+  # Erlaubt Django/Jinja2 Template Tags
+  allowed_django_tags:
+    - extends
+    - block
+    - endblock
+    - include
+    - load
+    - if
+    - elif
+    - else
+    - endif
+    - for
+    - endfor
+    - with
+    - endwith
+    - url_for
+    - static
+    - set
+    - endset
+    - macro
+    - endmacro
+    - call
+    - endcall
+    - filter
+    - endfilter
+    - autoescape
+    - endautoescape
+
+# Dateien ignorieren
+exclude: |
+  (?x)^(
+    \.venv/.*|
+    venv/.*|
+    env/.*|
+    node_modules/.*|
+    build/.*|
+    dist/.*
+  )$

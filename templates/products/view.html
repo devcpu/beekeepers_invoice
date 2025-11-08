@@ -13,14 +13,14 @@
 
 <div class="card">
     <h2>Produktdetails</h2>
-    
+
     <div style="display: grid; grid-template-columns: 200px 1fr; gap: 1rem; margin-bottom: 2rem;">
         <div><strong>Produktname:</strong></div>
         <div>{{ product.name }}</div>
-        
+
         <div><strong>Menge/Größe:</strong></div>
         <div>{{ product.quantity or '-' }}</div>
-        
+
         <div><strong>Lagerbestand:</strong></div>
         <div>
             <span style="font-size: 1.5rem; font-weight: bold; {% if product.number <= 0 %}color: #e74c3c;{% elif product.number <= 10 %}color: #f39c12;{% else %}color: #27ae60;{% endif %}">
@@ -32,13 +32,13 @@
                 <span style="color: #f39c12; margin-left: 1rem;">⚠️ Niedriger Bestand</span>
             {% endif %}
         </div>
-        
+
         <div><strong>Preis:</strong></div>
         <div style="font-size: 1.3rem; font-weight: bold; color: #2c3e50;">{{ "%.2f"|format(product.price) }} €</div>
-        
+
         <div><strong>Chargennummer:</strong></div>
         <div>{{ product.lot_number or '-' }}</div>
-        
+
         <div><strong>Status:</strong></div>
         <div>
             {% if product.active %}
@@ -47,10 +47,10 @@
                 <span class="badge" style="background: #95a5a6;">Inaktiv</span>
             {% endif %}
         </div>
-        
+
         <div><strong>Erstellt am:</strong></div>
         <div>{{ product.created_at.strftime('%d.%m.%Y %H:%M') }}</div>
-        
+
         {% if product.updated_at != product.created_at %}
         <div><strong>Zuletzt geändert:</strong></div>
         <div>{{ product.updated_at.strftime('%d.%m.%Y %H:%M') }}</div>

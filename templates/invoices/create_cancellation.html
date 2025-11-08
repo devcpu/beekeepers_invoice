@@ -5,7 +5,7 @@
 {% block content %}
 <div style="max-width: 800px; margin: 0 auto;">
     <h1>Stornorechnung erstellen</h1>
-    
+
     <div class="card" style="background: #fff3cd; border-left: 4px solid #856404; margin-bottom: 2rem;">
         <h3 style="color: #856404; margin-top: 0;">⚠️ Wichtiger Hinweis (GoBD-Konformität)</h3>
         <p>
@@ -17,7 +17,7 @@
             <li>Betrag: <strong>{{ "%.2f"|format(invoice.total) }} €</strong></li>
             <li>Datum: <strong>{{ invoice.invoice_date.strftime('%d.%m.%Y') }}</strong></li>
         </ul>
-        
+
         <p style="margin-bottom: 0;">
             <strong>Was passiert:</strong>
         </p>
@@ -29,38 +29,38 @@
             <li>✓ Die Original-Rechnung bleibt <strong>unveränderbar</strong> im System</li>
         </ul>
     </div>
-    
+
     <div class="card">
         <h2>Stornierungsdetails</h2>
-        
+
         <form method="POST">
             <div class="form-group">
                 <label for="reason">Grund für Stornierung *</label>
-                <textarea name="reason" id="reason" rows="4" required 
+                <textarea name="reason" id="reason" rows="4" required
                           placeholder="z.B. Kunde hat Ware zurückgegeben, Fehler in der Rechnung, etc."></textarea>
                 <small style="color: #7f8c8d;">
                     Der Grund wird in der Stornorechnung und im Audit Trail dokumentiert.
                 </small>
             </div>
-            
+
             <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid #ddd;">
                 <button type="submit" class="btn" style="background: #e74c3c; color: white; font-size: 1.1rem;">
                     🗑️ Stornorechnung jetzt erstellen
                 </button>
-                <a href="{{ url_for('view_invoice', invoice_id=invoice.id) }}" 
+                <a href="{{ url_for('view_invoice', invoice_id=invoice.id) }}"
                    class="btn" style="background: #95a5a6; color: white; margin-left: 0.5rem;">
                     Abbrechen
                 </a>
             </div>
         </form>
     </div>
-    
+
     <div class="card" style="background: #e3f2fd; border-left: 4px solid #2196f3;">
         <h3 style="color: #1976d2; margin-top: 0;">ℹ️ Rechnungspositionen</h3>
         <p style="margin-bottom: 1rem;">
             Folgende Positionen werden mit <strong>negativen Beträgen</strong> storniert:
         </p>
-        
+
         <table style="width: 100%; border-collapse: collapse;">
             <thead>
                 <tr style="background: #f8f9fa; border-bottom: 2px solid #ddd;">
@@ -95,7 +95,7 @@
                 </tr>
             </tfoot>
         </table>
-        
+
         <p style="margin-top: 1rem; margin-bottom: 0; font-size: 0.9rem; color: #555;">
             <strong>Nach Stornierung:</strong> Alle Beträge werden mit <span style="color: #e74c3c;">negativem Vorzeichen (-)</span> in der Stornorechnung erscheinen.
         </p>

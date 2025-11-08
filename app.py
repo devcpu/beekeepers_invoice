@@ -168,6 +168,7 @@ def create_app(config_name='default'):
         return render_template('index.html', invoices=recent_invoices, stats=stats)
     
     @app.route('/invoices')
+    @login_required
     def list_invoices():
         """Liste aller Rechnungen"""
         from datetime import datetime, timedelta
@@ -197,6 +198,7 @@ def create_app(config_name='default'):
         return render_template('invoices/list.html', invoices=invoices, status_filter=status_filter)
     
     @app.route('/invoices/new', methods=['GET', 'POST'])
+    @login_required
     def create_invoice():
         """Neue Rechnung erstellen"""
         if request.method == 'POST':
@@ -303,6 +305,7 @@ def create_app(config_name='default'):
                              landw_tax_rate=landw_tax_rate)
     
     @app.route('/invoices/<int:invoice_id>')
+    @login_required
     def view_invoice(invoice_id):
         """Einzelne Rechnung anzeigen"""
         invoice = Invoice.query.get_or_404(invoice_id)
@@ -310,6 +313,7 @@ def create_app(config_name='default'):
         return render_template('invoices/view.html', invoice=invoice, is_valid=is_valid)
     
     @app.route('/invoices/<int:invoice_id>/status/<status>')
+    @login_required
     def update_invoice_status(invoice_id, status):
         """Status einer Rechnung ändern (GoBD-konform mit Audit Trail)"""
         invoice = Invoice.query.get_or_404(invoice_id)
@@ -387,6 +391,7 @@ def create_app(config_name='default'):
         return redirect(url_for('view_invoice', invoice_id=invoice_id))
     
     @app.route('/invoices/<int:invoice_id>/delete', methods=['POST'])
+    @login_required
     def delete_invoice(invoice_id):
         """Rechnung löschen (nur bei Status 'draft' erlaubt - GoBD-konform)"""
         invoice = Invoice.query.get_or_404(invoice_id)
@@ -438,6 +443,7 @@ def create_app(config_name='default'):
             return redirect(url_for('view_invoice', invoice_id=invoice_id))
     
     @app.route('/invoices/<int:invoice_id>/create-cancellation', methods=['GET', 'POST'])
+    @login_required
     def create_cancellation_invoice(invoice_id):
         """Erstellt eine Stornorechnung (GoBD-konform)"""
         original_invoice = Invoice.query.get_or_404(invoice_id)
@@ -565,6 +571,7 @@ def create_app(config_name='default'):
         return render_template('invoices/create_cancellation.html', invoice=original_invoice)
     
     @app.route('/invoices/<int:invoice_id>/pdf')
+    @login_required
     def download_invoice_pdf(invoice_id):
         """Rechnung als PDF herunterladen (GoBD-konform mit PDF-Archivierung)"""
         import hashlib
@@ -608,6 +615,7 @@ def create_app(config_name='default'):
         return send_file(pdf_path, as_attachment=True, download_name=f'Rechnung_{invoice.invoice_number}.pdf')
     
     @app.route('/invoices/<int:invoice_id>/send-email', methods=['GET', 'POST'])
+    @login_required
     def send_invoice_email(invoice_id):
         """Rechnung per E-Mail versenden"""
         from pdf_service import generate_invoice_pdf
@@ -642,6 +650,7 @@ def create_app(config_name='default'):
         return render_template('invoices/send_email.html', invoice=invoice)
     
     @app.route('/invoices/<int:invoice_id>/reminder', methods=['GET', 'POST'])
+    @login_required
     def create_reminder(invoice_id):
         """Mahnung erstellen und versenden"""
         from reminder_service import generate_reminder_pdf
@@ -745,6 +754,7 @@ Mit freundlichen Grüßen
                              next_level=next_level)
     
     @app.route('/customers')
+    @login_required
     def list_customers():
         """Liste aller Kunden mit Suchfunktion"""
         search_query = request.args.get('search', '').strip()
@@ -766,12 +776,14 @@ Mit freundlichen Grüßen
         return render_template('customers/list.html', customers=customers, search_query=search_query)
     
     @app.route('/customers/<int:customer_id>')
+    @login_required
     def view_customer(customer_id):
         """Kundendetails anzeigen"""
         customer = Customer.query.get_or_404(customer_id)
         return render_template('customers/view.html', customer=customer)
     
     @app.route('/customers/<int:customer_id>/edit', methods=['GET', 'POST'])
+    @login_required
     def edit_customer(customer_id):
         """Kunde bearbeiten"""
         customer = Customer.query.get_or_404(customer_id)
@@ -797,6 +809,7 @@ Mit freundlichen Grüßen
         return render_template('customers/edit.html', customer=customer)
     
     @app.route('/products')
+    @login_required
     def list_products():
         """Liste aller Produkte"""
         show_inactive = request.args.get('show_inactive', 'false') == 'true'
@@ -809,6 +822,7 @@ Mit freundlichen Grüßen
         return render_template('products/list.html', products=products, show_inactive=show_inactive)
     
     @app.route('/products/new', methods=['GET', 'POST'])
+    @login_required
     def create_product():
         """Neues Produkt erstellen"""
         if request.method == 'POST':
@@ -839,12 +853,14 @@ Mit freundlichen Grüßen
         return render_template('products/create.html')
     
     @app.route('/products/<int:product_id>')
+    @login_required
     def view_product(product_id):
         """Produktdetails anzeigen"""
         product = Product.query.get_or_404(product_id)
         return render_template('products/view.html', product=product)
     
     @app.route('/products/<int:product_id>/edit', methods=['GET', 'POST'])
+    @login_required
     def edit_product(product_id):
         """Produkt bearbeiten"""
         product = Product.query.get_or_404(product_id)
@@ -873,6 +889,7 @@ Mit freundlichen Grüßen
         return render_template('products/edit.html', product=product)
     
     @app.route('/products/<int:product_id>/delete', methods=['POST'])
+    @login_required
     def delete_product(product_id):
         """Produkt löschen - DEAKTIVIERT aus Sicherheitsgründen"""
         flash('Das Löschen von Produkten ist aus Sicherheitsgründen deaktiviert. Bitte deaktivieren Sie das Produkt stattdessen.', 'error')
@@ -883,12 +900,16 @@ Mit freundlichen Grüßen
     # ============================================================================
     
     @app.route('/pos')
+    @login_required
+    @role_required('cashier', 'admin')
     def pos():
         """Kassenseite für schnellen Direktverkauf"""
         products = Product.query.filter_by(active=True).order_by(Product.name).all()
         return render_template('pos.html', products=products)
     
     @app.route('/pos/complete-sale', methods=['POST'])
+    @login_required
+    @role_required('cashier', 'admin')
     def complete_pos_sale():
         """Verkauf abschließen - Bestand reduzieren und GoBD-konform dokumentieren"""
         try:
@@ -1030,6 +1051,8 @@ Mit freundlichen Grüßen
     # ============================================================================
     
     @app.route('/settings')
+    @login_required
+    @role_required('admin')
     def settings():
         """Einstellungen - Firmendaten anzeigen"""
         company_data = {
@@ -1052,6 +1075,7 @@ Mit freundlichen Grüßen
         return render_template('settings.html', company=company_data, bank=bank_data, config=app.config)
     
     @app.route('/payments/review')
+    @login_required
     def payment_review():
         """Manuelle Prüfung von Zahlungseingängen"""
         # Nur ungelöste Probleme anzeigen
@@ -1062,6 +1086,7 @@ Mit freundlichen Grüßen
         return render_template('payments/review.html', checks=pending_checks)
     
     @app.route('/stock')
+    @login_required
     def stock_management():
         """Bestandsverwaltung mit Produktauswahl"""
         return render_template('stock_management.html')
@@ -1069,12 +1094,14 @@ Mit freundlichen Grüßen
     # ===== LIEFERSCHEINE & KOMMISSIONSLAGER =====
     
     @app.route('/delivery-notes')
+    @login_required
     def list_delivery_notes():
         """Liste aller Lieferscheine"""
         delivery_notes = DeliveryNote.query.order_by(DeliveryNote.delivery_date.desc()).all()
         return render_template('delivery_notes/list.html', delivery_notes=delivery_notes)
     
     @app.route('/delivery-notes/new', methods=['GET', 'POST'])
+    @login_required
     def create_delivery_note():
         """Neuen Lieferschein erstellen"""
         if request.method == 'POST':
@@ -1181,12 +1208,14 @@ Mit freundlichen Grüßen
         return render_template('delivery_notes/create.html', customers=customers, products=products)
     
     @app.route('/delivery-notes/<int:delivery_note_id>')
+    @login_required
     def view_delivery_note(delivery_note_id):
         """Lieferschein anzeigen"""
         delivery_note = DeliveryNote.query.get_or_404(delivery_note_id)
         return render_template('delivery_notes/view.html', delivery_note=delivery_note)
     
     @app.route('/delivery-notes/<int:delivery_note_id>/pdf')
+    @login_required
     def download_delivery_note_pdf(delivery_note_id):
         """Lieferschein als PDF herunterladen"""
         from delivery_note_service import generate_delivery_note_pdf
@@ -1198,6 +1227,7 @@ Mit freundlichen Grüßen
                         download_name=f'Lieferschein_{delivery_note.delivery_note_number}.pdf')
     
     @app.route('/consignment/<int:customer_id>')
+    @login_required
     def consignment_stock_overview(customer_id):
         """Kommissionslager-Übersicht für einen Reseller"""
         customer = Customer.query.get_or_404(customer_id)
@@ -1206,6 +1236,7 @@ Mit freundlichen Grüßen
         return render_template('consignment/overview.html', customer=customer, stock_items=stock_items)
     
     @app.route('/consignment/<int:customer_id>/update', methods=['POST'])
+    @login_required
     def update_consignment_stock(customer_id):
         """Bestand im Kommissionslager korrigieren"""
         try:
@@ -1233,6 +1264,7 @@ Mit freundlichen Grüßen
         return redirect(url_for('consignment_stock_overview', customer_id=customer_id))
     
     @app.route('/consignment/<int:customer_id>/create-invoice', methods=['POST'])
+    @login_required
     def create_invoice_from_consignment(customer_id):
         """Rechnung aus Kommissionslager erstellen"""
         try:
@@ -1349,6 +1381,7 @@ Mit freundlichen Grüßen
             return redirect(url_for('consignment_stock_overview', customer_id=customer_id))
     
     @app.route('/payments/<int:check_id>/resolve', methods=['POST'])
+    @login_required
     def resolve_payment_check(check_id):
         """Markiert eine Zahlungsprüfung als gelöst"""
         check = PaymentCheck.query.get_or_404(check_id)
@@ -1379,6 +1412,8 @@ Mit freundlichen Grüßen
         return redirect(url_for('payment_review'))
     
     @app.route('/settings/test-email', methods=['POST'])
+    @login_required
+    @role_required('admin')
     def test_email_settings():
         """E-Mail-Einstellungen (SMTP und IMAP) testen"""
         import smtplib
@@ -1484,6 +1519,7 @@ Mit freundlichen Grüßen
     
     # API Endpoints
     @app.route('/api/customers/search')
+    @login_required
     def api_search_customers():
         """API Endpoint für Kundensuche (Autocomplete)"""
         query = request.args.get('q', '').strip()
@@ -1518,6 +1554,7 @@ Mit freundlichen Grüßen
         return jsonify(results)
     
     @app.route('/api/products/search')
+    @login_required
     def api_search_products():
         """API Endpoint für Produktsuche (Autocomplete)"""
         query = request.args.get('q', '').strip()
@@ -1551,6 +1588,7 @@ Mit freundlichen Grüßen
         return jsonify(results)
     
     @app.route('/api/products/lot/<lot_number>/stock/add', methods=['POST'])
+    @login_required
     def api_add_stock_by_lot(lot_number):
         """API Endpoint zum Hinzufügen von Bestand via lot_number"""
         try:
@@ -1606,6 +1644,7 @@ Mit freundlichen Grüßen
             return jsonify({'success': False, 'error': str(e)}), 500
     
     @app.route('/api/products/lot/<lot_number>/stock/reduce', methods=['POST'])
+    @login_required
     def api_reduce_stock_by_lot(lot_number):
         """API Endpoint zum Reduzieren von Bestand via lot_number"""
         try:
@@ -1650,6 +1689,7 @@ Mit freundlichen Grüßen
             return jsonify({'success': False, 'error': str(e)}), 500
     
     @app.route('/api/products/<int:product_id>/stock/add', methods=['POST'])
+    @login_required
     def api_add_stock(product_id):
         """API Endpoint zum Hinzufügen von Bestand (legacy, für Web-UI)"""
         try:
@@ -1704,6 +1744,7 @@ Mit freundlichen Grüßen
             return jsonify({'success': False, 'error': str(e)}), 500
     
     @app.route('/api/products/<int:product_id>/stock/reduce', methods=['POST'])
+    @login_required
     def api_reduce_stock(product_id):
         """API Endpoint zum Reduzieren von Bestand (legacy, für Web-UI)"""
         try:
@@ -1746,12 +1787,14 @@ Mit freundlichen Grüßen
     
     # API Endpoints
     @app.route('/api/invoices/<int:invoice_id>')
+    @login_required
     def api_get_invoice(invoice_id):
         """API Endpoint für Rechnungsdetails"""
         invoice = Invoice.query.get_or_404(invoice_id)
         return jsonify(invoice.to_dict())
     
     @app.route('/api/invoices/<int:invoice_id>/verify')
+    @login_required
     def api_verify_invoice(invoice_id):
         """API Endpoint zur Überprüfung der Rechnungsintegrität"""
         invoice = Invoice.query.get_or_404(invoice_id)
@@ -1764,6 +1807,7 @@ Mit freundlichen Grüßen
         })
     
     @app.route('/api/payments/check', methods=['POST'])
+    @login_required
     def api_check_payment():
         """API Endpoint für automatischen Zahlungsabgleich"""
         try:

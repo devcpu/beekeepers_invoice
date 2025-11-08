@@ -117,7 +117,6 @@ def generate_invoice_pdf(invoice, pdf_folder, config=None):
     company_street = config.get("COMPANY_STREET", "Musterstraße 123") if config else "Musterstraße 123"
     company_zip = config.get("COMPANY_ZIP", "12345") if config else "12345"
     company_city = config.get("COMPANY_CITY", "Musterstadt") if config else "Musterstadt"
-    company_country = config.get("COMPANY_COUNTRY", "Deutschland") if config else "Deutschland"
     company_email = config.get("COMPANY_EMAIL", "info@firma.de") if config else "info@firma.de"
     company_phone = config.get("COMPANY_PHONE", "+49 123 456789") if config else "+49 123 456789"
     company_tax_id = config.get("COMPANY_TAX_ID", "DE123456789") if config else "DE123456789"

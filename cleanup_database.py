@@ -70,15 +70,15 @@ def cleanup_database():
             try:
                 count = Reminder.query.delete()
                 print(f"   ✓ {count} Mahnungen gelöscht")
-            except Exception as e:
-                print(f"   ℹ️  Mahnungen übersprungen (Tabelle existiert nicht)")
+            except Exception:
+                print("   ℹ️  Mahnungen übersprungen (Tabelle existiert nicht)")
 
             # 2. Zahlungsprüfungen (falls Tabelle existiert)
             try:
                 count = PaymentCheck.query.delete()
                 print(f"   ✓ {count} Zahlungsprüfungen gelöscht")
-            except Exception as e:
-                print(f"   ℹ️  Zahlungsprüfungen übersprungen (Tabelle existiert nicht)")
+            except Exception:
+                print("   ℹ️  Zahlungsprüfungen übersprungen (Tabelle existiert nicht)")
 
             # 3. Status-Historie (Foreign Key zu invoices)
             count = InvoiceStatusLog.query.delete()
@@ -132,7 +132,7 @@ def cleanup_database():
                 try:
                     db.session.execute(text(f"ALTER SEQUENCE {table}_id_seq RESTART WITH 1;"))
                     print(f"   ✓ {table}_id_seq zurückgesetzt")
-                except Exception as e:
+                except Exception:
                     print(f"   ℹ️  {table}: Sequenz nicht gefunden (ok wenn Tabelle leer war)")
 
             db.session.commit()

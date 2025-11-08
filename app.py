@@ -731,7 +731,7 @@ def create_app(config_name="default"):
 
         # Produkte mit niedrigem Bestand (aktiv und < 25)
         low_stock_products = (
-            Product.query.filter(Product.active == True, Product.number < 25).order_by(Product.number.asc()).all()
+            Product.query.filter(Product.active.is_(True), Product.number < 25).order_by(Product.number.asc()).all()
         )
 
         # Überfällige Rechnungen (mehr als 10 Tage überfällig)
@@ -2580,7 +2580,7 @@ Mit freundlichen Grüßen
             try:
                 # Reseller auswählen
                 customer_id = request.form.get("customer_id")
-                customer = Customer.query.get_or_404(customer_id)
+                Customer.query.get_or_404(customer_id)  # Validate customer exists
 
                 # Lieferscheinnummer generieren
                 today = datetime.now().date()
@@ -2742,7 +2742,7 @@ Mit freundlichen Grüßen
     def create_invoice_from_consignment(customer_id):
         """Rechnung aus Kommissionslager erstellen"""
         try:
-            customer = Customer.query.get_or_404(customer_id)
+            Customer.query.get_or_404(customer_id)  # Validate customer exists
 
             # Alle markierten/verkauften Artikel
             product_ids = request.form.getlist("product_id[]")
@@ -3043,7 +3043,7 @@ Mit freundlichen Grüßen
         search_pattern = f"%{query}%"
         products = (
             Product.query.filter(
-                Product.active == True,
+                Product.active.is_(True),
                 db.or_(
                     Product.name.ilike(search_pattern),
                     Product.lot_number.ilike(search_pattern),
@@ -3128,7 +3128,7 @@ Mit freundlichen Grüßen
                     201,
                 )
 
-        except ValueError as e:
+        except ValueError:
             return jsonify({"success": False, "error": "Ungültige Menge"}), 400
         except Exception as e:
             db.session.rollback()
@@ -3172,7 +3172,7 @@ Mit freundlichen Grüßen
                 }
             )
 
-        except ValueError as e:
+        except ValueError:
             return jsonify({"success": False, "error": "Ungültige Menge"}), 400
         except Exception as e:
             db.session.rollback()
@@ -3274,7 +3274,7 @@ Mit freundlichen Grüßen
                 }
             )
 
-        except ValueError as e:
+        except ValueError:
             return jsonify({"success": False, "error": "Ungültige Menge"}), 400
         except Exception as e:
             db.session.rollback()

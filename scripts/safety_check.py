@@ -54,9 +54,7 @@ def read_pyproject_toml():
 def get_installed_versions(package_names):
     """Get installed versions of specific packages using pip freeze."""
     try:
-        result = subprocess.run(
-            ["pip", "freeze"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True
-        )
+        result = subprocess.run(["pip", "freeze"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
 
         if result.returncode != 0:
             return {}

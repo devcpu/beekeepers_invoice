@@ -1,6 +1,6 @@
 # Pre-commit hooks für Rechnungs-System
 # Installation: pip install pre-commit && pre-commit install
-exclude: '(docs|_build|tests|logs|migrations|migrations_archive|pdfs|venv)/.*'
+exclude: '(docs|_build|tests|logs|migrations|migrations_archive|pdfs|venv|scripts)/.*'
 repos:
   # Python Code Formatting & Linting
   - repo: https://github.com/psf/black
@@ -29,8 +29,8 @@ repos:
     rev: v1.36.4
     hooks:
       - id: djlint-jinja
-        files: \.(html|jinja|jinja2)$
-        args: ['--check', '--quiet', '--ignore=H006,H030,H031']  # Nur kritische Fehler
+        types_or: [html]
+        args: ['--check', '--ignore=H006,H030,H031']  # Nur kritische Fehler
 
   # HTML Validation & Linting
   - repo: https://github.com/Lucas-C/pre-commit-hooks-markup

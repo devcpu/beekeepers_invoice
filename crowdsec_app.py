@@ -82,9 +82,7 @@ class CrowdSecApp:
         """
         ip = ip or getattr(g, "ip", request.remote_addr or "unknown")
 
-        self.logger.warning(
-            f"FAILED_LOGIN ip={ip} user={username} reason={reason} " f"path={request.path} method={request.method}"
-        )
+        self.logger.warning(f"FAILED_LOGIN ip={ip} user={username} reason={reason} " f"path={request.path} method={request.method}")
 
     def log_suspicious_activity(self, activity_type, details="", ip=None):
         """
@@ -97,10 +95,7 @@ class CrowdSecApp:
         """
         ip = ip or getattr(g, "ip", request.remote_addr or "unknown")
 
-        self.logger.error(
-            f"SUSPICIOUS_ACTIVITY type={activity_type} ip={ip} "
-            f'path={request.path} method={request.method} details="{details}"'
-        )
+        self.logger.error(f"SUSPICIOUS_ACTIVITY type={activity_type} ip={ip} " f'path={request.path} method={request.method} details="{details}"')
 
     def log_rate_limit_exceeded(self, endpoint, ip=None):
         """
@@ -125,9 +120,7 @@ class CrowdSecApp:
         """
         ip = ip or getattr(g, "ip", request.remote_addr or "unknown")
 
-        self.logger.warning(
-            f"UNAUTHORIZED_ACCESS resource={resource} required_role={required_role} " f"ip={ip} path={request.path}"
-        )
+        self.logger.warning(f"UNAUTHORIZED_ACCESS resource={resource} required_role={required_role} " f"ip={ip} path={request.path}")
 
 
 # Singleton Instance

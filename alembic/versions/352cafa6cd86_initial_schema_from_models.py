@@ -32,9 +32,7 @@ def upgrade() -> None:
     op.drop_index("idx_delivery_notes_customer", table_name="delivery_notes")
     op.drop_index("idx_delivery_notes_date", table_name="delivery_notes")
     op.drop_index("idx_delivery_notes_number", table_name="delivery_notes")
-    op.create_index(
-        op.f("ix_delivery_notes_delivery_note_number"), "delivery_notes", ["delivery_note_number"], unique=True
-    )
+    op.create_index(op.f("ix_delivery_notes_delivery_note_number"), "delivery_notes", ["delivery_note_number"], unique=True)
     op.drop_index("idx_invoice_pdf_archive_invoice_id", table_name="invoice_pdf_archive")
     op.drop_index("idx_invoice_pdf_archive_pdf_hash", table_name="invoice_pdf_archive")
     op.drop_constraint("unique_invoice_pdf", "invoice_pdf_archive", type_="unique")
@@ -152,9 +150,7 @@ def downgrade() -> None:
         ["id"],
         ondelete="RESTRICT",
     )
-    op.create_foreign_key(
-        "stock_adjustments_adjusted_by_fkey", "stock_adjustments", "users", ["adjusted_by"], ["id"], ondelete="RESTRICT"
-    )
+    op.create_foreign_key("stock_adjustments_adjusted_by_fkey", "stock_adjustments", "users", ["adjusted_by"], ["id"], ondelete="RESTRICT")
     op.create_index("idx_stock_adjustments_product_id", "stock_adjustments", ["product_id"], unique=False)
     op.create_index("idx_stock_adjustments_adjusted_by", "stock_adjustments", ["adjusted_by"], unique=False)
     op.create_index("idx_stock_adjustments_adjusted_at", "stock_adjustments", ["adjusted_at"], unique=False)
@@ -218,9 +214,7 @@ def downgrade() -> None:
         ["id"],
         ondelete="CASCADE",
     )
-    op.create_unique_constraint(
-        "unique_invoice_pdf", "invoice_pdf_archive", ["invoice_id", "pdf_filename"], postgresql_nulls_not_distinct=False
-    )
+    op.create_unique_constraint("unique_invoice_pdf", "invoice_pdf_archive", ["invoice_id", "pdf_filename"], postgresql_nulls_not_distinct=False)
     op.create_index("idx_invoice_pdf_archive_pdf_hash", "invoice_pdf_archive", ["pdf_hash"], unique=False)
     op.create_index("idx_invoice_pdf_archive_invoice_id", "invoice_pdf_archive", ["invoice_id"], unique=False)
     op.drop_index(op.f("ix_delivery_notes_delivery_note_number"), table_name="delivery_notes")
@@ -236,9 +230,7 @@ def downgrade() -> None:
     op.create_index("idx_delivery_note_items_product", "delivery_note_items", ["product_id"], unique=False)
     op.create_index("idx_delivery_note_items_dn", "delivery_note_items", ["delivery_note_id"], unique=False)
     op.drop_constraint(None, "customers", type_="unique")
-    op.create_index(
-        "customers_email_unique", "customers", ["email"], unique=False, postgresql_where="(email IS NOT NULL)"
-    )
+    op.create_index("customers_email_unique", "customers", ["email"], unique=False, postgresql_where="(email IS NOT NULL)")
     op.create_index("idx_consignment_stock_product", "consignment_stock", ["product_id"], unique=False)
     op.create_index("idx_consignment_stock_customer", "consignment_stock", ["customer_id"], unique=False)
     # ### end Alembic commands ###

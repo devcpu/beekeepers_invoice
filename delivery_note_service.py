@@ -42,21 +42,15 @@ def generate_delivery_note_pdf(delivery_note, pdf_folder, config=None):
     filepath = os.path.join(pdf_folder, filename)
 
     # PDF erstellen
-    doc = SimpleDocTemplate(
-        filepath, pagesize=A4, rightMargin=20 * mm, leftMargin=20 * mm, topMargin=20 * mm, bottomMargin=20 * mm
-    )
+    doc = SimpleDocTemplate(filepath, pagesize=A4, rightMargin=20 * mm, leftMargin=20 * mm, topMargin=20 * mm, bottomMargin=20 * mm)
 
     # Container für PDF-Elemente
     elements = []
 
     # Styles
     styles = getSampleStyleSheet()
-    title_style = ParagraphStyle(
-        "CustomTitle", parent=styles["Heading1"], fontSize=24, textColor=colors.HexColor("#2c3e50"), spaceAfter=30
-    )
-    heading_style = ParagraphStyle(
-        "CustomHeading", parent=styles["Heading2"], fontSize=14, textColor=colors.HexColor("#2c3e50"), spaceAfter=12
-    )
+    title_style = ParagraphStyle("CustomTitle", parent=styles["Heading1"], fontSize=24, textColor=colors.HexColor("#2c3e50"), spaceAfter=30)
+    heading_style = ParagraphStyle("CustomHeading", parent=styles["Heading2"], fontSize=14, textColor=colors.HexColor("#2c3e50"), spaceAfter=12)
     normal_style = styles["Normal"]
     small_style = ParagraphStyle("Small", parent=styles["Normal"], fontSize=8, textColor=colors.grey)
 
@@ -78,9 +72,7 @@ def generate_delivery_note_pdf(delivery_note, pdf_folder, config=None):
 
     if delivery_note.customer.company_name:
         recipient_data.append(Paragraph(f"<b>{delivery_note.customer.company_name}</b>", normal_style))
-    recipient_data.append(
-        Paragraph(f"{delivery_note.customer.first_name} {delivery_note.customer.last_name}", normal_style)
-    )
+    recipient_data.append(Paragraph(f"{delivery_note.customer.first_name} {delivery_note.customer.last_name}", normal_style))
     if delivery_note.customer.address:
         for line in delivery_note.customer.address.split("\n"):
             recipient_data.append(Paragraph(line, normal_style))
@@ -151,9 +143,7 @@ def generate_delivery_note_pdf(delivery_note, pdf_folder, config=None):
 
     # Tabellenkopf und Daten - mit oder ohne MwSt
     if delivery_note.show_tax:
-        line_items_data = [
-            ["Pos.", "Beschreibung", "Menge", "Einzelpreis (netto)", "MwSt %", "Gesamt (netto)", "Gesamt (brutto)"]
-        ]
+        line_items_data = [["Pos.", "Beschreibung", "Menge", "Einzelpreis (netto)", "MwSt %", "Gesamt (netto)", "Gesamt (brutto)"]]
 
         for idx, item in enumerate(sorted(delivery_note.items, key=lambda x: x.position), 1):
             # Steuersatz aus Produkt oder Standard
@@ -176,9 +166,7 @@ def generate_delivery_note_pdf(delivery_note, pdf_folder, config=None):
                 ]
             )
 
-        line_items_table = Table(
-            line_items_data, colWidths=[10 * mm, 60 * mm, 15 * mm, 25 * mm, 15 * mm, 25 * mm, 25 * mm]
-        )
+        line_items_table = Table(line_items_data, colWidths=[10 * mm, 60 * mm, 15 * mm, 25 * mm, 15 * mm, 25 * mm, 25 * mm])
     else:
         # Ohne Steuer - wie bisher
         line_items_data = [["Pos.", "Beschreibung", "Menge", "Reseller-Preis", "Wert"]]

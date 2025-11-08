@@ -77,9 +77,7 @@ def send_password_reset_email(user, token, mail):
     """
     reset_url = url_for("reset_password", token=token, _external=True)
 
-    msg = Message(
-        subject="Passwort zurücksetzen - Rechnungsverwaltung", sender=mail.default_sender, recipients=[user.email]
-    )
+    msg = Message(subject="Passwort zurücksetzen - Rechnungsverwaltung", sender=mail.default_sender, recipients=[user.email])
 
     msg.body = f"""Hallo {user.username},
 

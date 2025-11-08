@@ -167,9 +167,7 @@ with app.app_context():
     ]
 
     for stock_data in type3_stock_data:
-        stock = ConsignmentStock.query.filter_by(
-            customer_id=type3_customer.id, product_id=stock_data["product"].id
-        ).first()
+        stock = ConsignmentStock.query.filter_by(customer_id=type3_customer.id, product_id=stock_data["product"].id).first()
 
         if not stock:
             stock = ConsignmentStock(
@@ -206,9 +204,7 @@ with app.app_context():
                 quantity_sold=0,
             )
             db.session.add(stock)
-            print(
-                f"✅ Marktbestand: {stock_data['product'].name} → {marktstand.company_name} ({stock_data['quantity']} Stk @ {stock_data['unit_price']}€)"
-            )
+            print(f"✅ Marktbestand: {stock_data['product'].name} → {marktstand.company_name} ({stock_data['quantity']} Stk @ {stock_data['unit_price']}€)")
         else:
             print(f"ℹ️  Marktbestand existiert: {stock_data['product'].name}")
 

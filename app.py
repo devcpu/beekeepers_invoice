@@ -215,9 +215,7 @@ def create_app(config_name="default"):
         # Prüfe ob Marktbestand existiert
         has_market_stock = False
         if current_user.reseller_customer_id:
-            has_market_stock = (
-                ConsignmentStock.query.filter_by(customer_id=current_user.reseller_customer_id).first() is not None
-            )
+            has_market_stock = ConsignmentStock.query.filter_by(customer_id=current_user.reseller_customer_id).first() is not None
 
         return render_template("select_stock_source.html", has_market_stock=has_market_stock)
 
@@ -505,8 +503,7 @@ def create_app(config_name="default"):
                             "invoice_number": inv.invoice_number,
                             "customer": {
                                 "id": inv.customer.id,
-                                "name": inv.customer.company_name
-                                or f"{inv.customer.first_name} {inv.customer.last_name}",
+                                "name": inv.customer.company_name or f"{inv.customer.first_name} {inv.customer.last_name}",
                             },
                             "invoice_date": inv.invoice_date.isoformat(),
                             "due_date": inv.due_date.isoformat() if inv.due_date else None,
@@ -712,9 +709,7 @@ def create_app(config_name="default"):
         # Prüfe ob Bestandsauswahl nötig ist
         if current_user.reseller_customer_id and "stock_source" not in session:
             # Prüfe ob ConsignmentStock existiert
-            has_stock = (
-                ConsignmentStock.query.filter_by(customer_id=current_user.reseller_customer_id).first() is not None
-            )
+            has_stock = ConsignmentStock.query.filter_by(customer_id=current_user.reseller_customer_id).first() is not None
 
             if has_stock:
                 return redirect(url_for("select_stock_source"))
@@ -730,18 +725,12 @@ def create_app(config_name="default"):
         }
 
         # Produkte mit niedrigem Bestand (aktiv und < 25)
-        low_stock_products = (
-            Product.query.filter(Product.active.is_(True), Product.number < 25).order_by(Product.number.asc()).all()
-        )
+        low_stock_products = Product.query.filter(Product.active.is_(True), Product.number < 25).order_by(Product.number.asc()).all()
 
         # Überfällige Rechnungen (mehr als 10 Tage überfällig)
         overdue_date = datetime.now().date() - timedelta(days=10)
         overdue_invoices = (
-            Invoice.query.filter(
-                Invoice.status == "sent", Invoice.due_date.isnot(None), Invoice.due_date < overdue_date
-            )
-            .order_by(Invoice.due_date.asc())
-            .all()
+            Invoice.query.filter(Invoice.status == "sent", Invoice.due_date.isnot(None), Invoice.due_date < overdue_date).order_by(Invoice.due_date.asc()).all()
         )
 
         return render_template(
@@ -773,9 +762,7 @@ def create_app(config_name="default"):
         elif custom_filter == "overdue":
             # Fälligkeitsdatum mehr als 10 Tage überschritten
             overdue_date = datetime.now().date() - timedelta(days=10)
-            query = query.filter(
-                Invoice.status == "sent", Invoice.due_date.isnot(None), Invoice.due_date < overdue_date
-            )
+            query = query.filter(Invoice.status == "sent", Invoice.due_date.isnot(None), Invoice.due_date < overdue_date)
 
         invoices = query.order_by(Invoice.invoice_date.desc()).all()
         return render_template("invoices/list.html", invoices=invoices, status_filter=status_filter)
@@ -824,11 +811,7 @@ def create_app(config_name="default"):
                     invoice_number=invoice_number,
                     customer_id=customer.id,
                     invoice_date=datetime.strptime(request.form.get("invoice_date"), "%Y-%m-%d").date(),
-                    due_date=(
-                        datetime.strptime(request.form.get("due_date"), "%Y-%m-%d").date()
-                        if request.form.get("due_date")
-                        else None
-                    ),
+                    due_date=(datetime.strptime(request.form.get("due_date"), "%Y-%m-%d").date() if request.form.get("due_date") else None),
                     tax_rate=tax_rate,
                     tax_model=tax_model,
                     customer_type=customer_type,
@@ -842,9 +825,7 @@ def create_app(config_name="default"):
                 unit_prices = request.form.getlist("unit_price[]")
                 product_ids = request.form.getlist("product_id[]")
 
-                for idx, (desc, qty, price, prod_id) in enumerate(
-                    zip(descriptions, quantities, unit_prices, product_ids)
-                ):
+                for idx, (desc, qty, price, prod_id) in enumerate(zip(descriptions, quantities, unit_prices, product_ids)):
                     if desc and qty and price:
                         # Tax Rate aus Produkt holen (falls vorhanden)
                         tax_rate_for_item = None
@@ -941,9 +922,7 @@ def create_app(config_name="default"):
 
                             # Bei Reseller: Auch Kommissionslager korrigieren
                             if invoice.customer_type == "reseller":
-                                stock = ConsignmentStock.query.filter_by(
-                                    customer_id=invoice.customer_id, product_id=line_item.product_id
-                                ).first()
+                                stock = ConsignmentStock.query.filter_by(customer_id=invoice.customer_id, product_id=line_item.product_id).first()
                                 if stock:
                                     # Menge zurück ins Kommissionslager
                                     stock.quantity += int(line_item.quantity)
@@ -1008,9 +987,7 @@ def create_app(config_name="default"):
 
                         # Bei Reseller: Auch Kommissionslager korrigieren
                         if invoice.customer_type == "reseller":
-                            stock = ConsignmentStock.query.filter_by(
-                                customer_id=invoice.customer_id, product_id=line_item.product_id
-                            ).first()
+                            stock = ConsignmentStock.query.filter_by(customer_id=invoice.customer_id, product_id=line_item.product_id).first()
                             if stock:
                                 # Menge zurück ins Kommissionslager
                                 stock.quantity_remaining += int(line_item.quantity)
@@ -1059,11 +1036,7 @@ def create_app(config_name="default"):
                 today = datetime.now().date()
                 prefix = f"STORNO-{today.strftime('%Y-%m-%d')}"
 
-                last_invoice = (
-                    Invoice.query.filter(Invoice.invoice_number.like(f"{prefix}%"))
-                    .order_by(Invoice.invoice_number.desc())
-                    .first()
-                )
+                last_invoice = Invoice.query.filter(Invoice.invoice_number.like(f"{prefix}%")).order_by(Invoice.invoice_number.desc()).first()
 
                 if last_invoice:
                     last_num = int(last_invoice.invoice_number.split("-")[-1])
@@ -1121,9 +1094,7 @@ def create_app(config_name="default"):
 
                             # Bei Reseller: Kommissionslager anpassen
                             if original_invoice.customer_type == "reseller":
-                                stock = ConsignmentStock.query.filter_by(
-                                    customer_id=original_invoice.customer_id, product_id=orig_item.product_id
-                                ).first()
+                                stock = ConsignmentStock.query.filter_by(customer_id=original_invoice.customer_id, product_id=orig_item.product_id).first()
                                 if stock:
                                     stock.quantity += int(orig_item.quantity)
 
@@ -1132,9 +1103,7 @@ def create_app(config_name="default"):
 
                 # Original-Rechnung auf storniert setzen
                 original_invoice.status = "cancelled"
-                original_invoice.notes = (
-                    original_invoice.notes or ""
-                ) + f"\n\nStorniert durch {cancellation_number} am {today.strftime('%d.%m.%Y')}"
+                original_invoice.notes = (original_invoice.notes or "") + f"\n\nStorniert durch {cancellation_number} am {today.strftime('%d.%m.%Y')}"
 
                 # Status-Log für beide Rechnungen
                 db.session.add(
@@ -1187,9 +1156,7 @@ def create_app(config_name="default"):
         # GoBD: PDF archivieren und hashen (nur bei erstmaligem Versand)
         if invoice.status == "sent":
             # Prüfen ob schon archiviert
-            existing_archive = InvoicePdfArchive.query.filter_by(
-                invoice_id=invoice.id, pdf_filename=os.path.basename(pdf_path)
-            ).first()
+            existing_archive = InvoicePdfArchive.query.filter_by(invoice_id=invoice.id, pdf_filename=os.path.basename(pdf_path)).first()
 
             if not existing_archive:
                 # PDF hashen
@@ -1270,9 +1237,7 @@ def create_app(config_name="default"):
             action = request.form.get("action")  # 'download' oder 'send_email'
 
             # Mahnstufe ermitteln (nächste Stufe)
-            existing_reminders = (
-                Reminder.query.filter_by(invoice_id=invoice_id).order_by(Reminder.reminder_level.desc()).first()
-            )
+            existing_reminders = Reminder.query.filter_by(invoice_id=invoice_id).order_by(Reminder.reminder_level.desc()).first()
             reminder_level = 1 if not existing_reminders else existing_reminders.reminder_level + 1
 
             # Mahnung erstellen
@@ -1294,9 +1259,7 @@ def create_app(config_name="default"):
                 reminder.sent_date = datetime.utcnow()
                 db.session.commit()
 
-                return send_file(
-                    pdf_path, as_attachment=True, download_name=f"Mahnung_{reminder_level}_{invoice.invoice_number}.pdf"
-                )
+                return send_file(pdf_path, as_attachment=True, download_name=f"Mahnung_{reminder_level}_{invoice.invoice_number}.pdf")
 
             elif action == "send_email":
                 # Per E-Mail versenden
@@ -1346,9 +1309,7 @@ Mit freundlichen Grüßen
                 return redirect(url_for("view_invoice", invoice_id=invoice_id))
 
         # GET: Formular anzeigen
-        existing_reminders = (
-            Reminder.query.filter_by(invoice_id=invoice_id).order_by(Reminder.reminder_date.desc()).all()
-        )
+        existing_reminders = Reminder.query.filter_by(invoice_id=invoice_id).order_by(Reminder.reminder_date.desc()).all()
         next_level = 1 if not existing_reminders else existing_reminders[0].reminder_level + 1
 
         return render_template(
@@ -1773,11 +1734,7 @@ Mit freundlichen Grüßen
 
         if stock_source == "market" and current_user.reseller_customer_id:
             # Marktbestand: Lade ConsignmentStock
-            consignment_items = (
-                ConsignmentStock.query.filter_by(customer_id=current_user.reseller_customer_id)
-                .filter(ConsignmentStock.quantity > 0)
-                .all()
-            )
+            consignment_items = ConsignmentStock.query.filter_by(customer_id=current_user.reseller_customer_id).filter(ConsignmentStock.quantity > 0).all()
 
             # Konvertiere zu Product-ähnlicher Struktur für Template
             products = []
@@ -1831,9 +1788,7 @@ Mit freundlichen Grüßen
 
                 if stock_source == "market" and current_user.reseller_customer_id:
                     # Marktbestand: ConsignmentStock reduzieren
-                    consignment = ConsignmentStock.query.filter_by(
-                        customer_id=current_user.reseller_customer_id, product_id=product.id
-                    ).first()
+                    consignment = ConsignmentStock.query.filter_by(customer_id=current_user.reseller_customer_id, product_id=product.id).first()
 
                     if not consignment or consignment.quantity < quantity:
                         available = consignment.quantity if consignment else 0
@@ -1899,11 +1854,7 @@ Mit freundlichen Grüßen
             today = datetime.now().date()
             prefix = f"BAR-{today.strftime('%Y%m%d')}"
 
-            last_receipt = (
-                Invoice.query.filter(Invoice.invoice_number.like(f"{prefix}%"))
-                .order_by(Invoice.invoice_number.desc())
-                .first()
-            )
+            last_receipt = Invoice.query.filter(Invoice.invoice_number.like(f"{prefix}%")).order_by(Invoice.invoice_number.desc()).first()
 
             if last_receipt:
                 last_num = int(last_receipt.invoice_number.split("-")[-1])
@@ -2093,16 +2044,11 @@ Mit freundlichen Grüßen
                 stats["by_type"][customer_type]["count"] += 1
 
         # Maximalen Monatsumsatz für Diagramme berechnen
-        stats["max_month_revenue"] = max(
-            [stats["by_month"][m]["revenue"] for m in range(1, 13)], default=Decimal("0.00")
-        )
+        stats["max_month_revenue"] = max([stats["by_month"][m]["revenue"] for m in range(1, 13)], default=Decimal("0.00"))
 
         # Verfügbare Jahre ermitteln
         available_years_query = (
-            db.session.query(extract("year", Invoice.invoice_date).label("year"))
-            .distinct()
-            .order_by(extract("year", Invoice.invoice_date).desc())
-            .all()
+            db.session.query(extract("year", Invoice.invoice_date).label("year")).distinct().order_by(extract("year", Invoice.invoice_date).desc()).all()
         )
 
         available_years = [int(y[0]) for y in available_years_query if y[0]]
@@ -2198,9 +2144,7 @@ Mit freundlichen Grüßen
 
         # PDF erstellen
         buffer = BytesIO()
-        doc = SimpleDocTemplate(
-            buffer, pagesize=landscape(A4), rightMargin=2 * cm, leftMargin=2 * cm, topMargin=2 * cm, bottomMargin=2 * cm
-        )
+        doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), rightMargin=2 * cm, leftMargin=2 * cm, topMargin=2 * cm, bottomMargin=2 * cm)
 
         elements = []
         styles = getSampleStyleSheet()
@@ -2223,11 +2167,7 @@ Mit freundlichen Grüßen
             ["Anzahl Rechnungen:", str(stats["total_invoices"])],
             [
                 "Durchschnitt pro Rechnung:",
-                (
-                    f'{float(stats["total_revenue"] / stats["total_invoices"]):.2f} €'
-                    if stats["total_invoices"] > 0
-                    else "0,00 €"
-                ),
+                (f'{float(stats["total_revenue"] / stats["total_invoices"]):.2f} €' if stats["total_invoices"] > 0 else "0,00 €"),
             ],
         ]
 
@@ -2328,8 +2268,7 @@ Mit freundlichen Grüßen
         footer_style = ParagraphStyle("Footer", parent=styles["Normal"], fontSize=8, textColor=colors.grey)
         elements.append(
             Paragraph(
-                f'Erstellt am: {datetime.now().strftime("%d.%m.%Y %H:%M")} | '
-                f"Berücksichtigt: Alle bezahlten Rechnungen des Jahres {year}",
+                f'Erstellt am: {datetime.now().strftime("%d.%m.%Y %H:%M")} | ' f"Berücksichtigt: Alle bezahlten Rechnungen des Jahres {year}",
                 footer_style,
             )
         )
@@ -2338,9 +2277,7 @@ Mit freundlichen Grüßen
         doc.build(elements)
         buffer.seek(0)
 
-        return send_file(
-            buffer, as_attachment=True, download_name=f"Jahresuebersicht_{year}.pdf", mimetype="application/pdf"
-        )
+        return send_file(buffer, as_attachment=True, download_name=f"Jahresuebersicht_{year}.pdf", mimetype="application/pdf")
 
     # ============================================================================
     # Einstellungen
@@ -2588,9 +2525,7 @@ Mit freundlichen Grüßen
 
                 # Höchste Nummer des Tages finden
                 last_dn = (
-                    DeliveryNote.query.filter(DeliveryNote.delivery_note_number.like(f"{prefix}%"))
-                    .order_by(DeliveryNote.delivery_note_number.desc())
-                    .first()
+                    DeliveryNote.query.filter(DeliveryNote.delivery_note_number.like(f"{prefix}%")).order_by(DeliveryNote.delivery_note_number.desc()).first()
                 )
 
                 if last_dn:
@@ -2626,9 +2561,7 @@ Mit freundlichen Grüßen
 
                     # BESTANDSPRÜFUNG: Prüfen ob genug auf Lager
                     if product.number < int(quantity):
-                        raise Exception(
-                            f"Nicht genug Bestand für {product.name}! Verfügbar: {product.number}, benötigt: {int(quantity)}"
-                        )
+                        raise Exception(f"Nicht genug Bestand für {product.name}! Verfügbar: {product.number}, benötigt: {int(quantity)}")
 
                     # Reseller-Preis verwenden
                     unit_price = product.reseller_price if product.reseller_price else product.price
@@ -2696,9 +2629,7 @@ Mit freundlichen Grüßen
         delivery_note = DeliveryNote.query.get_or_404(delivery_note_id)
         pdf_path = generate_delivery_note_pdf(delivery_note, app.config["PDF_FOLDER"], app.config)
 
-        return send_file(
-            pdf_path, as_attachment=True, download_name=f"Lieferschein_{delivery_note.delivery_note_number}.pdf"
-        )
+        return send_file(pdf_path, as_attachment=True, download_name=f"Lieferschein_{delivery_note.delivery_note_number}.pdf")
 
     @app.route("/consignment/<int:customer_id>")
     @login_required
@@ -2757,11 +2688,7 @@ Mit freundlichen Grüßen
             today = datetime.now().date()
             prefix = f"RE-{today.strftime('%Y-%m-%d')}"
 
-            last_invoice = (
-                Invoice.query.filter(Invoice.invoice_number.like(f"{prefix}%"))
-                .order_by(Invoice.invoice_number.desc())
-                .first()
-            )
+            last_invoice = Invoice.query.filter(Invoice.invoice_number.like(f"{prefix}%")).order_by(Invoice.invoice_number.desc()).first()
 
             if last_invoice:
                 last_num = int(last_invoice.invoice_number.split("-")[-1])
@@ -2959,9 +2886,7 @@ Mit freundlichen Grüßen
                 mail.logout()
 
                 results["imap"]["success"] = True
-                results["imap"][
-                    "message"
-                ] = f"Verbindung erfolgreich zu {imap_server}:{imap_port} ({folder_count} Ordner gefunden)"
+                results["imap"]["message"] = f"Verbindung erfolgreich zu {imap_server}:{imap_port} ({folder_count} Ordner gefunden)"
 
         except imaplib.IMAP4.error as e:
             error_msg = str(e)
@@ -3192,9 +3117,7 @@ Mit freundlichen Grüßen
 
             # Prüfen ob Produkt mit dieser lot_number bereits existiert
             if lot_number:
-                existing = Product.query.filter_by(
-                    name=Product.query.get(product_id).name, lot_number=lot_number
-                ).first()
+                existing = Product.query.filter_by(name=Product.query.get(product_id).name, lot_number=lot_number).first()
 
                 if existing and existing.id != product_id:
                     # Bestand zu existierendem Produkt hinzufügen

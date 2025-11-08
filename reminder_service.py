@@ -45,9 +45,7 @@ def generate_reminder_pdf(invoice, reminder, pdf_folder, config=None):
     filepath = os.path.join(pdf_folder, filename)
 
     # PDF erstellen
-    doc = SimpleDocTemplate(
-        filepath, pagesize=A4, rightMargin=20 * mm, leftMargin=20 * mm, topMargin=20 * mm, bottomMargin=20 * mm
-    )
+    doc = SimpleDocTemplate(filepath, pagesize=A4, rightMargin=20 * mm, leftMargin=20 * mm, topMargin=20 * mm, bottomMargin=20 * mm)
 
     # Container für PDF-Elemente
     elements = []
@@ -61,9 +59,7 @@ def generate_reminder_pdf(invoice, reminder, pdf_folder, config=None):
         textColor=colors.HexColor("#e74c3c"),  # Rot für Mahnung
         spaceAfter=30,
     )
-    heading_style = ParagraphStyle(
-        "CustomHeading", parent=styles["Heading2"], fontSize=14, textColor=colors.HexColor("#2c3e50"), spaceAfter=12
-    )
+    heading_style = ParagraphStyle("CustomHeading", parent=styles["Heading2"], fontSize=14, textColor=colors.HexColor("#2c3e50"), spaceAfter=12)
     normal_style = styles["Normal"]
     small_style = ParagraphStyle("Small", parent=styles["Normal"], fontSize=8, textColor=colors.grey)
     warning_style = ParagraphStyle(
@@ -169,9 +165,7 @@ def generate_reminder_pdf(invoice, reminder, pdf_folder, config=None):
 
     # Anrede und Mahntext
     salutation = (
-        "Sehr geehrte Damen und Herren,"
-        if not invoice.customer.first_name
-        else f"Sehr geehrte/r {invoice.customer.first_name} {invoice.customer.last_name},"
+        "Sehr geehrte Damen und Herren," if not invoice.customer.first_name else f"Sehr geehrte/r {invoice.customer.first_name} {invoice.customer.last_name},"
     )
     elements.append(Paragraph(salutation, normal_style))
     elements.append(Spacer(1, 5 * mm))

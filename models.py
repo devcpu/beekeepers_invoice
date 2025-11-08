@@ -183,9 +183,7 @@ class Product(db.Model):
     quantity = db.Column(db.String(50))  # z.B. "250g", "500g", "20ml"
     price = db.Column(db.Numeric(10, 2), nullable=False)  # Endkundenpreis
     reseller_price = db.Column(db.Numeric(10, 2))  # Wiederverkäuferpreis
-    tax_rate = db.Column(
-        db.Numeric(5, 2), default=7.80
-    )  # MwSt-Satz für dieses Produkt (z.B. 7.80 für landw. Urproduktion)
+    tax_rate = db.Column(db.Numeric(5, 2), default=7.80)  # MwSt-Satz für dieses Produkt (z.B. 7.80 für landw. Urproduktion)
     lot_number = db.Column(db.String(100))  # Chargennummer
     active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

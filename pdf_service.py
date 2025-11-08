@@ -93,21 +93,15 @@ def generate_invoice_pdf(invoice, pdf_folder, config=None):
     filepath = os.path.join(pdf_folder, filename)
 
     # PDF erstellen
-    doc = SimpleDocTemplate(
-        filepath, pagesize=A4, rightMargin=20 * mm, leftMargin=20 * mm, topMargin=20 * mm, bottomMargin=20 * mm
-    )
+    doc = SimpleDocTemplate(filepath, pagesize=A4, rightMargin=20 * mm, leftMargin=20 * mm, topMargin=20 * mm, bottomMargin=20 * mm)
 
     # Container für PDF-Elemente
     elements = []
 
     # Styles
     styles = getSampleStyleSheet()
-    title_style = ParagraphStyle(
-        "CustomTitle", parent=styles["Heading1"], fontSize=24, textColor=colors.HexColor("#2c3e50"), spaceAfter=30
-    )
-    heading_style = ParagraphStyle(
-        "CustomHeading", parent=styles["Heading2"], fontSize=14, textColor=colors.HexColor("#2c3e50"), spaceAfter=12
-    )
+    title_style = ParagraphStyle("CustomTitle", parent=styles["Heading1"], fontSize=24, textColor=colors.HexColor("#2c3e50"), spaceAfter=30)
+    heading_style = ParagraphStyle("CustomHeading", parent=styles["Heading2"], fontSize=14, textColor=colors.HexColor("#2c3e50"), spaceAfter=12)
     normal_style = styles["Normal"]
     small_style = ParagraphStyle("Small", parent=styles["Normal"], fontSize=8, textColor=colors.grey)
 

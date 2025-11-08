@@ -171,9 +171,7 @@ class EmailInvoiceParser:
 
         for qty, description, price in items:
             price_clean = float(price.replace(",", "."))
-            invoice_data["line_items"].append(
-                {"description": description.strip(), "quantity": float(qty), "unit_price": price_clean}
-            )
+            invoice_data["line_items"].append({"description": description.strip(), "quantity": float(qty), "unit_price": price_clean})
 
         # Gesamtbetrag extrahieren
         total_pattern = r"Gesamt(?:betrag)?:\s*(\d+[,\.]\d{2})\s*€"

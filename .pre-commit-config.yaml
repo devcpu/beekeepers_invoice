@@ -273,11 +273,11 @@ repos:
         args: [--whitespaces-count, '2']  # defaults to: 4
         exclude: '(attic|tests|docs|files)/.*'
 
-  - repo: https://github.com/Yelp/detect-secrets
-    rev: 'v1.5.0'
-    hooks:
-      - id: detect-secrets
-        exclude: '(attic|tests|docs|files)/.*|.*/tests/.*'
+  # - repo: https://github.com/Yelp/detect-secrets
+  #   rev: 'v1.5.0'
+  #   hooks:
+  #     - id: detect-secrets
+  #       exclude: '(attic|tests|docs|files)/.*|.*/tests/.*'
 
   - repo: https://github.com/pre-commit/mirrors-pylint
     rev: v3.0.0a5

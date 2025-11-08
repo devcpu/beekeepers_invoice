@@ -33,6 +33,10 @@ class User(UserMixin, db.Model):
     api_token = db.Column(db.String(255), nullable=True, unique=True)
     api_token_expires = db.Column(db.DateTime, nullable=True)
     
+    # Passwort-Reset
+    reset_token = db.Column(db.String(255), nullable=True, unique=True)
+    reset_token_expires = db.Column(db.DateTime, nullable=True)
+    
     # Reseller-spezifisch (nur wenn role='reseller')
     reseller_customer_id = db.Column(db.Integer, db.ForeignKey('customers.id'), nullable=True)
     reseller_customer = db.relationship('Customer', backref='reseller_user')

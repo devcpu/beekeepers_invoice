@@ -21,21 +21,23 @@ services:
       timeout: 5s
       retries: 5
 
-  # Redis für Sessions (optional, aber empfohlen)
-  redis:
-    image: redis:7-alpine
-    container_name: rechnungen-redis
-    restart: unless-stopped
-    command: redis-server --appendonly yes
-    volumes:
-      - redis_data:/data
-    networks:
-      - backend
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 3s
-      retries: 3
+  # Redis für Sessions (optional - nur für High-Traffic/Multi-Server)
+  # Für kleinere Setups reichen File-based Sessions völlig aus!
+  # Kommentiere diesen Service aus, wenn nicht benötigt
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: rechnungen-redis
+  #   restart: unless-stopped
+  #   command: redis-server --appendonly yes
+  #   volumes:
+  #     - redis_data:/data
+  #   networks:
+  #     - backend
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 10s
+  #     timeout: 3s
+  #     retries: 3
 
   # Flask App
   app:
@@ -45,15 +47,20 @@ services:
     depends_on:
       db:
         condition: service_healthy
-      redis:
-        condition: service_healthy
+      # redis:  # Nur wenn Redis aktiviert ist
+      #   condition: service_healthy
     environment:
       # Database
       DATABASE_URL: postgresql://${DB_USER:-rechnungen_user}:${DB_PASSWORD}@db:5432/${DB_NAME:-rechnungen}
       
-      # Redis Session
-      SESSION_TYPE: redis
-      SESSION_REDIS: redis://redis:6379/0
+      # Session Storage (File-based - ausreichend für die meisten Setups)
+      # Für Redis: Kommentiere die nächsten zwei Zeilen aus und aktiviere Redis-Service
+      SESSION_TYPE: filesystem
+      SESSION_FILE_DIR: /app/flask_session
+      
+      # Redis Session (nur wenn Redis-Service aktiviert)
+      # SESSION_TYPE: redis
+      # SESSION_REDIS: redis://redis:6379/0
       
       # Flask
       FLASK_ENV: production
@@ -101,6 +108,7 @@ services:
       - ./invoices:/app/invoices
       - ./uploads:/app/uploads
       - ./logs:/app/logs
+      - ./flask_session:/app/flask_session  # File-based sessions
     networks:
       - backend
       - traefik
@@ -182,8 +190,8 @@ networks:
 volumes:
   postgres_data:
     name: rechnungen-postgres
-  redis_data:
-    name: rechnungen-redis
+  # redis_data:  # Nur wenn Redis aktiviert
+  #   name: rechnungen-redis
   crowdsec_config:
     name: rechnungen-crowdsec-config
   crowdsec_data:

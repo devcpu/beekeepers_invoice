@@ -27,6 +27,10 @@ def create_app(config_name='default'):
     login_manager.login_message = 'Bitte melden Sie sich an, um auf diese Seite zuzugreifen.'
     login_manager.login_message_category = 'info'
     
+    # CrowdSec Integration
+    from crowdsec_app import crowdsec_app
+    crowdsec_app.init_app(app)
+    
     @login_manager.user_loader
     def load_user(user_id):
         return User.query.get(int(user_id))
@@ -71,6 +75,8 @@ def create_app(config_name='default'):
             
             if user and user.check_password(password):
                 if not user.is_active:
+                    # CrowdSec: Account deaktiviert
+                    crowdsec_app.log_failed_login(username, reason='account_disabled')
                     flash('Ihr Account wurde deaktiviert.', 'danger')
                     return redirect(url_for('login'))
                 
@@ -91,6 +97,8 @@ def create_app(config_name='default'):
                 next_page = request.args.get('next')
                 return redirect(next_page) if next_page else redirect(url_for('index'))
             else:
+                # CrowdSec: Failed Login
+                crowdsec_app.log_failed_login(username or 'unknown', reason='invalid_credentials')
                 flash('Ungültiger Benutzername oder Passwort.', 'danger')
         
         return render_template('auth/login.html')
@@ -148,6 +156,71 @@ def create_app(config_name='default'):
         logout_user()
         flash('Sie wurden erfolgreich abgemeldet.', 'success')
         return redirect(url_for('login'))
+    
+    @app.route('/forgot-password', methods=['GET', 'POST'])
+    def forgot_password():
+        """Passwort vergessen - E-Mail-Anfrage"""
+        if current_user.is_authenticated:
+            return redirect(url_for('index'))
+        
+        if request.method == 'POST':
+            email = request.form.get('email')
+            user = User.query.filter_by(email=email).first()
+            
+            if user and user.is_active:
+                from password_reset import PasswordResetToken, send_password_reset_email
+                from email_service import mail
+                
+                token = PasswordResetToken.create_reset_token(user)
+                
+                try:
+                    send_password_reset_email(user, token, mail)
+                    flash('Eine E-Mail mit Anweisungen zum Zurücksetzen des Passworts wurde gesendet.', 'success')
+                except Exception as e:
+                    app.logger.error(f'Fehler beim Senden der Reset-E-Mail: {str(e)}')
+                    flash('Fehler beim Senden der E-Mail. Bitte kontaktieren Sie den Administrator.', 'danger')
+            else:
+                # Security: Immer gleiche Meldung, auch wenn E-Mail nicht existiert
+                flash('Eine E-Mail mit Anweisungen zum Zurücksetzen des Passworts wurde gesendet.', 'success')
+            
+            return redirect(url_for('login'))
+        
+        return render_template('auth/forgot_password.html')
+    
+    @app.route('/reset-password/<token>', methods=['GET', 'POST'])
+    def reset_password(token):
+        """Passwort zurücksetzen mit Token"""
+        if current_user.is_authenticated:
+            return redirect(url_for('index'))
+        
+        from password_reset import PasswordResetToken
+        
+        user = PasswordResetToken.verify_token(token)
+        
+        if not user:
+            flash('Ungültiger oder abgelaufener Reset-Link.', 'danger')
+            return redirect(url_for('login'))
+        
+        if request.method == 'POST':
+            password = request.form.get('password')
+            password_confirm = request.form.get('password_confirm')
+            
+            if password != password_confirm:
+                flash('Die Passwörter stimmen nicht überein.', 'danger')
+                return render_template('auth/reset_password.html', token=token)
+            
+            if len(password) < 8:
+                flash('Das Passwort muss mindestens 8 Zeichen lang sein.', 'danger')
+                return render_template('auth/reset_password.html', token=token)
+            
+            # Passwort setzen
+            user.set_password(password)
+            PasswordResetToken.invalidate_token(user)
+            
+            flash('Ihr Passwort wurde erfolgreich zurückgesetzt. Sie können sich jetzt anmelden.', 'success')
+            return redirect(url_for('login'))
+        
+        return render_template('auth/reset_password.html', token=token)
     
     @app.route('/settings/2fa-setup', methods=['GET', 'POST'])
     @login_required
@@ -248,6 +321,276 @@ def create_app(config_name='default'):
             return {'status': 'healthy', 'database': 'ok'}, 200
         except Exception as e:
             return {'status': 'unhealthy', 'error': str(e)}, 503
+    
+    # ========== JWT API FÜR PWA ==========
+    
+    from jwt_api import generate_jwt_token, token_required, role_required_api
+    
+    @app.route('/api/auth/login', methods=['POST'])
+    def api_login():
+        """API Login - gibt JWT Token zurück"""
+        data = request.get_json()
+        
+        if not data or not data.get('username') or not data.get('password'):
+            return jsonify({'error': 'Username and password required'}), 400
+        
+        username = data.get('username')
+        password = data.get('password')
+        
+        user = User.query.filter_by(username=username).first()
+        
+        if not user or not user.check_password(password):
+            return jsonify({'error': 'Invalid credentials'}), 401
+        
+        if not user.is_active:
+            return jsonify({'error': 'Account deactivated'}), 401
+        
+        # 2FA Check
+        if user.totp_enabled:
+            token_2fa = data.get('totp_token')
+            
+            if not token_2fa:
+                return jsonify({
+                    'error': '2FA required',
+                    'requires_2fa': True
+                }), 401
+            
+            if not user.verify_totp(token_2fa) and not user.verify_backup_code(token_2fa):
+                return jsonify({'error': 'Invalid 2FA code'}), 401
+            
+            if user.verify_backup_code(token_2fa):
+                db.session.commit()  # Backup-Code verbrauchen
+        
+        # JWT Token generieren
+        token = generate_jwt_token(user.id)
+        
+        # Login-Timestamp aktualisieren
+        user.last_login = datetime.utcnow()
+        user.last_login_ip = request.remote_addr
+        db.session.commit()
+        
+        return jsonify({
+            'token': token,
+            'user': {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'role': user.role,
+                'totp_enabled': user.totp_enabled
+            }
+        }), 200
+    
+    @app.route('/api/auth/verify', methods=['GET'])
+    @token_required
+    def api_verify_token(current_user):
+        """Token verifizieren und User-Daten zurückgeben"""
+        return jsonify({
+            'valid': True,
+            'user': {
+                'id': current_user.id,
+                'username': current_user.username,
+                'email': current_user.email,
+                'role': current_user.role,
+                'totp_enabled': current_user.totp_enabled
+            }
+        }), 200
+    
+    @app.route('/api/auth/refresh', methods=['POST'])
+    @token_required
+    def api_refresh_token(current_user):
+        """Token erneuern"""
+        token = generate_jwt_token(current_user.id)
+        return jsonify({'token': token}), 200
+    
+    @app.route('/api/invoices', methods=['GET'])
+    @token_required
+    def api_list_invoices(current_user):
+        """API: Liste aller Rechnungen"""
+        status = request.args.get('status')
+        limit = request.args.get('limit', 50, type=int)
+        
+        query = Invoice.query
+        
+        if status:
+            query = query.filter_by(status=status)
+        
+        invoices = query.order_by(Invoice.created_at.desc()).limit(limit).all()
+        
+        return jsonify({
+            'invoices': [{
+                'id': inv.id,
+                'invoice_number': inv.invoice_number,
+                'customer': {
+                    'id': inv.customer.id,
+                    'name': inv.customer.company_name or f"{inv.customer.first_name} {inv.customer.last_name}"
+                },
+                'invoice_date': inv.invoice_date.isoformat(),
+                'due_date': inv.due_date.isoformat() if inv.due_date else None,
+                'total': float(inv.total),
+                'status': inv.status,
+                'created_at': inv.created_at.isoformat()
+            } for inv in invoices]
+        }), 200
+    
+    @app.route('/api/invoices/<int:invoice_id>', methods=['GET'])
+    @token_required
+    def api_get_invoice(current_user, invoice_id):
+        """API: Einzelne Rechnung abrufen"""
+        invoice = Invoice.query.get_or_404(invoice_id)
+        
+        return jsonify({
+            'id': invoice.id,
+            'invoice_number': invoice.invoice_number,
+            'customer': {
+                'id': invoice.customer.id,
+                'company_name': invoice.customer.company_name,
+                'first_name': invoice.customer.first_name,
+                'last_name': invoice.customer.last_name,
+                'email': invoice.customer.email,
+                'address': invoice.customer.address
+            },
+            'invoice_date': invoice.invoice_date.isoformat(),
+            'due_date': invoice.due_date.isoformat() if invoice.due_date else None,
+            'line_items': [{
+                'description': item.description,
+                'quantity': float(item.quantity),
+                'unit_price': float(item.unit_price),
+                'total': float(item.total),
+                'tax_rate': float(item.tax_rate)
+            } for item in invoice.line_items],
+            'subtotal': float(invoice.subtotal),
+            'tax_amount': float(invoice.tax_amount),
+            'total': float(invoice.total),
+            'status': invoice.status,
+            'notes': invoice.notes,
+            'payment_method': invoice.payment_method,
+            'created_at': invoice.created_at.isoformat()
+        }), 200
+    
+    @app.route('/api/customers', methods=['GET'])
+    @token_required
+    def api_list_customers(current_user):
+        """API: Liste aller Kunden"""
+        limit = request.args.get('limit', 100, type=int)
+        search = request.args.get('q')
+        
+        query = Customer.query
+        
+        if search:
+            search_term = f"%{search}%"
+            query = query.filter(
+                (Customer.company_name.ilike(search_term)) |
+                (Customer.first_name.ilike(search_term)) |
+                (Customer.last_name.ilike(search_term)) |
+                (Customer.email.ilike(search_term))
+            )
+        
+        customers = query.order_by(Customer.company_name).limit(limit).all()
+        
+        return jsonify({
+            'customers': [{
+                'id': c.id,
+                'company_name': c.company_name,
+                'first_name': c.first_name,
+                'last_name': c.last_name,
+                'email': c.email,
+                'phone': c.phone,
+                'address': c.address
+            } for c in customers]
+        }), 200
+    
+    @app.route('/api/pos/complete-sale', methods=['POST'])
+    @token_required
+    @role_required_api('cashier', 'admin')
+    def api_pos_complete_sale(current_user):
+        """API: POS Verkauf abschließen"""
+        data = request.get_json()
+        
+        if not data or not data.get('items'):
+            return jsonify({'error': 'Items required'}), 400
+        
+        try:
+            # Kunde erstellen (Barverkauf)
+            customer = Customer(
+                first_name='Barkunde',
+                last_name=f"POS-{datetime.now().strftime('%Y%m%d-%H%M%S')}",
+                email=f"pos-{datetime.now().strftime('%Y%m%d%H%M%S')}@local.internal"
+            )
+            db.session.add(customer)
+            db.session.flush()
+            
+            # Rechnung erstellen
+            invoice_number = generate_invoice_number()
+            invoice = Invoice(
+                invoice_number=invoice_number,
+                customer_id=customer.id,
+                invoice_date=datetime.now().date(),
+                tax_rate=float(data.get('tax_rate', app.config.get('DEFAULT_TAX_RATE', 19.0))),
+                payment_method='bar',
+                status='paid'
+            )
+            db.session.add(invoice)
+            db.session.flush()
+            
+            total = Decimal('0')
+            
+            # Positionen hinzufügen
+            for item_data in data['items']:
+                product = Product.query.get(item_data['product_id'])
+                if not product:
+                    raise ValueError(f"Product {item_data['product_id']} not found")
+                
+                quantity = Decimal(str(item_data['quantity']))
+                
+                # Bestand prüfen
+                if product.number < quantity:
+                    raise ValueError(f"Not enough stock for {product.name}")
+                
+                # Bestand reduzieren
+                product.number -= int(quantity)
+                
+                line_total = quantity * product.price
+                
+                line_item = LineItem(
+                    invoice_id=invoice.id,
+                    description=product.name,
+                    quantity=quantity,
+                    unit_price=product.price,
+                    total=line_total,
+                    tax_rate=invoice.tax_rate,
+                    product_id=product.id
+                )
+                db.session.add(line_item)
+                total += line_total
+            
+            invoice.subtotal = total
+            invoice.tax_amount = total * (invoice.tax_rate / Decimal('100'))
+            invoice.total = invoice.subtotal + invoice.tax_amount
+            
+            # Status-Log
+            status_log = InvoiceStatusLog(
+                invoice_id=invoice.id,
+                old_status=None,
+                new_status='paid',
+                changed_by=current_user.username,
+                reason='POS sale via API'
+            )
+            db.session.add(status_log)
+            
+            db.session.commit()
+            
+            return jsonify({
+                'success': True,
+                'invoice_id': invoice.id,
+                'invoice_number': invoice_number,
+                'total': float(invoice.total)
+            }), 201
+            
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({'error': str(e)}), 400
+    
+    # ========== HAUPTSEITEN-ROUTEN ==========
     
     # Routes
     @app.route('/')
@@ -2034,166 +2377,6 @@ Mit freundlichen Grüßen
             
         except ValueError as e:
             return jsonify({'success': False, 'error': 'Ungültige Menge'}), 400
-        except Exception as e:
-            db.session.rollback()
-            return jsonify({'success': False, 'error': str(e)}), 500
-    
-    # API Endpoints
-    @app.route('/api/invoices/<int:invoice_id>')
-    @login_required
-    def api_get_invoice(invoice_id):
-        """API Endpoint für Rechnungsdetails"""
-        invoice = Invoice.query.get_or_404(invoice_id)
-        return jsonify(invoice.to_dict())
-    
-    @app.route('/api/invoices/<int:invoice_id>/verify')
-    @login_required
-    def api_verify_invoice(invoice_id):
-        """API Endpoint zur Überprüfung der Rechnungsintegrität"""
-        invoice = Invoice.query.get_or_404(invoice_id)
-        is_valid = invoice.verify_hash()
-        return jsonify({
-            'invoice_id': invoice_id,
-            'invoice_number': invoice.invoice_number,
-            'is_valid': is_valid,
-            'data_hash': invoice.data_hash
-        })
-    
-    @app.route('/api/payments/check', methods=['POST'])
-    @login_required
-    def api_check_payment():
-        """API Endpoint für automatischen Zahlungsabgleich"""
-        try:
-            data = request.get_json()
-            invoice_number = data.get('invoice_number', '').strip()
-            amount_received = Decimal(str(data.get('amount', 0)))
-            
-            if not invoice_number:
-                return jsonify({'success': False, 'error': 'Rechnungsnummer fehlt'}), 400
-            
-            if amount_received <= 0:
-                return jsonify({'success': False, 'error': 'Betrag muss größer als 0 sein'}), 400
-            
-            # Rechnung suchen
-            invoice = Invoice.query.filter_by(invoice_number=invoice_number).first()
-            
-            if not invoice:
-                # Rechnung nicht gefunden
-                payment_check = PaymentCheck(
-                    invoice_number=invoice_number,
-                    invoice_id=None,
-                    amount_received=amount_received,
-                    status='not_found',
-                    expected_amount=None,
-                    difference=None,
-                    notes=f'Rechnung {invoice_number} nicht in Datenbank gefunden'
-                )
-                db.session.add(payment_check)
-                db.session.commit()
-                
-                return jsonify({
-                    'success': False,
-                    'status': 'not_found',
-                    'message': f'Rechnung {invoice_number} nicht gefunden',
-                    'check_id': payment_check.id,
-                    'requires_review': True
-                }), 404
-            
-            # Prüfen ob bereits bezahlt (mögliche Doppelzahlung)
-            if invoice.status == 'paid':
-                existing_checks = PaymentCheck.query.filter_by(
-                    invoice_id=invoice.id,
-                    status='matched'
-                ).count()
-                
-                if existing_checks > 0:
-                    # Doppelzahlung erkannt
-                    payment_check = PaymentCheck(
-                        invoice_number=invoice_number,
-                        invoice_id=invoice.id,
-                        amount_received=amount_received,
-                        status='duplicate',
-                        expected_amount=invoice.total,
-                        difference=amount_received - invoice.total,
-                        notes=f'Rechnung bereits als bezahlt markiert (Status: {invoice.status})'
-                    )
-                    db.session.add(payment_check)
-                    db.session.commit()
-                    
-                    return jsonify({
-                        'success': False,
-                        'status': 'duplicate',
-                        'message': 'Rechnung bereits bezahlt - mögliche Doppelzahlung',
-                        'invoice_id': invoice.id,
-                        'expected_amount': float(invoice.total),
-                        'amount_received': float(amount_received),
-                        'check_id': payment_check.id,
-                        'requires_review': True
-                    }), 409
-            
-            # Beträge vergleichen
-            expected_amount = invoice.total
-            difference = amount_received - expected_amount
-            
-            # Toleranz für Rundungsdifferenzen (0.01 €)
-            tolerance = Decimal('0.01')
-            
-            if abs(difference) <= tolerance:
-                # Betrag stimmt - Rechnung als bezahlt markieren
-                invoice.status = 'paid'
-                
-                payment_check = PaymentCheck(
-                    invoice_number=invoice_number,
-                    invoice_id=invoice.id,
-                    amount_received=amount_received,
-                    status='matched',
-                    expected_amount=expected_amount,
-                    difference=difference,
-                    notes='Zahlung erfolgreich zugeordnet, Rechnung als bezahlt markiert'
-                )
-                db.session.add(payment_check)
-                db.session.commit()
-                
-                return jsonify({
-                    'success': True,
-                    'status': 'matched',
-                    'message': f'Zahlung für {invoice_number} erfolgreich verbucht',
-                    'invoice_id': invoice.id,
-                    'expected_amount': float(expected_amount),
-                    'amount_received': float(amount_received),
-                    'difference': float(difference),
-                    'check_id': payment_check.id,
-                    'requires_review': False
-                }), 200
-            
-            else:
-                # Betragsdifferenz - manuelle Prüfung erforderlich
-                payment_check = PaymentCheck(
-                    invoice_number=invoice_number,
-                    invoice_id=invoice.id,
-                    amount_received=amount_received,
-                    status='mismatch',
-                    expected_amount=expected_amount,
-                    difference=difference,
-                    notes=f'Betragsdifferenz: {float(difference):.2f} € (erwartet: {float(expected_amount):.2f} €, erhalten: {float(amount_received):.2f} €)'
-                )
-                db.session.add(payment_check)
-                db.session.commit()
-                
-                return jsonify({
-                    'success': False,
-                    'status': 'mismatch',
-                    'message': 'Betragsdifferenz festgestellt - manuelle Prüfung erforderlich',
-                    'invoice_id': invoice.id,
-                    'expected_amount': float(expected_amount),
-                    'amount_received': float(amount_received),
-                    'difference': float(difference),
-                    'check_id': payment_check.id,
-                    'requires_review': True
-                }), 200
-            
-        except ValueError as e:
-            return jsonify({'success': False, 'error': f'Ungültiger Betrag: {str(e)}'}), 400
         except Exception as e:
             db.session.rollback()
             return jsonify({'success': False, 'error': str(e)}), 500

@@ -24,22 +24,101 @@ Eine webbasierte Rechnungsverwaltung mit manipulationssicherer Datenspeicherung,
 - Erweiterbar für verschiedene Shop-Systeme
 - Automatische Kundenerkennung
 
+✅ **JWT-API für PWA/Mobile Apps**
+- Token-basierte Authentifizierung
+- 30 Tage Gültigkeit
+- 2FA-Support
+- REST API für Rechnungen, Kunden, POS
+
+✅ **Passwort-Reset per E-Mail**
+- Sichere Token-Generierung
+- 1 Stunde Gültigkeit
+- HTML/Text E-Mails
+
+✅ **CrowdSec Integration**
+- Automatische Sicherheitslogging
+- Bruteforce-Schutz
+- SQL-Injection/XSS-Erkennung
+- Rate-Limiting
+
 ## Technologie-Stack
 
-- **Backend:** Flask 3.0, SQLAlchemy
+- **Backend:** Flask 3.0, SQLAlchemy, Flask-Login, PyJWT
 - **Datenbank:** PostgreSQL
 - **PDF-Generierung:** ReportLab
-- **E-Mail:** Python IMAP
+- **E-Mail:** Python IMAP, Flask-Mail
+- **Security:** CrowdSec, 2FA (TOTP)
+- **Deployment:** Docker, Traefik 3, Gunicorn
 
 ## Installation
 
-### 1. Voraussetzungen
+### Variante 1: Docker-Deployment (Empfohlen für Produktion)
+
+Mit Docker Compose ist die gesamte Infrastruktur mit einem Befehl einsatzbereit:
+
+```bash
+# Repository klonen
+cd /home/janusz/git/privat/rechnungen
+
+# .env Datei konfigurieren
+cp .env.example .env
+nano .env
+
+# Container starten
+docker-compose up -d
+
+# Datenbank initialisieren
+docker-compose exec app flask init-db
+
+# Optional: Testdaten
+docker-compose exec app flask seed-db
+```
+
+**Enthaltene Services:**
+- **app**: Flask-Anwendung mit Gunicorn + Gevent
+- **db**: PostgreSQL 15
+- **traefik**: Reverse Proxy mit automatischem TLS (Let's Encrypt)
+- **crowdsec**: Security Engine für Bruteforce-Schutz
+- **redis** (optional): Session-Store für horizontales Scaling (>1000 Nutzer)
+
+**Standard-Konfiguration:**
+- File-based Sessions (ausreichend für <1000 Nutzer)
+- Redis auskommentiert (kann aktiviert werden bei Bedarf)
+- Traefik lauscht auf Port 80/443
+- CrowdSec-Log-Parsing für automatische IP-Sperren
+
+**Erste Schritte:**
+1. Domain in `.env` setzen: `DOMAIN=ihr-server.de`
+2. E-Mail für Let's Encrypt: `ACME_EMAIL=admin@ihr-server.de`
+3. `docker-compose up -d`
+4. App läuft unter: `https://ihr-server.de`
+
+**Redis aktivieren (bei Bedarf):**
+```yaml
+# In docker-compose.yml auskommentieren:
+redis:
+  image: redis:7-alpine
+  # ...
+
+# In app service ändern:
+SESSION_TYPE: redis
+REDIS_URL: redis://redis:6379
+```
+
+---
+
+### Variante 2: Manuelle Installation
+
+Für Entwicklung oder kleine Deployments ohne Docker:
+
+#### 1. Voraussetzungen
 
 - Python 3.9+
 - PostgreSQL 12+
 - pip und virtualenv
+- (Optional) CrowdSec für Security-Logging
 
-### 2. Repository klonen und einrichten
+#### 2. Repository klonen und einrichten
 
 ```bash
 cd /home/janusz/git/privat/rechnungen
@@ -102,6 +181,16 @@ MAIL_SERVER=imap.ihre-domain.de
 MAIL_PORT=993
 MAIL_USERNAME=shop@ihre-domain.de
 MAIL_PASSWORD=email-passwort
+
+# Optional: SMTP für Passwort-Reset E-Mails
+SMTP_SERVER=smtp.ihre-domain.de
+SMTP_PORT=587
+SMTP_USERNAME=noreply@ihre-domain.de
+SMTP_PASSWORD=smtp-passwort
+SMTP_USE_TLS=True
+
+# Optional: JWT Token Secret (für API-Authentifizierung)
+JWT_SECRET_KEY=ein-anderer-sehr-sicherer-schluessel
 ```
 
 **Tipp:** Ihre aktuellen Einstellungen können Sie jederzeit in der Web-UI unter "⚙️ Einstellungen" einsehen.
@@ -224,6 +313,482 @@ Für den Produktivbetrieb beachten Sie:
 5. **Regelmäßige Backups der PostgreSQL-Datenbank**
 
 6. **Firewall-Regeln konfigurieren**
+
+---
+
+## JWT-API für PWA/Mobile Apps
+
+Die Anwendung bietet eine vollständige REST API mit JWT-Authentifizierung für Progressive Web Apps und Mobile Anwendungen.
+
+### Authentifizierung
+
+#### Login & JWT Token erhalten
+
+```http
+POST /api/auth/login
+Content-Type: application/json
+
+{
+  "username": "ihr-benutzername",
+  "password": "ihr-passwort",
+  "totp_token": "123456"  // Optional, nur wenn 2FA aktiviert
+}
+```
+
+**Antwort (Erfolg):**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": 1,
+    "username": "admin",
+    "email": "admin@example.com",
+    "role": "admin"
+  },
+  "expires_in": 2592000
+}
+```
+
+**Antwort (2FA erforderlich):**
+```json
+{
+  "error": "2FA token required",
+  "requires_2fa": true
+}
+```
+
+**Token-Gültigkeit:** 30 Tage
+
+---
+
+#### Token validieren
+
+```http
+GET /api/auth/verify
+Authorization: Bearer <token>
+```
+
+**Antwort:**
+```json
+{
+  "valid": true,
+  "user": {
+    "id": 1,
+    "username": "admin",
+    "email": "admin@example.com",
+    "role": "admin"
+  }
+}
+```
+
+---
+
+#### Token erneuern
+
+```http
+POST /api/auth/refresh
+Authorization: Bearer <token>
+```
+
+**Antwort:**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "expires_in": 2592000
+}
+```
+
+---
+
+### API-Endpunkte (JWT-geschützt)
+
+Alle folgenden Endpoints erfordern einen gültigen JWT-Token im Authorization-Header:
+
+```
+Authorization: Bearer <token>
+```
+
+#### Rechnungen auflisten
+
+```http
+GET /api/invoices?page=1&per_page=20&status=sent
+Authorization: Bearer <token>
+```
+
+**Query-Parameter:**
+- `page` - Seitennummer (Standard: 1)
+- `per_page` - Einträge pro Seite (Standard: 20, max: 100)
+- `status` - Filter nach Status: draft, sent, paid, cancelled
+
+**Antwort:**
+```json
+{
+  "invoices": [
+    {
+      "id": 1,
+      "invoice_number": "RE-2024-11-07-0001",
+      "customer_id": 5,
+      "customer_name": "Müller GmbH",
+      "total": 555.00,
+      "status": "sent",
+      "created_at": "2024-11-07T10:30:00",
+      "due_date": "2024-11-21"
+    }
+  ],
+  "total": 150,
+  "page": 1,
+  "per_page": 20,
+  "pages": 8
+}
+```
+
+---
+
+#### Rechnungsdetails abrufen
+
+```http
+GET /api/invoices/<invoice_id>
+Authorization: Bearer <token>
+```
+
+**Antwort:**
+```json
+{
+  "id": 1,
+  "invoice_number": "RE-2024-11-07-0001",
+  "customer": {
+    "id": 5,
+    "company_name": "Müller GmbH",
+    "email": "info@mueller.de"
+  },
+  "items": [
+    {
+      "product_name": "Honig Lindenhonig",
+      "quantity": 10,
+      "unit_price": 50.00,
+      "total": 500.00
+    }
+  ],
+  "subtotal": 500.00,
+  "tax_rate": 19.0,
+  "tax_amount": 95.00,
+  "total": 595.00,
+  "status": "sent",
+  "created_at": "2024-11-07T10:30:00",
+  "due_date": "2024-11-21",
+  "notes": "Bitte Rechnungsnummer bei Überweisung angeben",
+  "data_hash": "abc123...",
+  "is_valid": true
+}
+```
+
+---
+
+#### Kunden durchsuchen
+
+```http
+GET /api/customers?search=müller&page=1&per_page=20
+Authorization: Bearer <token>
+```
+
+**Query-Parameter:**
+- `search` - Suchbegriff (durchsucht Firma, Name, E-Mail)
+- `page` - Seitennummer
+- `per_page` - Einträge pro Seite
+
+**Antwort:**
+```json
+{
+  "customers": [
+    {
+      "id": 5,
+      "company_name": "Müller GmbH",
+      "first_name": "Hans",
+      "last_name": "Müller",
+      "email": "info@mueller.de",
+      "phone": "+49 123 456789",
+      "address": "Musterstraße 1\n12345 Stadt",
+      "tax_id": "DE123456789"
+    }
+  ],
+  "total": 1,
+  "page": 1,
+  "per_page": 20
+}
+```
+
+---
+
+#### POS-Verkauf abschließen
+
+```http
+POST /api/pos/complete-sale
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "customer_id": 5,
+  "items": [
+    {
+      "product_id": 10,
+      "quantity": 2,
+      "unit_price": 8.50
+    }
+  ],
+  "payment_method": "cash",
+  "notes": "Barzahlung"
+}
+```
+
+**Antwort:**
+```json
+{
+  "success": true,
+  "invoice_id": 42,
+  "invoice_number": "RE-2024-11-07-0042",
+  "total": 17.00,
+  "pdf_url": "/invoices/42/download"
+}
+```
+
+---
+
+### Beispiel: JavaScript Fetch API
+
+```javascript
+// Login
+const response = await fetch('https://ihr-server.de/api/auth/login', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    username: 'admin',
+    password: 'passwort'
+  })
+});
+
+const { token } = await response.json();
+
+// Token speichern
+localStorage.setItem('jwt_token', token);
+
+// API-Aufruf mit Token
+const invoicesResponse = await fetch('https://ihr-server.de/api/invoices', {
+  headers: {
+    'Authorization': `Bearer ${token}`
+  }
+});
+
+const invoices = await invoicesResponse.json();
+```
+
+---
+
+### Beispiel: Python Requests
+
+```python
+import requests
+
+# Login
+response = requests.post('https://ihr-server.de/api/auth/login', json={
+    'username': 'admin',
+    'password': 'passwort'
+})
+
+token = response.json()['token']
+
+# API-Aufruf mit Token
+headers = {'Authorization': f'Bearer {token}'}
+invoices = requests.get('https://ihr-server.de/api/invoices', headers=headers).json()
+
+for invoice in invoices['invoices']:
+    print(f"{invoice['invoice_number']}: {invoice['total']} €")
+```
+
+---
+
+### Rollenbasierte Zugriffskontrolle
+
+Die JWT-API respektiert die Benutzerrollen:
+
+- **admin**: Voller Zugriff auf alle Endpoints
+- **manager**: Rechnungen, Kunden, Produkte (keine User-Verwaltung)
+- **employee**: Rechnungen erstellen/ansehen (keine Kunden bearbeiten)
+- **viewer**: Nur Lesezugriff
+
+Beispiel für fehlende Berechtigung:
+```json
+{
+  "error": "Insufficient permissions",
+  "required_role": "admin",
+  "your_role": "employee"
+}
+```
+
+---
+
+## Passwort-Reset per E-Mail
+
+Benutzer können ihr Passwort über einen E-Mail-Link zurücksetzen.
+
+### Funktionsweise
+
+1. **Passwort vergessen?** Link auf Login-Seite
+2. Benutzer gibt E-Mail-Adresse ein
+3. System sendet E-Mail mit Reset-Link (1 Stunde gültig)
+4. Benutzer klickt Link und setzt neues Passwort
+5. Alter Token wird ungültig
+
+### E-Mail-Konfiguration
+
+In `.env` SMTP-Daten eintragen:
+
+```env
+SMTP_SERVER=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USERNAME=ihre-email@gmail.com
+SMTP_PASSWORD=ihr-app-passwort
+SMTP_USE_TLS=True
+```
+
+**Für Gmail:**
+1. 2-Faktor-Authentifizierung aktivieren
+2. App-Passwort erstellen: https://myaccount.google.com/apppasswords
+3. App-Passwort in `.env` eintragen
+
+### Routes
+
+```
+GET  /forgot-password          → E-Mail-Eingabe
+POST /forgot-password          → Reset-Link senden
+GET  /reset-password/<token>   → Neues Passwort eingeben
+POST /reset-password/<token>   → Passwort speichern
+```
+
+### Sicherheit
+
+- Token: 32 Byte zufällig, URL-safe
+- Gültigkeit: 1 Stunde
+- Einmalverwendung (wird nach Verwendung gelöscht)
+- Rate-Limiting: Max. 3 Versuche/15 Min (via CrowdSec)
+
+---
+
+## CrowdSec Integration
+
+CrowdSec ist eine moderne Security-Engine, die automatisch Angriffe erkennt und IP-Adressen sperrt.
+
+### Was wird geloggt?
+
+Die Flask-App schreibt strukturierte Logs nach `logs/security.log`, die CrowdSec auswertet:
+
+**1. Failed Logins (Bruteforce-Schutz)**
+```json
+{
+  "timestamp": "2024-11-07T15:30:00",
+  "level": "WARNING",
+  "event": "failed_login",
+  "username": "admin",
+  "ip": "203.0.113.42",
+  "user_agent": "Mozilla/5.0..."
+}
+```
+
+**2. Suspicious Activity (SQL-Injection, XSS)**
+```json
+{
+  "timestamp": "2024-11-07T15:31:00",
+  "level": "WARNING",
+  "event": "suspicious_activity",
+  "ip": "203.0.113.42",
+  "path": "/search?q=<script>alert(1)</script>",
+  "reason": "XSS attempt detected"
+}
+```
+
+**3. Rate Limit Exceeded**
+```json
+{
+  "timestamp": "2024-11-07T15:32:00",
+  "level": "WARNING",
+  "event": "rate_limit_exceeded",
+  "ip": "203.0.113.42",
+  "endpoint": "/api/invoices"
+}
+```
+
+**4. Unauthorized Access**
+```json
+{
+  "timestamp": "2024-11-07T15:33:00",
+  "level": "WARNING",
+  "event": "unauthorized_access",
+  "ip": "203.0.113.42",
+  "path": "/admin/users",
+  "user": "employee",
+  "required_role": "admin"
+}
+```
+
+### CrowdSec-Konfiguration
+
+Im Docker-Setup ist CrowdSec bereits vorkonfiguriert. Für manuelle Installation:
+
+```bash
+# CrowdSec installieren
+curl -s https://packagecloud.io/install/repositories/crowdsec/crowdsec/script.deb.sh | sudo bash
+sudo apt install crowdsec
+
+# Flask-Parser installieren
+sudo cscli parsers install crowdsecurity/flask-logs
+
+# Scenario aktivieren
+sudo cscli scenarios install crowdsecurity/http-bruteforce
+sudo cscli scenarios install crowdsecurity/http-scan
+
+# Log-Datei konfigurieren
+sudo nano /etc/crowdsec/acquis.yaml
+```
+
+**acquis.yaml:**
+```yaml
+filenames:
+  - /home/janusz/git/privat/rechnungen/logs/security.log
+labels:
+  type: flask
+```
+
+```bash
+# CrowdSec neu starten
+sudo systemctl restart crowdsec
+
+# Status prüfen
+sudo cscli metrics
+sudo cscli decisions list
+```
+
+### Automatische IP-Sperren
+
+CrowdSec sperrt IPs automatisch bei:
+- **5 fehlgeschlagene Logins** in 5 Minuten → 4 Stunden Sperre
+- **10 XSS/SQLi-Versuche** in 5 Minuten → 24 Stunden Sperre
+- **50 Requests/Minute** an API → 1 Stunde Sperre
+- **Scan-Versuche** (/.env, /admin, etc.) → 12 Stunden Sperre
+
+### Web-Dashboard (Optional)
+
+```bash
+# Metabase installieren (Web-UI)
+sudo cscli dashboard setup
+
+# URL anzeigen
+sudo cscli dashboard show-password
+```
+
+Zugriff: `http://localhost:3000` (Standard-Credentials siehe Terminal)
+
+---
 
 ## API-Endpunkte
 

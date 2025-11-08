@@ -36,7 +36,7 @@ def create_users_table():
             admin.set_password("admin123")  # WICHTIG: Später ändern!
             db.session.add(admin)
             db.session.commit()
-            print(f"✓ Admin user created: username='admin', password='admin123'")
+            print("✓ Admin user created: username='admin', password='admin123'")
             print("  ⚠️  WICHTIG: Bitte Passwort nach erstem Login ändern!")
         else:
             print(f"\n✓ Admin user already exists: {admin.username}")

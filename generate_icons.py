@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pylint: disable=bare-except,too-many-locals,too-many-statements
 """
 Icon-Generator für PWA
 Generiert alle benötigten Icon-Größen aus einem einzigen Source-Icon
@@ -110,7 +111,7 @@ def generate_icons(source_icon=None):
     else:
         create_default_icon(180, icons_dir / "apple-touch-icon.png")
 
-    print(f"✅ apple-touch-icon.png (180x180)")
+    print("✅ apple-touch-icon.png (180x180)")
 
     # Favicons
     print("\n🔖 Generiere Favicons...")
@@ -221,7 +222,7 @@ def generate_icons(source_icon=None):
     print("\n✅ Alle Icons erfolgreich generiert!")
     print(f"📁 Ausgabe: {icons_dir.absolute()}")
     print("\nℹ️  Hinweis: Für bessere Icons, führe aus:")
-    print(f"   python generate_icons.py /pfad/zu/deinem/logo.png")
+    print("   python generate_icons.py /pfad/zu/deinem/logo.png")
 
 
 if __name__ == "__main__":

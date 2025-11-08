@@ -17,6 +17,52 @@
 </div>
 
 <div class="card">
+    <h2>🔐 Zwei-Faktor-Authentifizierung (2FA)</h2>
+    <p style="color: #7f8c8d; margin-bottom: 1.5rem;">Zusätzliche Sicherheit für Ihren Account.</p>
+    
+    {% if current_user.totp_enabled %}
+    <div style="padding: 1rem; background: #d4edda; border-left: 4px solid #28a745; border-radius: 4px; margin-bottom: 1rem;">
+        <strong>✓ 2FA ist aktiviert</strong><br>
+        <span style="color: #155724;">Ihr Account ist durch Zwei-Faktor-Authentifizierung geschützt.</span>
+    </div>
+    
+    <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+        <form method="POST" action="{{ url_for('regenerate_backup_codes') }}" style="display: inline;">
+            <input type="password" name="password" placeholder="Passwort bestätigen" required 
+                   style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; margin-right: 0.5rem;">
+            <button type="submit" class="btn" style="background: #17a2b8; color: white;">
+                🔄 Backup-Codes neu generieren
+            </button>
+        </form>
+        
+        <form method="POST" action="{{ url_for('disable_2fa') }}" style="display: inline;" 
+              onsubmit="return confirm('Sind Sie sicher, dass Sie 2FA deaktivieren möchten?');">
+            <input type="password" name="password" placeholder="Passwort bestätigen" required 
+                   style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; margin-right: 0.5rem;">
+            <button type="submit" class="btn" style="background: #dc3545; color: white;">
+                ❌ 2FA deaktivieren
+            </button>
+        </form>
+    </div>
+    {% else %}
+    <div style="padding: 1rem; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px; margin-bottom: 1rem;">
+        <strong>⚠ 2FA ist nicht aktiviert</strong><br>
+        <span style="color: #856404;">Erhöhen Sie die Sicherheit Ihres Accounts durch Zwei-Faktor-Authentifizierung.</span>
+    </div>
+    
+    <a href="{{ url_for('setup_2fa') }}" class="btn" style="background: #28a745; color: white;">
+        <i class="bi bi-shield-lock"></i> 2FA jetzt aktivieren
+    </a>
+    
+    <div style="margin-top: 1.5rem; padding: 1rem; background: #e3f2fd; border-left: 4px solid #2196f3; border-radius: 4px;">
+        <strong>💡 Was ist 2FA?</strong><br>
+        Zwei-Faktor-Authentifizierung (2FA) schützt Ihren Account durch einen zweiten Faktor zusätzlich zum Passwort. 
+        Sie benötigen eine Authenticator-App wie Google Authenticator, Authy oder Microsoft Authenticator.
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
     <h2>E-Mail-Konfiguration</h2>
     <p style="color: #7f8c8d; margin-bottom: 1.5rem;">SMTP (Versand) und IMAP (Empfang) Einstellungen.</p>
     

@@ -149,6 +149,93 @@ def create_app(config_name='default'):
         flash('Sie wurden erfolgreich abgemeldet.', 'success')
         return redirect(url_for('login'))
     
+    @app.route('/settings/2fa-setup', methods=['GET', 'POST'])
+    @login_required
+    def setup_2fa():
+        """2FA aktivieren"""
+        if current_user.totp_enabled:
+            flash('2FA ist bereits aktiviert.', 'info')
+            return redirect(url_for('settings'))
+        
+        if request.method == 'POST':
+            token = request.form.get('token', '').replace(' ', '')
+            
+            # Verifiziere den eingegebenen Code
+            if current_user.verify_totp(token):
+                # Aktiviere 2FA
+                current_user.totp_enabled = True
+                
+                # Generiere Backup-Codes
+                backup_codes = current_user.generate_backup_codes()
+                db.session.commit()
+                
+                flash('2FA wurde erfolgreich aktiviert! Bewahren Sie Ihre Backup-Codes sicher auf.', 'success')
+                return render_template('auth/2fa_backup_codes.html', backup_codes=backup_codes)
+            else:
+                flash('Ungültiger Code. Bitte versuchen Sie es erneut.', 'danger')
+        
+        # Generiere TOTP-Secret (falls noch nicht vorhanden)
+        if not current_user.totp_secret:
+            current_user.generate_totp_secret()
+            db.session.commit()
+        
+        # QR-Code generieren
+        import qrcode
+        import io
+        import base64
+        
+        totp_uri = current_user.get_totp_uri()
+        qr = qrcode.QRCode(version=1, box_size=10, border=4)
+        qr.add_data(totp_uri)
+        qr.make(fit=True)
+        
+        img = qr.make_image(fill_color="black", back_color="white")
+        buffer = io.BytesIO()
+        img.save(buffer, format='PNG')
+        buffer.seek(0)
+        qr_code_base64 = base64.b64encode(buffer.getvalue()).decode()
+        
+        return render_template('auth/2fa_setup.html', 
+                             qr_code=qr_code_base64, 
+                             totp_secret=current_user.totp_secret)
+    
+    @app.route('/settings/2fa-disable', methods=['POST'])
+    @login_required
+    def disable_2fa():
+        """2FA deaktivieren"""
+        password = request.form.get('password')
+        
+        if not current_user.check_password(password):
+            flash('Falsches Passwort.', 'danger')
+            return redirect(url_for('settings'))
+        
+        current_user.totp_enabled = False
+        current_user.totp_secret = None
+        current_user.backup_codes = None
+        db.session.commit()
+        
+        flash('2FA wurde deaktiviert.', 'warning')
+        return redirect(url_for('settings'))
+    
+    @app.route('/settings/2fa-regenerate-codes', methods=['POST'])
+    @login_required
+    def regenerate_backup_codes():
+        """Backup-Codes neu generieren"""
+        if not current_user.totp_enabled:
+            flash('2FA ist nicht aktiviert.', 'danger')
+            return redirect(url_for('settings'))
+        
+        password = request.form.get('password')
+        if not current_user.check_password(password):
+            flash('Falsches Passwort.', 'danger')
+            return redirect(url_for('settings'))
+        
+        backup_codes = current_user.generate_backup_codes()
+        db.session.commit()
+        
+        flash('Neue Backup-Codes wurden generiert. Die alten Codes sind ungültig.', 'warning')
+        return render_template('auth/2fa_backup_codes.html', backup_codes=backup_codes)
+    
     # ========== HAUPTSEITEN-ROUTEN ==========
     
     # Routes

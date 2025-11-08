@@ -368,7 +368,7 @@ def create_app(config_name='default'):
             invoice_id=invoice.id,
             old_status=old_status,
             new_status=status,
-            changed_by='System',  # TODO: User-Login implementieren
+            changed_by=current_user.username,
             reason=request.args.get('reason', None)  # Optional: Begründung aus URL
         )
         db.session.add(status_log)
@@ -545,7 +545,7 @@ def create_app(config_name='default'):
                     invoice_id=original_invoice.id,
                     old_status='sent' if original_invoice.status != 'paid' else 'paid',
                     new_status='cancelled',
-                    changed_by='System',
+                    changed_by=current_user.username,
                     reason=f"Storniert durch {cancellation_number}: {reason}"
                 ))
                 
@@ -553,7 +553,7 @@ def create_app(config_name='default'):
                     invoice_id=cancellation_invoice.id,
                     old_status=None,
                     new_status='sent',
-                    changed_by='System',
+                    changed_by=current_user.username,
                     reason=f"Stornorechnung für {original_invoice.invoice_number}"
                 ))
                 
@@ -601,7 +601,7 @@ def create_app(config_name='default'):
                     pdf_filename=os.path.basename(pdf_path),
                     pdf_hash=pdf_hash,
                     file_size=file_size,
-                    archived_by='System'
+                    archived_by=current_user.username
                 )
                 db.session.add(archive)
                 
@@ -1028,7 +1028,7 @@ Mit freundlichen Grüßen
                 invoice_id=invoice.id,
                 old_status=None,
                 new_status='paid',
-                changed_by='POS-System',
+                changed_by=current_user.username,
                 reason='Barverkauf - automatisch als bezahlt markiert'
             )
             db.session.add(status_log)

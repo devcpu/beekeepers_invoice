@@ -178,21 +178,21 @@ def generate_reminder_pdf(invoice, reminder, pdf_folder, config=None):
 
     # Mahntext abhängig von Mahnstufe
     if reminder.reminder_level == 1:
-        reminder_text = f"""
+        reminder_text = """
         leider haben wir bis heute keinen Zahlungseingang für die oben genannte Rechnung feststellen können.
         Möglicherweise haben Sie die Zahlung bereits veranlasst - in diesem Fall betrachten Sie dieses Schreiben bitte als gegenstandslos.
         <br/><br/>
         Falls die Zahlung noch nicht erfolgt ist, bitten wir Sie höflich, den ausstehenden Betrag innerhalb der nächsten 7 Tage zu begleichen.
         """
     elif reminder.reminder_level == 2:
-        reminder_text = f"""
+        reminder_text = """
         trotz unserer ersten Mahnung haben wir bis heute keinen Zahlungseingang für die oben genannte Rechnung feststellen können.
         <br/><br/>
         Wir bitten Sie dringend, den ausstehenden Betrag <b>umgehend innerhalb von 5 Tagen</b> zu begleichen,
         um weitere Maßnahmen zu vermeiden.
         """
     else:
-        reminder_text = f"""
+        reminder_text = """
         <b>trotz mehrfacher Aufforderung</b> haben wir bis heute keinen Zahlungseingang für die oben genannte Rechnung feststellen können.
         <br/><br/>
         Wir fordern Sie hiermit <b>letztmalig</b> auf, den ausstehenden Betrag <b>innerhalb von 3 Tagen</b> zu begleichen.

@@ -1945,7 +1945,7 @@ Mit freundlichen Grüßen
                 tax_amount=tax_amount,
                 total=total,
                 payment_method="Barzahlung",
-                notes=f"Barverkauf / Direktverkauf\nKasse: POS-System",
+                notes="Barverkauf / Direktverkauf\nKasse: POS-System",
             )
 
             # LineItems ZUERST erstellen (ohne invoice_id, wird später gesetzt)
@@ -2007,7 +2007,7 @@ Mit freundlichen Grüßen
         """Jahresübersicht Einnahmen nach Kundentyp"""
         from decimal import Decimal
 
-        from sqlalchemy import extract, func
+        from sqlalchemy import extract
 
         # Jahr aus Query-Parameter (Standard: aktuelles Jahr)
         year = request.args.get("year", datetime.now().year, type=int)
@@ -2121,7 +2121,7 @@ Mit freundlichen Grüßen
         from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
         from reportlab.lib.units import cm
         from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
-        from sqlalchemy import extract, func
+        from sqlalchemy import extract
 
         # Jahr aus Query-Parameter
         year = request.args.get("year", datetime.now().year, type=int)
@@ -3230,7 +3230,7 @@ Mit freundlichen Grüßen
                 }
             )
 
-        except ValueError as e:
+        except ValueError:
             return jsonify({"success": False, "error": "Ungültige Menge"}), 400
         except Exception as e:
             db.session.rollback()

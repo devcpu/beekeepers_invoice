@@ -1297,6 +1297,114 @@ Mit freundlichen Grüßen
         adjustments = StockAdjustment.query.order_by(StockAdjustment.adjusted_at.desc()).limit(100).all()
         return render_template('stock_adjustments/list.html', adjustments=adjustments)
     
+    @app.route('/stock-adjustments/export-pdf')
+    @login_required
+    def export_stock_adjustments_pdf():
+        """Exportiere alle Bestandsanpassungen als PDF (GoBD-konform)"""
+        from reportlab.lib.pagesizes import A4, landscape
+        from reportlab.lib import colors
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.units import cm
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+        from reportlab.pdfbase import pdfmetrics
+        from reportlab.pdfbase.ttfonts import TTFont
+        from io import BytesIO
+        
+        # Filter-Parameter
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        adjustment_type = request.args.get('adjustment_type')
+        
+        query = StockAdjustment.query
+        
+        if start_date:
+            from datetime import datetime
+            query = query.filter(StockAdjustment.adjusted_at >= datetime.strptime(start_date, '%Y-%m-%d'))
+        if end_date:
+            from datetime import datetime
+            query = query.filter(StockAdjustment.adjusted_at <= datetime.strptime(end_date, '%Y-%m-%d'))
+        if adjustment_type:
+            query = query.filter(StockAdjustment.adjustment_type == adjustment_type)
+        
+        adjustments = query.order_by(StockAdjustment.adjusted_at.desc()).all()
+        
+        # PDF erstellen
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=landscape(A4))
+        elements = []
+        
+        # Styles
+        styles = getSampleStyleSheet()
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=16,
+            spaceAfter=30
+        )
+        
+        # Titel
+        title = Paragraph("Bestandsanpassungen - Übersicht (GoBD-konform)", title_style)
+        elements.append(title)
+        
+        # Zeitraum
+        if start_date or end_date:
+            period = f"Zeitraum: {start_date or 'Anfang'} bis {end_date or 'Heute'}"
+            elements.append(Paragraph(period, styles['Normal']))
+            elements.append(Spacer(1, 0.5*cm))
+        
+        # Tabelle
+        data = [['Datum', 'Produkt', 'Typ', 'Menge', 'Alt → Neu', 'Grund', 'Benutzer', 'Beleg-Nr.']]
+        
+        type_labels = {
+            'eigenentnahme': 'Eigenentnahme',
+            'geschenk': 'Geschenk',
+            'verderb': 'Verderb',
+            'bruch': 'Bruch',
+            'inventur_plus': 'Inventur +',
+            'inventur_minus': 'Inventur -',
+            'korrektur': 'Korrektur',
+            'sonstiges': 'Sonstiges'
+        }
+        
+        for adj in adjustments:
+            data.append([
+                adj.adjusted_at.strftime('%d.%m.%Y %H:%M'),
+                adj.product.name if adj.product else 'N/A',
+                type_labels.get(adj.adjustment_type, adj.adjustment_type),
+                f"{adj.quantity:+d}",
+                f"{adj.old_stock} → {adj.new_stock}",
+                adj.reason[:30] + '...' if len(adj.reason) > 30 else adj.reason,
+                adj.adjusted_by_user.username if adj.adjusted_by_user else 'N/A',
+                adj.document_number or '-'
+            ])
+        
+        table = Table(data, colWidths=[3*cm, 4*cm, 2.5*cm, 1.5*cm, 2*cm, 5*cm, 2*cm, 3*cm])
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('FONTSIZE', (0, 1), (-1, -1), 8),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ]))
+        
+        elements.append(table)
+        
+        # Fußnote
+        elements.append(Spacer(1, 1*cm))
+        footer_text = f"Erstellt am: {datetime.now().strftime('%d.%m.%Y %H:%M')} | Anzahl Einträge: {len(adjustments)}"
+        elements.append(Paragraph(footer_text, styles['Normal']))
+        
+        doc.build(elements)
+        buffer.seek(0)
+        
+        filename = f"Bestandsanpassungen_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf"
+        return send_file(buffer, as_attachment=True, download_name=filename, mimetype='application/pdf')
+    
     @app.route('/stock-adjustments/create', methods=['GET', 'POST'])
     @login_required
     def create_stock_adjustment():

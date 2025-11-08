@@ -5,8 +5,31 @@
 Dieses System erfüllt die Anforderungen der **GoBD (Grundsätze zur ordnungsmäßigen Führung und Aufbewahrung von Büchern, Aufzeichnungen und Unterlagen in elektronischer Form sowie zum Datenzugriff)** für die elektronische Rechnungsstellung und -verwaltung.
 
 **Implementierungsdatum:** Dezember 2024  
-**Version:** 1.0  
+**Version:** 1.1  
 **Rechtsgrundlage:** BMF-Schreiben vom 28.11.2019
+
+**Erfasste Geschäftsvorfälle:**
+- Rechnungen (Verkauf an Kunden)
+- Stornorechnungen (Korrekturbelege)
+- BAR-Rechnungen (Direktverkauf/Kasse)
+- Bestandsanpassungen (Eigenentnahme, Inventur, Verderb, etc.)
+
+---
+
+## Inhaltsverzeichnis
+
+1. [Unveränderbarkeit von Belegen](#1-unveränderbarkeit-von-belegen-immutability)
+2. [Vollständiger Audit Trail](#2-vollständiger-audit-trail)
+3. [Stornierung durch Korrekturbeleg](#3-stornierung-durch-korrekturbeleg)
+4. [PDF-Archivierung mit Hash-Verifizierung](#4-pdf-archivierung-mit-hash-verifizierung)
+5. [Datenbankstruktur](#5-datenbankstruktur)
+6. [Migration bestehender Daten](#6-migration-bestehender-daten)
+7. [Verfahrensdokumentation](#7-verfahrensdokumentation)
+8. [Bestandsanpassungen (Eigenentnahme, Inventur)](#8-bestandsanpassungen-eigenentnahme-inventur)
+9. [Backup-Strategie](#9-backup-strategie)
+10. [Datenschutz (DSGVO)](#10-datenschutz-dsgvo)
+11. [Betriebsprüfung (Finanzamt)](#11-betriebsprüfung-finanzamt)
+12. [Checkliste: GoBD-Konformität](#12-checkliste-gobd-konformität)
 
 ---
 
@@ -391,7 +414,181 @@ is_valid = archive.verify_pdf('/path/to/invoice.pdf')
 
 ---
 
-## 8. Backup-Strategie
+## 8. Bestandsanpassungen (Eigenentnahme, Inventur)
+
+### Anforderung
+Bestandsveränderungen ohne Verkauf (Eigenentnahme, Verderb, Inventur) müssen GoBD-konform dokumentiert werden, auch wenn keine Rechnung erstellt wird.
+
+### Implementierung
+
+#### Datenbank-Modell: `StockAdjustment`
+**Datei:** `models.py`
+
+```sql
+CREATE TABLE stock_adjustments (
+    id SERIAL PRIMARY KEY,
+    product_id INTEGER NOT NULL REFERENCES products(id),
+    quantity INTEGER NOT NULL,              -- Positiv = Zugang, Negativ = Abgang
+    old_stock INTEGER NOT NULL,             -- Bestand vor Anpassung
+    new_stock INTEGER NOT NULL,             -- Bestand nach Anpassung
+    adjustment_type adjustment_type_enum NOT NULL,
+    reason TEXT NOT NULL,                   -- Pflichtfeld für GoBD
+    adjusted_by INTEGER NOT NULL REFERENCES users(id),
+    adjusted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    document_number VARCHAR(50) UNIQUE      -- Beleg-Nummer für Eigenentnahmen
+);
+```
+
+**Anpassungstypen:**
+- `eigenentnahme` - Privater Verbrauch (§ 3 Abs. 1b Nr. 1 UStG)
+- `geschenk` - Unentgeltliche Zuwendung
+- `verderb` - Verdorbene/unverkäufliche Ware
+- `bruch` - Beschädigte Ware
+- `inventur_plus` - Inventur-Mehrbestand
+- `inventur_minus` - Inventur-Minderbestand
+- `korrektur` - Fehlerkorrektur
+- `sonstiges` - Andere Gründe
+
+#### Beleg-Nummern für Eigenentnahmen
+**Format:** `ENT-YYYYMMDD-####`
+
+Beispiel: `ENT-20251108-0001`
+
+**Generierung:**
+```python
+today = datetime.now().date()
+prefix = f"ENT-{today.strftime('%Y%m%d')}"
+# Finde letzte Nummer des Tages
+last_doc = StockAdjustment.query.filter(
+    StockAdjustment.document_number.like(f"{prefix}%")
+).order_by(StockAdjustment.document_number.desc()).first()
+# Inkrementiere
+next_num = (int(last_doc.document_number.split('-')[-1]) + 1) if last_doc else 1
+document_number = f"{prefix}-{next_num:04d}"
+```
+
+**Wann wird Beleg-Nummer erstellt:**
+- ✅ Bei `eigenentnahme` (privater Verbrauch)
+- ✅ Bei `geschenk` (unentgeltliche Zuwendung)
+- ❌ **Nicht** bei Inventur-Korrekturen (interne Buchung)
+- ❌ **Nicht** bei Verderb/Bruch (nur Dokumentation)
+
+#### Unveränderbarkeit
+- **Keine Löschung** - Bestandsanpassungen können nicht gelöscht werden
+- **Keine Änderung** - Einträge sind unveränderbar
+- **Vollständige Historie** - Alle Anpassungen bleiben dauerhaft gespeichert
+
+#### Route-Implementierung
+**Datei:** `app.py`
+
+**Neue Anpassung erstellen:**
+```python
+@app.route('/stock-adjustments/create', methods=['GET', 'POST'])
+@login_required
+def create_stock_adjustment():
+    # Validierung
+    if new_stock < 0:
+        flash('Bestand würde negativ werden!', 'error')
+        return redirect(...)
+    
+    # Erstelle Anpassung
+    adjustment = StockAdjustment(
+        product_id=product.id,
+        quantity=quantity,
+        old_stock=old_stock,
+        new_stock=new_stock,
+        adjustment_type=adjustment_type,
+        reason=reason,
+        adjusted_by=current_user.id,
+        document_number=document_number  # Falls eigenentnahme/geschenk
+    )
+    
+    # Bestand aktualisieren
+    product.number = new_stock
+    db.session.commit()
+```
+
+#### PDF-Export (GoBD Z2-Datenzugriff)
+**Route:** `/stock-adjustments/export-pdf`
+
+Exportiert alle Bestandsanpassungen als PDF-Übersicht:
+- Datum, Produkt, Typ, Menge, Bestand vorher/nachher
+- Grund, Benutzer, Beleg-Nummer
+- Zeitraum-Filter möglich
+- Landschaftsformat (A4 quer)
+
+**Verwendung bei Betriebsprüfung:**
+```bash
+# Export für Zeitraum
+GET /stock-adjustments/export-pdf?start_date=2024-01-01&end_date=2024-12-31
+
+# Export nur Eigenentnahmen
+GET /stock-adjustments/export-pdf?adjustment_type=eigenentnahme
+```
+
+### Steuerliche Relevanz
+
+#### Eigenentnahme (§ 3 Abs. 1b Nr. 1 UStG)
+Entnahme von Gegenständen für private Zwecke ist **umsatzsteuerpflichtig**.
+
+**Bewertung:**
+- Kleinunternehmer (§ 19 UStG): Keine USt-Pflicht
+- Regelbesteuerung: USt auf Einkaufspreis/Herstellungskosten
+- Landwirt (§ 24 UStG): Durchschnittssatz
+
+**Dokumentation erforderlich:**
+- ✅ Datum der Entnahme
+- ✅ Menge und Bezeichnung
+- ✅ Grund ("privater Verbrauch")
+- ✅ Beleg-Nummer
+
+#### Geschenke
+Unentgeltliche Zuwendungen > 35 EUR sind USt-pflichtig.
+
+**Dokumentation erforderlich:**
+- ✅ Empfänger (im Feld "Grund" vermerken)
+- ✅ Anlass
+- ✅ Wert
+
+#### Verderb/Bruch
+Keine steuerliche Relevanz, aber Dokumentation notwendig:
+- Nachweis für Bestandsminderung
+- Plausibilität für Inventur
+- Betriebsprüfung
+
+### Verfahrensdokumentation
+
+**Prozess: Eigenentnahme dokumentieren**
+
+1. Navigation: **📝 Anpassungen** → "Neue Anpassung"
+2. Produkt auswählen
+3. Typ: "🏠 Eigenentnahme"
+4. Menge: Negativ (z.B. `-5`)
+5. Grund: "5 Gläser Honig für privaten Verbrauch entnommen"
+6. Speichern
+   - ➜ Beleg-Nummer wird generiert: `ENT-20251108-0001`
+   - ➜ Bestand wird automatisch reduziert
+   - ➜ Eintrag ist unveränderbar
+
+**Prozess: PDF-Export für Steuerberater**
+
+1. Navigation: **📝 Anpassungen**
+2. Klick auf "PDF exportieren"
+3. Optional: Filter setzen (Zeitraum, Typ)
+4. PDF wird generiert und heruntergeladen
+
+### Beispiel-Einträge
+
+| Datum | Produkt | Typ | Menge | Alt → Neu | Grund | Beleg-Nr. |
+|-------|---------|-----|-------|-----------|-------|-----------|
+| 08.11.2024 | Waldhonig 500g | Eigenentnahme | -5 | 100 → 95 | 5 Gläser für privaten Verbrauch | ENT-20241108-0001 |
+| 08.11.2024 | Blütenhonig 500g | Geschenk | -2 | 150 → 148 | Geschenk an Nachbarn (Weihnachten) | ENT-20241108-0002 |
+| 08.11.2024 | Rapshonig 500g | Inventur + | +10 | 80 → 90 | Inventur: 10 Gläser mehr gefunden | - |
+| 08.11.2024 | Akazienhonig 500g | Verderb | -3 | 50 → 47 | Kristallisiert, nicht mehr verkaufbar | - |
+
+---
+
+## 9. Backup-Strategie
 
 ### Empfohlene Maßnahmen
 
@@ -472,6 +669,12 @@ Das System ermöglicht den gesetzlich geforderten Datenzugriff:
    
    # PDF-Hashes exportieren
    psql -U user -d rechnungen -c "COPY invoice_pdf_archive TO '/export/pdf_hashes.csv' CSV HEADER;"
+   
+   # Bestandsanpassungen exportieren (NEU)
+   psql -U user -d rechnungen -c "COPY stock_adjustments TO '/export/stock_adjustments.csv' CSV HEADER;"
+   
+   # Oder: PDF-Export über Weboberfläche
+   # → Navigation: 📝 Anpassungen → "PDF exportieren"
    ```
 
 3. **Z3 (Unmittelbarer Datenzugriff)**
@@ -496,16 +699,17 @@ Zusätzlich bereithalten:
 | Anforderung | Status | Implementierung |
 |-------------|--------|-----------------|
 | ✅ Unveränderbarkeit | Erfüllt | Status-Workflow-Validierung, Entwürfe löschbar |
-| ✅ Nachvollziehbarkeit | Erfüllt | `InvoiceStatusLog` (Audit Trail) |
+| ✅ Nachvollziehbarkeit | Erfüllt | `InvoiceStatusLog` + `StockAdjustment` (Audit Trail) |
 | ✅ Vollständigkeit | Erfüllt | Keine Löschung ab Status `sent`, nur Stornierung |
 | ✅ Richtigkeit | Erfüllt | SHA-256 Hash-Prüfung |
-| ✅ Zeitgerechte Buchung | Erfüllt | Automatische Timestamps |
-| ✅ Ordnung | Erfüllt | Fortlaufende Rechnungsnummern |
+| ✅ Zeitgerechte Buchung | Erfüllt | Automatische Timestamps (Mikrosekunden-genau) |
+| ✅ Ordnung | Erfüllt | Fortlaufende Rechnungsnummern + Beleg-Nummern |
 | ✅ Sicherheit | Erfüllt | PDF-Hashes, Datenbankindizes |
 | ✅ Verfügbarkeit | Erfüllt | Backup-Konzept |
-| ✅ Datenzugriff | Erfüllt | Export-Funktionen, SQL |
+| ✅ Datenzugriff | Erfüllt | Export-Funktionen (PDF, SQL) |
 | ✅ Prüfbarkeit | Erfüllt | Vollständige Dokumentation |
 | ✅ Entwurfsverwaltung | Erfüllt | Löschung nur bei Status `draft` |
+| ✅ Bestandsanpassungen | Erfüllt | Eigenentnahme mit Beleg-Nummern, PDF-Export |
 
 ---
 

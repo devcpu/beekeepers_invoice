@@ -52,9 +52,9 @@ Eine webbasierte Rechnungsverwaltung mit manipulationssicherer Datenspeicherung,
 
 ## Installation
 
-### Variante 1: Docker-Deployment (Empfohlen für Produktion)
+### Variante 1: Docker-Deployment (Standalone)
 
-Mit Docker Compose ist die gesamte Infrastruktur mit einem Befehl einsatzbereit:
+Komplette Infrastruktur mit einem Befehl - alle Dienste inkludiert:
 
 ```bash
 # Repository klonen
@@ -107,7 +107,59 @@ REDIS_URL: redis://redis:6379
 
 ---
 
-### Variante 2: Manuelle Installation
+### Variante 2: Integrierte Variante (Shared Infrastructure)
+
+Für Umgebungen mit **bereits vorhandenen Diensten** (Traefik, CrowdSec, PostgreSQL, Redis):
+
+```bash
+# Repository klonen
+cd /home/janusz/git/privat/rechnungen
+
+# .env für integrierte Variante
+cp .env.integrated.example .env
+nano .env
+
+# Datenbank im shared PostgreSQL anlegen
+docker exec postgres psql -U postgres -c "
+CREATE DATABASE rechnungen;
+CREATE USER rechnungen_user WITH PASSWORD 'sicheres_passwort';
+GRANT ALL PRIVILEGES ON DATABASE rechnungen TO rechnungen_user;
+"
+
+# Container starten (nutzt externe Netzwerke)
+docker-compose -f docker-compose.integrated.yml up -d
+
+# Datenbank initialisieren
+docker-compose -f docker-compose.integrated.yml exec app flask init-db
+```
+
+**Voraussetzungen:**
+- Externe Netzwerke: `traefik-proxy`, `crowdsec`, `intern-service`
+- Shared PostgreSQL im `intern-service` Netzwerk
+- Traefik mit Let's Encrypt läuft bereits
+- CrowdSec konfiguriert (optional)
+
+**Vorteile:**
+- ✅ **RAM-effizient**: ~750MB Ersparnis bei 5 Apps (shared DB statt 5x separate DBs)
+- ✅ **Zentrales Backup**: Ein PostgreSQL-Dump für alle DBs
+- ✅ **Einfachere Wartung**: Updates nur 1x durchführen
+- ✅ **Sicherheit**: DB-Isolation via separate Datenbanken + User
+
+**Shared vs. Dedicated DB:**
+
+| Aspekt | Shared PostgreSQL ✅ | Dedicated DB |
+|--------|---------------------|--------------|
+| RAM-Verbrauch | ~50MB/App | ~200MB/App |
+| Sicherheit | DB-Level Isolation | Container-Level |
+| Backup | Zentral, einfach | Pro App separat |
+| Skalierung | Bis ~10k Req/min | Unbegrenzt |
+| Empfohlen für | <5 Apps, begrenzter RAM | High-Traffic, Compliance |
+
+**Detaillierte Anleitung:** Siehe [SETUP_INTEGRATED.md](SETUP_INTEGRATED.md)
+
+---
+
+### Variante 3: Manuelle Installation
 
 Für Entwicklung oder kleine Deployments ohne Docker:
 

@@ -624,6 +624,8 @@ def create_app(config_name='default'):
     @login_required
     def index():
         """Startseite mit Übersicht"""
+        from datetime import datetime, timedelta
+        
         # Prüfe ob Bestandsauswahl nötig ist
         if current_user.reseller_customer_id and 'stock_source' not in session:
             # Prüfe ob ConsignmentStock existiert
@@ -643,7 +645,26 @@ def create_app(config_name='default'):
             'cancelled_invoices': Invoice.query.filter_by(status='cancelled').count(),
             'total_customers': Customer.query.count()
         }
-        return render_template('index.html', invoices=recent_invoices, stats=stats)
+        
+        # Produkte mit niedrigem Bestand (aktiv und < 25)
+        low_stock_products = Product.query.filter(
+            Product.is_active == True,
+            Product.number < 25
+        ).order_by(Product.number.asc()).all()
+        
+        # Überfällige Rechnungen (mehr als 10 Tage überfällig)
+        overdue_date = datetime.now().date() - timedelta(days=10)
+        overdue_invoices = Invoice.query.filter(
+            Invoice.status == 'sent',
+            Invoice.due_date.isnot(None),
+            Invoice.due_date < overdue_date
+        ).order_by(Invoice.due_date.asc()).all()
+        
+        return render_template('index.html', 
+                             invoices=recent_invoices, 
+                             stats=stats,
+                             low_stock_products=low_stock_products,
+                             overdue_invoices=overdue_invoices)
     
     @app.route('/invoices')
     @login_required

@@ -648,7 +648,7 @@ def create_app(config_name='default'):
         
         # Produkte mit niedrigem Bestand (aktiv und < 25)
         low_stock_products = Product.query.filter(
-            Product.is_active == True,
+            Product.active == True,
             Product.number < 25
         ).order_by(Product.number.asc()).all()
         

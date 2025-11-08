@@ -50,6 +50,9 @@
                                 {{ customer.first_name }} {{ customer.last_name }}
                             {% endif %}
                         </strong>
+                        {% if customer.is_anonymized %}
+                        <span style="color: #95a5a6; font-size: 0.85rem; margin-left: 0.5rem;" title="DSGVO-anonymisiert">🔒 Anonymisiert</span>
+                        {% endif %}
                     </td>
                     <td>{{ customer.email or '-' }}</td>
                     <td>{{ customer.phone or '-' }}</td>

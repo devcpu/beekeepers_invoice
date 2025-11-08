@@ -233,6 +233,33 @@ class Customer(db.Model):
             return self.company_name
         return self.full_name
     
+    @property
+    def is_anonymized(self):
+        """Prüft ob Kunde anonymisiert wurde"""
+        return self.email and self.email.startswith('deleted_') and '@anonymized.local' in self.email
+    
+    def anonymize_gdpr(self):
+        """
+        Anonymisiert Kundendaten gemäß DSGVO Art. 17.
+        
+        WICHTIG: Bestehende Rechnungen bleiben unverändert (GoBD-konform).
+        Die denormalisierten Kundendaten in den Rechnungen (customer_company, 
+        customer_name, etc.) werden NICHT verändert, um die Manipulationssicherheit
+        (data_hash) zu erhalten und die steuerrechtlichen Aufbewahrungspflichten
+        (§147 AO - 10 Jahre) zu erfüllen.
+        
+        DSGVO Art. 17 Abs. 3 Buchstabe b: Das Recht auf Löschung gilt nicht,
+        wenn die Verarbeitung zur Erfüllung einer rechtlichen Verpflichtung
+        erforderlich ist.
+        """
+        self.first_name = "Anonymisiert"
+        self.last_name = f"Kunde #{self.id}"
+        self.email = f"deleted_{self.id}@anonymized.local"
+        self.phone = None
+        self.address = None
+        self.tax_id = None
+        self.company_name = f"Gelöschter Kunde #{self.id}"
+    
     def to_dict(self):
         return {
             'id': self.id,

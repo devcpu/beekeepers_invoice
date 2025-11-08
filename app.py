@@ -1286,6 +1286,63 @@ Mit freundlichen Grüßen
         
         return render_template('customers/edit.html', customer=customer)
     
+    @app.route('/customers/<int:customer_id>/anonymize', methods=['POST'])
+    @login_required
+    def anonymize_customer(customer_id):
+        """
+        DSGVO-konforme Anonymisierung von Kundendaten.
+        
+        Anonymisiert nur die Kundenstammdaten. Bestehende Rechnungen bleiben
+        aus steuerrechtlichen Gründen (§147 AO, GoBD) unverändert und zeigen
+        weiterhin die Originaldaten. Dies ist DSGVO-konform gemäß Art. 17 Abs. 3 b.
+        """
+        customer = Customer.query.get_or_404(customer_id)
+        
+        # Prüfung: Bereits anonymisiert?
+        if customer.is_anonymized:
+            flash('Dieser Kunde wurde bereits anonymisiert.', 'warning')
+            return redirect(url_for('list_customers'))
+        
+        # Anzahl verknüpfter Rechnungen ermitteln
+        invoice_count = Invoice.query.filter_by(customer_id=customer_id).count()
+        
+        # Original-Daten für Audit-Log
+        original_email = customer.email
+        original_name = customer.display_name
+        
+        try:
+            # DSGVO-Anonymisierung durchführen
+            customer.anonymize_gdpr()
+            db.session.commit()
+            
+            # Audit-Protokollierung
+            app.logger.info(
+                f"DSGVO-Anonymisierung durchgeführt | "
+                f"Kunde ID: {customer_id} | "
+                f"Original: {original_name} ({original_email}) | "
+                f"Benutzer: {current_user.username} | "
+                f"Verknüpfte Rechnungen: {invoice_count} (bleiben unverändert gemäß §147 AO)"
+            )
+            
+            if invoice_count > 0:
+                flash(
+                    f'Kunde erfolgreich anonymisiert. '
+                    f'{invoice_count} bestehende Rechnung(en) bleiben aus steuerrechtlichen Gründen '
+                    f'(§147 AO - 10 Jahre Aufbewahrungspflicht) unverändert und zeigen weiterhin die Originaldaten. '
+                    f'Dies ist DSGVO-konform gemäß Art. 17 Abs. 3 Buchstabe b.',
+                    'success'
+                )
+            else:
+                flash('Kunde erfolgreich anonymisiert.', 'success')
+            
+            return redirect(url_for('list_customers'))
+            
+        except Exception as e:
+            db.session.rollback()
+            app.logger.error(f"Fehler bei DSGVO-Anonymisierung Kunde #{customer_id}: {str(e)}")
+            flash(f'Fehler bei der Anonymisierung: {str(e)}', 'error')
+            return redirect(url_for('view_customer', customer_id=customer_id))
+    
     # ============================================================================
     # Stock Adjustments - Bestandsanpassungen (Eigenentnahme, Inventur, etc.)
     # ============================================================================

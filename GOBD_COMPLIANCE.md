@@ -26,8 +26,8 @@ Dieses System erfüllt die Anforderungen der **GoBD (Grundsätze zur ordnungsmä
 6. [Migration bestehender Daten](#6-migration-bestehender-daten)
 7. [Verfahrensdokumentation](#7-verfahrensdokumentation)
 8. [Bestandsanpassungen (Eigenentnahme, Inventur)](#8-bestandsanpassungen-eigenentnahme-inventur)
-9. [Backup-Strategie](#9-backup-strategie)
-10. [Datenschutz (DSGVO)](#10-datenschutz-dsgvo)
+9. [Datenschutz (DSGVO) & Anonymisierung](#9-datenschutz-dsgvo--anonymisierung)
+10. [Backup-Strategie](#10-backup-strategie)
 11. [Betriebsprüfung (Finanzamt)](#11-betriebsprüfung-finanzamt)
 12. [Checkliste: GoBD-Konformität](#12-checkliste-gobd-konformität)
 
@@ -640,7 +640,354 @@ Keine steuerliche Relevanz, aber Dokumentation notwendig:
 
 ---
 
-## 9. Backup-Strategie
+## 9. Datenschutz (DSGVO) & Anonymisierung
+
+### 9.1 Der Konflikt: GoBD vs. DSGVO
+
+Die Datenschutz-Grundverordnung (DSGVO) und die GoBD-Aufbewahrungspflichten stehen in einem scheinbaren Widerspruch:
+
+- **DSGVO Art. 17**: Recht auf Löschung personenbezogener Daten
+- **§ 147 AO**: 10 Jahre Aufbewahrungspflicht für Rechnungen
+- **GoBD**: Unveränderbarkeit steuerrelevanter Belege
+
+**Lösung:** Anonymisierung statt Löschung
+
+### 9.2 Rechtliche Grundlage
+
+**DSGVO Art. 17 Abs. 3 Buchstabe b:**
+> Das Recht auf Löschung gilt nicht, soweit die Verarbeitung erforderlich ist zur Erfüllung einer rechtlichen Verpflichtung [...], der der Verantwortliche unterliegt.
+
+**Interpretation:**
+- Rechnungen müssen 10 Jahre aufbewahrt werden (§ 147 AO)
+- Dies ist eine **rechtliche Verpflichtung**
+- **Kundenstammdaten** können anonymisiert werden
+- **Rechnungsdaten** müssen unverändert bleiben (GoBD-Hash!)
+
+### 9.3 Implementierung: Denormalisierte Datenstruktur
+
+Das System verwendet eine **denormalisierte Speicherung** der Kundendaten in Rechnungen:
+
+```sql
+-- Kunde (kann anonymisiert werden)
+CREATE TABLE customers (
+    id SERIAL PRIMARY KEY,
+    company_name VARCHAR(200),
+    first_name VARCHAR(100),
+    last_name VARCHAR(100),
+    email VARCHAR(120),
+    phone VARCHAR(50),
+    address TEXT,
+    tax_id VARCHAR(50)
+);
+
+-- Rechnung (speichert Kundendaten redundant)
+CREATE TABLE invoices (
+    id SERIAL PRIMARY KEY,
+    customer_id INTEGER REFERENCES customers(id),
+    -- Denormalisiert: Kundendaten werden KOPIERT
+    customer_company VARCHAR(200),
+    customer_name VARCHAR(200),
+    customer_address TEXT,
+    customer_email VARCHAR(120),
+    customer_phone VARCHAR(50),
+    customer_tax_id VARCHAR(50),
+    -- ... weitere Felder
+    data_hash VARCHAR(64) NOT NULL  -- SHA-256 Hash ALLER Daten
+);
+```
+
+**Vorteil dieser Struktur:**
+- ✅ Kundenstamm kann anonymisiert werden
+- ✅ Rechnungen bleiben unverändert (Hash bleibt gültig)
+- ✅ GoBD-Konformität erhalten
+- ✅ DSGVO-Konformität erfüllt
+
+### 9.4 Anonymisierungs-Funktion
+
+**Datei:** `models.py` - Klasse `Customer`
+
+```python
+def anonymize_gdpr(self):
+    """
+    Anonymisiert Kundendaten gemäß DSGVO Art. 17.
+    
+    WICHTIG: Bestehende Rechnungen bleiben unverändert (GoBD-konform).
+    Die denormalisierten Kundendaten in den Rechnungen (customer_company, 
+    customer_name, etc.) werden NICHT verändert, um die Manipulationssicherheit
+    (data_hash) zu erhalten und die steuerrechtlichen Aufbewahrungspflichten
+    (§147 AO - 10 Jahre) zu erfüllen.
+    
+    DSGVO Art. 17 Abs. 3 Buchstabe b: Das Recht auf Löschung gilt nicht,
+    wenn die Verarbeitung zur Erfüllung einer rechtlichen Verpflichtung
+    erforderlich ist.
+    """
+    self.first_name = "Anonymisiert"
+    self.last_name = f"Kunde #{self.id}"
+    self.email = f"deleted_{self.id}@anonymized.local"
+    self.phone = None
+    self.address = None
+    self.tax_id = None
+    self.company_name = f"Gelöschter Kunde #{self.id}"
+
+@property
+def is_anonymized(self):
+    """Prüft ob Kunde anonymisiert wurde"""
+    return self.email and self.email.startswith('deleted_') and '@anonymized.local' in self.email
+```
+
+### 9.5 Route-Implementierung
+
+**Datei:** `app.py`
+
+**Route:** `POST /customers/<id>/anonymize`
+
+```python
+@app.route('/customers/<int:customer_id>/anonymize', methods=['POST'])
+@login_required
+def anonymize_customer(customer_id):
+    customer = Customer.query.get_or_404(customer_id)
+    
+    # Bereits anonymisiert?
+    if customer.is_anonymized:
+        flash('Dieser Kunde wurde bereits anonymisiert.', 'warning')
+        return redirect(url_for('list_customers'))
+    
+    # Anzahl verknüpfter Rechnungen ermitteln
+    invoice_count = Invoice.query.filter_by(customer_id=customer_id).count()
+    
+    # Audit-Log
+    app.logger.info(
+        f"DSGVO-Anonymisierung durchgeführt | "
+        f"Kunde ID: {customer_id} | "
+        f"Original: {customer.display_name} ({customer.email}) | "
+        f"Benutzer: {current_user.username} | "
+        f"Verknüpfte Rechnungen: {invoice_count} (bleiben unverändert gemäß §147 AO)"
+    )
+    
+    # Anonymisierung durchführen
+    customer.anonymize_gdpr()
+    db.session.commit()
+    
+    if invoice_count > 0:
+        flash(
+            f'Kunde erfolgreich anonymisiert. '
+            f'{invoice_count} bestehende Rechnung(en) bleiben aus steuerrechtlichen Gründen '
+            f'(§147 AO - 10 Jahre Aufbewahrungspflicht) unverändert und zeigen weiterhin die Originaldaten. '
+            f'Dies ist DSGVO-konform gemäß Art. 17 Abs. 3 Buchstabe b.',
+            'success'
+        )
+```
+
+### 9.6 Benutzeroberfläche
+
+#### Kundenliste
+**Datei:** `templates/customers/list.html`
+
+Anonymisierte Kunden werden markiert:
+```html
+<td>
+    <strong>{{ customer.display_name }}</strong>
+    {% if customer.is_anonymized %}
+    <span style="color: #95a5a6; font-size: 0.85rem; margin-left: 0.5rem;" 
+          title="DSGVO-anonymisiert">
+        🔒 Anonymisiert
+    </span>
+    {% endif %}
+</td>
+```
+
+#### Kundendetails
+**Datei:** `templates/customers/view.html`
+
+**Anonymisierungs-Button:**
+```html
+{% if not customer.is_anonymized %}
+<button type="button" class="btn" style="background: #e74c3c; color: white;" 
+        onclick="document.getElementById('anonymize-modal').style.display='block'">
+    DSGVO Anonymisieren
+</button>
+{% endif %}
+```
+
+**Warnung nach Anonymisierung:**
+```html
+{% if customer.is_anonymized %}
+<div class="alert alert-warning">
+    <strong>⚠️ Anonymisiert:</strong> Dieser Kunde wurde gemäß DSGVO anonymisiert. 
+    Die personenbezogenen Daten wurden gelöscht.
+</div>
+{% endif %}
+```
+
+**Bestätigungs-Modal:**
+- Zeigt Anzahl verknüpfter Rechnungen
+- Erklärt, was anonymisiert wird
+- Erklärt, was unverändert bleibt
+- Rechtliche Grundlage (DSGVO Art. 17 Abs. 3b)
+- Warnung vor Unumkehrbarkeit
+- Bestätigung erforderlich
+
+### 9.7 Verfahrensdokumentation
+
+#### Prozess: DSGVO-Löschantrag bearbeiten
+
+1. **Anfrage erhalten**
+   - Kunde stellt Löschantrag gemäß DSGVO Art. 17
+
+2. **Prüfung**
+   - Bestehen Rechnungen für diesen Kunden?
+   - Sind diese noch innerhalb der 10-Jahres-Frist?
+
+3. **Anonymisierung durchführen**
+   - Navigation: **Kunden** → Kunde auswählen → "DSGVO Anonymisieren"
+   - Modal erscheint mit Informationen
+   - Bestätigung klicken
+   - ➜ Kundenstammdaten werden anonymisiert
+   - ➜ Rechnungen bleiben unverändert
+
+4. **Bestätigung an Kunde**
+   - E-Mail: "Ihre personenbezogenen Daten wurden aus unserem Kundenstamm gelöscht."
+   - **Wichtig:** Erklären, dass Rechnungen aus steuerrechtlichen Gründen aufbewahrt werden müssen
+
+5. **Audit-Log-Eintrag**
+   - Wird automatisch erstellt
+   - Enthält: Original-Daten (Hash), Datum, Benutzer, Anzahl Rechnungen
+
+#### Beispiel-E-Mail an Kunden
+
+```
+Betreff: Ihre DSGVO-Löschungsanfrage
+
+Sehr geehrte/r [Kunde],
+
+wir haben Ihre Löschungsanfrage vom [Datum] erhalten und bearbeitet.
+
+✅ GELÖSCHT:
+- Ihre Kontaktdaten (Name, Adresse, E-Mail, Telefon)
+- Ihr Kundenprofil wurde anonymisiert
+
+ℹ️ AUFBEWAHRUNGSPFLICHT:
+Gemäß § 147 AO (Abgabenordnung) sind wir verpflichtet, Rechnungen 
+10 Jahre lang aufzubewahren. Diese enthalten weiterhin Ihre Daten 
+zum Zeitpunkt der Rechnungsstellung.
+
+RECHTLICHE GRUNDLAGE:
+DSGVO Art. 17 Abs. 3 Buchstabe b: Das Recht auf Löschung gilt nicht, 
+wenn die Verarbeitung zur Erfüllung einer rechtlichen Verpflichtung 
+erforderlich ist.
+
+Bei Fragen stehen wir Ihnen gerne zur Verfügung.
+
+Mit freundlichen Grüßen
+[Ihre Firma]
+```
+
+### 9.8 Was wird anonymisiert?
+
+#### ✅ Kundenstammdaten (Tabelle `customers`)
+
+| Feld | Vorher | Nachher |
+|------|--------|---------|
+| `first_name` | "Hans" | "Anonymisiert" |
+| `last_name` | "Müller" | "Kunde #123" |
+| `email` | "hans@example.com" | "deleted_123@anonymized.local" |
+| `phone` | "+49 123 456789" | `NULL` |
+| `address` | "Musterstr. 1, ..." | `NULL` |
+| `tax_id` | "DE123456789" | `NULL` |
+| `company_name` | "Müller GmbH" | "Gelöschter Kunde #123" |
+
+#### ❌ NICHT anonymisiert (bleiben unverändert)
+
+- **Rechnungen** (Tabelle `invoices`)
+  - `customer_company` - Originalwert
+  - `customer_name` - Originalwert
+  - `customer_address` - Originalwert
+  - `customer_email` - Originalwert
+  - `customer_phone` - Originalwert
+  - `customer_tax_id` - Originalwert
+  - **`data_hash`** - Bleibt gültig! ✅
+
+- **Rechnungs-PDFs**
+  - Zeigen Originaldaten
+  - PDF-Hash bleibt gültig
+
+- **Status-Logs**
+  - Keine personenbezogenen Daten enthalten
+
+- **Bestandsanpassungen**
+  - User-ID bleibt (technische Zuordnung)
+
+### 9.9 Hash-Integrität nach Anonymisierung
+
+**Kritischer Punkt:** Der `data_hash` darf NICHT brechen!
+
+**Warum funktioniert es:**
+
+1. **Hash wird aus Rechnungsdaten berechnet**
+   ```python
+   # models.py - Invoice.calculate_hash()
+   hash_data = {
+       'invoice_number': self.invoice_number,
+       'customer_company': self.customer_company,  # Denormalisiert!
+       'customer_name': self.customer_name,        # Denormalisiert!
+       'customer_address': self.customer_address,  # Denormalisiert!
+       # ... weitere Felder
+   }
+   ```
+
+2. **Kundenstamm wird NICHT verwendet**
+   - Hash referenziert NICHT `customers.first_name`
+   - Hash referenziert NUR `invoices.customer_name`
+   - Diese Felder werden bei Anonymisierung NICHT geändert
+
+3. **Ergebnis:**
+   - ✅ Kundenstamm: Anonymisiert
+   - ✅ Rechnung: Unverändert
+   - ✅ Hash: Gültig
+   - ✅ GoBD: Erfüllt
+   - ✅ DSGVO: Erfüllt
+
+### 9.10 Betriebsprüfung & Datenschutz
+
+**Frage des Finanzamts:** "Warum sind hier anonymisierte Kunden?"
+
+**Antwort:**
+> "Wir haben DSGVO-Löschanträge erhalten. Die Kundenstammdaten wurden anonymisiert, 
+> aber alle steuerrelevanten Rechnungen sind vollständig erhalten und durch SHA-256 
+> Hashes geschützt. Die Rechnungen zeigen weiterhin die korrekten Kundendaten zum 
+> Zeitpunkt der Rechnungsstellung."
+
+**Frage der Datenschutzbehörde:** "Warum speichern Sie noch Kundendaten in Rechnungen?"
+
+**Antwort:**
+> "Diese Daten unterliegen der 10-jährigen Aufbewahrungspflicht gemäß § 147 AO. 
+> DSGVO Art. 17 Abs. 3 Buchstabe b erlaubt die Speicherung zur Erfüllung rechtlicher 
+> Verpflichtungen. Personenbezogene Daten im Kundenstamm wurden gelöscht."
+
+### 9.11 Weitere personenbezogene Daten im System
+
+| Daten | Speicherort | DSGVO-Behandlung |
+|-------|-------------|------------------|
+| Benutzerdaten (Mitarbeiter) | `users` | Anonymisierung bei Kündigung möglich |
+| IP-Adressen (Login-Logs) | `security.log` | Automatische Löschung nach 90 Tagen (empfohlen) |
+| E-Mail-Archiv | `email_archive` | Automatische Löschung nach 30 Tagen (empfohlen) |
+| PDF-Archiv-Metadaten | `invoice_pdf_archive` | Keine personenbezogenen Daten (nur Hashes) |
+
+### 9.12 Checkliste: DSGVO-Konformität
+
+| Anforderung | Status | Implementierung |
+|-------------|--------|-----------------|
+| ✅ Recht auf Auskunft (Art. 15) | Erfüllt | Kundendetails exportierbar |
+| ✅ Recht auf Berichtigung (Art. 16) | Erfüllt | Kunde bearbeiten (Stammdaten) |
+| ✅ Recht auf Löschung (Art. 17) | Erfüllt | Anonymisierungsfunktion |
+| ✅ Aufbewahrungspflicht (§ 147 AO) | Erfüllt | Rechnungen unverändert |
+| ✅ Hash-Integrität | Erfüllt | Denormalisierte Struktur |
+| ✅ Audit-Trail | Erfüllt | Anonymisierung wird protokolliert |
+| ✅ Rechtsgrundlage dokumentiert | Erfüllt | DSGVO Art. 17 Abs. 3b |
+
+---
+
+## 10. Backup-Strategie
 
 ### Empfohlene Maßnahmen
 
@@ -697,7 +1044,7 @@ Keine steuerliche Relevanz, aber Dokumentation notwendig:
 
 ---
 
-## 10. Betriebsprüfung (Finanzamt)
+## 11. Betriebsprüfung (Finanzamt)
 
 ### Z1 - Datenzugriff
 Das System ermöglicht den gesetzlich geforderten Datenzugriff:
@@ -746,7 +1093,7 @@ Zusätzlich bereithalten:
 
 ---
 
-## 11. Checkliste: GoBD-Konformität
+## 12. Checkliste: GoBD-Konformität
 
 | Anforderung | Status | Implementierung |
 |-------------|--------|-----------------|
@@ -762,10 +1109,12 @@ Zusätzlich bereithalten:
 | ✅ Prüfbarkeit | Erfüllt | Vollständige Dokumentation |
 | ✅ Entwurfsverwaltung | Erfüllt | Löschung nur bei Status `draft` |
 | ✅ Bestandsanpassungen | Erfüllt | Eigenentnahme mit Beleg-Nummern, PDF-Export |
+| ✅ DSGVO-Konformität | Erfüllt | Anonymisierung ohne Hash-Verletzung |
+| ✅ Datenschutz-Dokumentation | Erfüllt | Art. 17 Abs. 3b dokumentiert |
 
 ---
 
-## 12. Technische Details
+## 13. Technische Details
 
 ### Verwendete Hash-Algorithmen
 - **SHA-256** für Rechnungsdaten und PDFs
@@ -785,7 +1134,7 @@ Zusätzlich bereithalten:
 
 ---
 
-## 13. Erweiterungsmöglichkeiten
+## 14. Erweiterungsmöglichkeiten
 
 ### Zukünftige Verbesserungen
 
@@ -818,7 +1167,7 @@ Zusätzlich bereithalten:
 
 ---
 
-## 14. Häufige Fragen (FAQ)
+## 15. Häufige Fragen (FAQ)
 
 **Q: Kann ich eine Rechnung löschen?**  
 A: **Entwürfe (Status `draft`) JA** - Diese sind noch nicht geschäftsrelevant und können gelöscht werden. **Versendete/Bezahlte Rechnungen NEIN** - Diese müssen 10 Jahre aufbewahrt werden. Verwenden Sie stattdessen die Stornorechnung.
@@ -845,7 +1194,7 @@ A: Verwenden Sie die `verify_pdf()` Methode oder berechnen Sie den SHA-256 Hash 
 
 ---
 
-## 15. Kontakt & Support
+## 16. Kontakt & Support
 
 **Entwickler:** [Ihr Name]  
 **Version:** 1.0  
@@ -858,7 +1207,7 @@ A: Verwenden Sie die `verify_pdf()` Methode oder berechnen Sie den SHA-256 Hash 
 
 ---
 
-## 16. Lizenz & Haftungsausschluss
+## 17. Lizenz & Haftungsausschluss
 
 Dieses System wurde nach bestem Wissen und Gewissen entwickelt, um die GoBD-Anforderungen zu erfüllen. Eine rechtliche Prüfung durch einen Steuerberater wird empfohlen.
 

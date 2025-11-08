@@ -13,9 +13,22 @@
     </h1>
     <div>
         <a href="{{ url_for('edit_customer', customer_id=customer.id) }}" class="btn btn-primary" style="margin-right: 0.5rem;">Bearbeiten</a>
+        {% if not customer.is_anonymized %}
+        <button type="button" class="btn" style="background: #e74c3c; color: white; margin-right: 0.5rem;" 
+                onclick="document.getElementById('anonymize-modal').style.display='block'">
+            DSGVO Anonymisieren
+        </button>
+        {% endif %}
         <a href="{{ url_for('list_customers') }}" class="btn" style="background: #95a5a6; color: white;">Zurück</a>
     </div>
 </div>
+
+{% if customer.is_anonymized %}
+<div class="alert alert-warning" style="margin-bottom: 1.5rem;">
+    <strong>⚠️ Anonymisiert:</strong> Dieser Kunde wurde gemäß DSGVO anonymisiert. 
+    Die personenbezogenen Daten wurden gelöscht.
+</div>
+{% endif %}
 
 <div class="card">
     <h2>Kundendaten</h2>
@@ -87,4 +100,54 @@
         <p>Noch keine Rechnungen für diesen Kunden.</p>
     {% endif %}
 </div>
+
+<!-- DSGVO Anonymisierungs-Modal -->
+<div id="anonymize-modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
+    <div style="background-color: white; margin: 10% auto; padding: 2rem; border-radius: 8px; width: 90%; max-width: 600px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <h2 style="color: #e74c3c; margin-bottom: 1rem;">⚠️ DSGVO-Anonymisierung</h2>
+        
+        <div class="alert alert-warning" style="margin-bottom: 1.5rem;">
+            <p style="margin-bottom: 1rem;"><strong>Sie sind dabei, diesen Kunden zu anonymisieren.</strong></p>
+            
+            <p style="margin-bottom: 0.5rem;"><strong>Was wird anonymisiert:</strong></p>
+            <ul style="margin-bottom: 1rem;">
+                <li>Name, Firma, E-Mail, Telefon</li>
+                <li>Adresse und Steuernummer</li>
+                <li>Alle personenbezogenen Daten im Kundenstamm</li>
+            </ul>
+            
+            <p style="margin-bottom: 0.5rem;"><strong>Was bleibt unverändert:</strong></p>
+            <ul style="margin-bottom: 1rem;">
+                <li><strong>Alle bestehenden Rechnungen</strong> ({{ customer.invoices|length }} Stück)</li>
+                <li>Die Rechnungen zeigen weiterhin die <strong>Originaldaten</strong></li>
+                <li>Dies ist erforderlich gemäß <strong>§147 AO</strong> (10 Jahre Aufbewahrungspflicht)</li>
+            </ul>
+            
+            <div style="background: #f8f9fa; padding: 1rem; border-radius: 4px; border-left: 4px solid #3498db;">
+                <p style="margin: 0; font-size: 0.9rem;">
+                    <strong>Rechtliche Grundlage:</strong><br>
+                    DSGVO Art. 17 Abs. 3 Buchstabe b: Das Recht auf Löschung gilt nicht, 
+                    wenn die Verarbeitung zur Erfüllung einer rechtlichen Verpflichtung erforderlich ist.
+                </p>
+            </div>
+        </div>
+        
+        <p style="margin-bottom: 1.5rem; color: #e74c3c; font-weight: bold;">
+            Diese Aktion kann nicht rückgängig gemacht werden!
+        </p>
+        
+        <form method="POST" action="{{ url_for('anonymize_customer', customer_id=customer.id) }}">
+            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button type="button" class="btn" style="background: #95a5a6; color: white;" 
+                        onclick="document.getElementById('anonymize-modal').style.display='none'">
+                    Abbrechen
+                </button>
+                <button type="submit" class="btn" style="background: #e74c3c; color: white;">
+                    Jetzt anonymisieren
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 {% endblock %}

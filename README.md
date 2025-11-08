@@ -190,7 +190,9 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 3. PostgreSQL-Datenbank erstellen
+### 3. Datenbank erstellen
+
+#### PostgreSQL
 
 ```bash
 # Als postgres-User
@@ -202,6 +204,42 @@ CREATE USER rechnungen_user WITH PASSWORD 'sicheres_passwort';
 GRANT ALL PRIVILEGES ON DATABASE rechnungen TO rechnungen_user;
 \q
 ```
+
+#### MySQL
+
+```bash
+# Als root-User anmelden
+sudo mysql
+
+# Oder mit Passwort:
+mysql -u root -p
+
+# In der MySQL-Konsole:
+CREATE DATABASE rechnungen CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'rechnungen_user'@'localhost' IDENTIFIED BY 'sicheres_passwort';
+GRANT ALL PRIVILEGES ON rechnungen.* TO 'rechnungen_user'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;
+```
+
+#### MariaDB
+
+```bash
+# Als root-User anmelden
+sudo mariadb
+
+# Oder mit Passwort:
+mariadb -u root -p
+
+# In der MariaDB-Konsole:
+CREATE DATABASE rechnungen CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'rechnungen_user'@'localhost' IDENTIFIED BY 'sicheres_passwort';
+GRANT ALL PRIVILEGES ON rechnungen.* TO 'rechnungen_user'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;
+```
+
+**Hinweis:** MySQL/MariaDB verwenden `utf8mb4` für vollständige Unicode-Unterstützung (inkl. Emojis).
 
 ### 4. Umgebungsvariablen konfigurieren
 

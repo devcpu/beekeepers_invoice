@@ -727,3 +727,55 @@ class InvoicePdfArchive(db.Model):
             'archived_by': self.archived_by
         }
 
+
+
+class StockAdjustment(db.Model):
+    """Bestandsanpassungen (Eigenentnahme, Inventur, etc.) - GoBD-konform dokumentiert"""
+    __tablename__ = 'stock_adjustments'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # Produkt
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
+    product = db.relationship('Product', backref='stock_adjustments')
+    
+    # Anpassung
+    quantity = db.Column(db.Integer, nullable=False)  # Positiv = Zugang, Negativ = Abgang
+    old_stock = db.Column(db.Integer, nullable=False)  # Bestand vor Anpassung
+    new_stock = db.Column(db.Integer, nullable=False)  # Bestand nach Anpassung
+    
+    # Typ der Anpassung
+    adjustment_type = db.Column(
+        db.Enum('eigenentnahme', 'geschenk', 'verderb', 'bruch', 'inventur_plus', 'inventur_minus', 'korrektur', 'sonstiges', name='adjustment_type_enum'),
+        nullable=False
+    )
+    
+    # Dokumentation
+    reason = db.Column(db.Text, nullable=False)  # Pflichtfeld für GoBD
+    
+    # Tracking
+    adjusted_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    adjusted_by_user = db.relationship('User', backref='stock_adjustments')
+    adjusted_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    
+    # Optional: Beleg-Nummer für Eigenentnahme (für Finanzamt)
+    document_number = db.Column(db.String(50), unique=True, nullable=True)
+    
+    def __repr__(self):
+        return f'<StockAdjustment Product:{self.product_id} Qty:{self.quantity} Type:{self.adjustment_type}>'
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'product_id': self.product_id,
+            'product_name': self.product.name if self.product else None,
+            'quantity': self.quantity,
+            'old_stock': self.old_stock,
+            'new_stock': self.new_stock,
+            'adjustment_type': self.adjustment_type,
+            'reason': self.reason,
+            'adjusted_by': self.adjusted_by,
+            'adjusted_by_username': self.adjusted_by_user.username if self.adjusted_by_user else None,
+            'adjusted_at': self.adjusted_at.isoformat() if self.adjusted_at else None,
+            'document_number': self.document_number
+        }

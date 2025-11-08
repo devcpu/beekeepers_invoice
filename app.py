@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_file, session
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from config import config
-from models import db, Customer, Invoice, LineItem, Product, PaymentCheck, Reminder, DeliveryNote, DeliveryNoteItem, ConsignmentStock, InvoiceStatusLog, InvoicePdfArchive, User
+from models import db, Customer, Invoice, LineItem, Product, PaymentCheck, Reminder, DeliveryNote, DeliveryNoteItem, ConsignmentStock, InvoiceStatusLog, InvoicePdfArchive, User, StockAdjustment
 from email_service import mail
 from datetime import datetime, timedelta
 from decimal import Decimal
@@ -1285,6 +1285,89 @@ Mit freundlichen Grüßen
                 flash(f'Fehler beim Aktualisieren: {str(e)}', 'error')
         
         return render_template('customers/edit.html', customer=customer)
+    
+    # ============================================================================
+    # Stock Adjustments - Bestandsanpassungen (Eigenentnahme, Inventur, etc.)
+    # ============================================================================
+    
+    @app.route('/stock-adjustments')
+    @login_required
+    def list_stock_adjustments():
+        """Liste aller Bestandsanpassungen"""
+        adjustments = StockAdjustment.query.order_by(StockAdjustment.adjusted_at.desc()).limit(100).all()
+        return render_template('stock_adjustments/list.html', adjustments=adjustments)
+    
+    @app.route('/stock-adjustments/create', methods=['GET', 'POST'])
+    @login_required
+    def create_stock_adjustment():
+        """Neue Bestandsanpassung erstellen"""
+        if request.method == 'POST':
+            try:
+                product_id = request.form.get('product_id')
+                quantity = int(request.form.get('quantity'))
+                adjustment_type = request.form.get('adjustment_type')
+                reason = request.form.get('reason')
+                
+                if not all([product_id, quantity, adjustment_type, reason]):
+                    flash('Alle Felder müssen ausgefüllt werden.', 'error')
+                    return redirect(url_for('create_stock_adjustment'))
+                
+                product = Product.query.get(int(product_id))
+                if not product:
+                    flash('Produkt nicht gefunden.', 'error')
+                    return redirect(url_for('create_stock_adjustment'))
+                
+                old_stock = product.number
+                new_stock = old_stock + quantity
+                
+                if new_stock < 0:
+                    flash(f'Fehler: Bestand würde negativ werden! Aktuell: {old_stock}, Änderung: {quantity}', 'error')
+                    return redirect(url_for('create_stock_adjustment'))
+                
+                # Generiere Belegnummer für Eigenentnahmen
+                document_number = None
+                if adjustment_type in ['eigenentnahme', 'geschenk']:
+                    today = datetime.now().date()
+                    prefix = f"ENT-{today.strftime('%Y%m%d')}"
+                    last_doc = StockAdjustment.query.filter(
+                        StockAdjustment.document_number.like(f"{prefix}%")
+                    ).order_by(StockAdjustment.document_number.desc()).first()
+                    
+                    if last_doc:
+                        last_num = int(last_doc.document_number.split('-')[-1])
+                        next_num = last_num + 1
+                    else:
+                        next_num = 1
+                    
+                    document_number = f"{prefix}-{next_num:04d}"
+                
+                # Erstelle Anpassung
+                adjustment = StockAdjustment(
+                    product_id=product.id,
+                    quantity=quantity,
+                    old_stock=old_stock,
+                    new_stock=new_stock,
+                    adjustment_type=adjustment_type,
+                    reason=reason,
+                    adjusted_by=current_user.id,
+                    document_number=document_number
+                )
+                
+                # Bestand aktualisieren
+                product.number = new_stock
+                
+                db.session.add(adjustment)
+                db.session.commit()
+                
+                flash(f'✅ Bestandsanpassung erfolgreich erstellt! Neuer Bestand: {new_stock}', 'success')
+                return redirect(url_for('list_stock_adjustments'))
+                
+            except Exception as e:
+                db.session.rollback()
+                flash(f'Fehler beim Erstellen: {str(e)}', 'error')
+        
+        products = Product.query.filter_by(active=True).order_by(Product.name).all()
+        return render_template('stock_adjustments/create.html', products=products)
     
     @app.route('/products')
     @login_required

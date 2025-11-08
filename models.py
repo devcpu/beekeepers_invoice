@@ -48,7 +48,8 @@ class User(UserMixin, db.Model):
     # type3_non_ust_pwa: Nicht USt.-pflichtig mit PWA (Bestandsumbuchung, keine Rechnung)
     # type4_owner_market: Owner auf Markt (Bestandsumbuchung + BAR-Rechnung)
     reseller_type = db.Column(
-        db.Enum('none', 'type1_ust_extern', 'type2_non_ust_extern', 'type3_non_ust_pwa', 'type4_owner_market', name='reseller_type_enum'),
+        db.Enum('none', 'type1_ust_extern', 'type2_non_ust_extern', 'type3_non_ust_pwa', 'type4_owner_market', 
+                name='reseller_type_enum', native_enum=False),
         default='none',
         nullable=False
     )
@@ -746,7 +747,8 @@ class StockAdjustment(db.Model):
     
     # Typ der Anpassung
     adjustment_type = db.Column(
-        db.Enum('eigenentnahme', 'geschenk', 'verderb', 'bruch', 'inventur_plus', 'inventur_minus', 'korrektur', 'sonstiges', name='adjustment_type_enum'),
+        db.Enum('eigenentnahme', 'geschenk', 'verderb', 'bruch', 'inventur_plus', 'inventur_minus', 'korrektur', 'sonstiges', 
+                name='adjustment_type_enum', native_enum=False),
         nullable=False
     )
     

@@ -41,10 +41,17 @@ Eine webbasierte Rechnungsverwaltung mit manipulationssicherer Datenspeicherung,
 - SQL-Injection/XSS-Erkennung
 - Rate-Limiting
 
+✅ **Alembic Migrationen**
+- Datenbank-agnostisch (PostgreSQL, MySQL, SQLite)
+- Automatische Schema-Generierung aus Models
+- Versionierung und Rollback
+- Team-fähig
+
 ## Technologie-Stack
 
 - **Backend:** Flask 3.0, SQLAlchemy, Flask-Login, PyJWT
-- **Datenbank:** PostgreSQL
+- **Datenbank:** PostgreSQL, MySQL, MariaDB, SQLite (via Alembic)
+- **Migrationen:** Alembic 1.13
 - **PDF-Generierung:** ReportLab
 - **E-Mail:** Python IMAP, Flask-Mail
 - **Security:** CrowdSec, 2FA (TOTP)
@@ -253,8 +260,11 @@ JWT_SECRET_KEY=ein-anderer-sehr-sicherer-schluessel
 # Virtuelle Umgebung aktivieren (falls nicht aktiv)
 source venv/bin/activate
 
-# Datenbank-Tabellen erstellen
-flask init-db
+# Datenbank-Schema mit Alembic erstellen
+alembic upgrade head
+
+# ODER: Alt (flask init-db funktioniert noch, aber Alembic ist empfohlen)
+# flask init-db
 
 # Optional: Testdaten einfügen
 flask seed-db
@@ -1319,12 +1329,17 @@ class MeinShopEmailParser(EmailInvoiceParser):
 Erweitern Sie die Modelle in `models.py` und führen Sie eine Migration durch:
 
 ```bash
-# Mit Alembic für Datenbankmigrationen
-pip install alembic
-alembic init migrations
-alembic revision --autogenerate -m "Add new field"
+# 1. Feld in models.py hinzufügen
+# Beispiel: birthday = db.Column(db.Date, nullable=True) in Customer-Klasse
+
+# 2. Migration generieren
+alembic revision --autogenerate -m "Add customer birthday field"
+
+# 3. Migration anwenden
 alembic upgrade head
 ```
+
+**Detaillierte Anleitung:** Siehe [MIGRATIONS.md](MIGRATIONS.md)
 
 ## Fehlerbehebung
 

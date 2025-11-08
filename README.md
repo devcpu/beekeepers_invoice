@@ -270,6 +270,50 @@ alembic upgrade head
 flask seed-db
 ```
 
+**Datenbankwechsel:**
+
+Um die Datenbank zu wechseln (z.B. von PostgreSQL zu MySQL), ändern Sie einfach die `DATABASE_URL` in `.env`:
+
+```bash
+# PostgreSQL (Standard)
+DATABASE_URL=postgresql://user:pass@localhost:5432/rechnungen
+
+# MySQL/MariaDB
+DATABASE_URL=mysql+pymysql://user:pass@localhost:3306/rechnungen
+
+# SQLite (für Tests)
+DATABASE_URL=sqlite:///rechnungen.db
+```
+
+Dann Migration anwenden:
+```bash
+alembic upgrade head
+```
+
+**Wichtige Alembic-Befehle:**
+
+```bash
+# Migration erstellen (nach Änderungen in models.py)
+alembic revision --autogenerate -m "Beschreibung der Änderung"
+
+# Migration anwenden
+alembic upgrade head
+
+# Migration rückgängig machen (1 Schritt zurück)
+alembic downgrade -1
+
+# Aktuelle Version anzeigen
+alembic current
+
+# Migrations-Historie anzeigen
+alembic history
+
+# Bestehende DB als migriert markieren (bei erster Alembic-Nutzung)
+alembic stamp head
+```
+
+**Siehe auch:** [MIGRATIONS.md](MIGRATIONS.md) für ausführliche Dokumentation
+
 ### 6. Anwendung starten
 
 ```bash

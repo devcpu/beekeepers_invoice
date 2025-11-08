@@ -5,7 +5,6 @@ Adds the ability for admins to enforce 2FA for specific users.
 """
 
 from app import create_app, db
-from models import User
 
 
 def upgrade():

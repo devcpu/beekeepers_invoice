@@ -7,7 +7,7 @@ import json
 import os
 
 from app import create_app
-from models import Invoice, db
+from models import Invoice
 
 
 def debug_invoice_hash():

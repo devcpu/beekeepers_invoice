@@ -4,8 +4,6 @@ Migration: Regeneriert alle Invoice-Hashes mit korrektem Format
 """
 import os
 
-from sqlalchemy import text
-
 from app import create_app
 from models import Invoice, db
 

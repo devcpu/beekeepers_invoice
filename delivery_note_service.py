@@ -1,5 +1,4 @@
 import os
-from datetime import datetime
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4

@@ -769,7 +769,7 @@ class InvoicePdfArchive(db.Model):
                 pdf_data = f.read()
                 calculated_hash = hashlib.sha256(pdf_data).hexdigest()
                 return calculated_hash == self.pdf_hash
-        except Exception as e:
+        except Exception:
             return False
 
     def to_dict(self):

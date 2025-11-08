@@ -1,0 +1,544 @@
+{% extends "base.html" %}
+
+{% block title %}Neue Rechnung erstellen{% endblock %}
+
+{% block extra_css %}
+<style>
+    .line-items-container {
+        margin-top: 1rem;
+    }
+    
+    .line-item {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr 1fr auto;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+        align-items: end;
+    }
+    
+    .line-item input {
+        width: 100%;
+    }
+    
+    .btn-remove {
+        background: #e74c3c;
+        color: white;
+        border: none;
+        padding: 0.6rem;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    
+    .totals-section {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 4px;
+        margin-top: 2rem;
+    }
+    
+    .total-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+    }
+    
+    .total-row.final {
+        font-size: 1.2rem;
+        font-weight: bold;
+        border-top: 2px solid #2c3e50;
+        padding-top: 0.5rem;
+        margin-top: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Neue Rechnung erstellen</h2>
+    
+    <form method="POST" id="invoiceForm">
+        <h3 style="margin-top: 1.5rem; margin-bottom: 1rem;">Kundendaten</h3>
+        
+        <div class="form-group">
+            <label for="customer_search">Kundensuche</label>
+            <input type="text" id="customer_search" 
+                   placeholder="Suche nach Firma, Name oder E-Mail (mind. 3 Zeichen)..."
+                   autocomplete="off">
+            <div id="search_results" style="display: none; position: relative;">
+                <div id="results_list" style="position: absolute; z-index: 1000; width: 100%; background: white; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-height: 300px; overflow-y: auto;"></div>
+            </div>
+            <small style="color: #7f8c8d;">Geben Sie mindestens 3 Zeichen ein, um nach einem Kunden zu suchen</small>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="company_name">Firma</label>
+                <input type="text" name="company_name" id="company_name">
+            </div>
+            
+            <div class="form-group">
+                <label for="first_name">Vorname</label>
+                <input type="text" name="first_name" id="first_name">
+            </div>
+            
+            <div class="form-group">
+                <label for="last_name">Nachname</label>
+                <input type="text" name="last_name" id="last_name">
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="customer_email">E-Mail</label>
+                <input type="email" name="customer_email" id="customer_email" 
+                       pattern="[^@\s]+@[^@\s]+\.[^@\s]+" 
+                       title="Gültige E-Mail-Adresse eingeben"
+                       placeholder="kunde@example.de">
+            </div>
+            
+            <div class="form-group">
+                <label for="phone">Telefon</label>
+                <input type="tel" name="phone" id="phone">
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="tax_id">Steuernummer</label>
+                <input type="text" name="tax_id" id="tax_id">
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="address">Adresse</label>
+            <textarea name="address" id="address" rows="3"></textarea>
+        </div>
+        
+        <h3 style="margin-top: 2rem; margin-bottom: 1rem;">Rechnungsdetails</h3>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="invoice_date">Rechnungsdatum *</label>
+                <input type="date" name="invoice_date" id="invoice_date" 
+                       value="{{ today }}" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="due_date">Fälligkeitsdatum</label>
+                <input type="date" name="due_date" id="due_date" 
+                       value="{{ due_date_default }}">
+            </div>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="payment_method">Zahlungsart</label>
+                <select name="payment_method" id="payment_method">
+                    <option value="">Bitte wählen</option>
+                    <option value="bank_transfer">Überweisung</option>
+                    <option value="paypal">PayPal</option>
+                    <option value="cash">Bar</option>
+                    <option value="card">Karte</option>
+                </select>
+            </div>
+        </div>
+        
+        <h3 style="margin-top: 2rem; margin-bottom: 1rem;">Kundentyp</h3>
+        
+        <div class="form-group">
+            <div style="display: flex; gap: 2rem;">
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="radio" name="customer_type" value="endkunde" checked style="margin-right: 0.5rem;">
+                    <strong>Endkunde</strong>
+                </label>
+                
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="radio" name="customer_type" value="wiederverkaeufer" style="margin-right: 0.5rem;">
+                    <strong>Wiederverkäufer</strong>
+                </label>
+            </div>
+            <small style="color: #7f8c8d; display: block; margin-top: 0.5rem;">Der Kundentyp bestimmt die verwendeten Preise bei der Produktauswahl</small>
+        </div>
+        
+        <h3 style="margin-top: 2rem; margin-bottom: 1rem;">Besteuerung</h3>
+        
+        <div class="form-group">
+            <label style="margin-bottom: 1rem;">Steuermodell *</label>
+            
+            <div style="display: flex; flex-direction: column; gap: 0.8rem;">
+                <label class="tax-model-option" style="display: flex; align-items: center; cursor: pointer; padding: 0.8rem; border: 2px solid #3498db; background: #e3f2fd; border-radius: 4px;">
+                    <input type="radio" name="tax_model" value="standard" checked style="margin-right: 0.8rem; width: auto;">
+                    <div>
+                        <strong>Mit Umsatzsteuer</strong><br>
+                        <small style="color: #555;">Produktspezifische MwSt.-Sätze (z.B. {{ landw_tax_rate }}% für landw. Urproduktion)</small>
+                    </div>
+                </label>
+                
+                <label class="tax-model-option" style="display: flex; align-items: center; cursor: pointer; padding: 0.8rem; border: 2px solid #ddd; border-radius: 4px;">
+                    <input type="radio" name="tax_model" value="kleinunternehmer" style="margin-right: 0.8rem; width: auto;">
+                    <div>
+                        <strong>Ohne Umsatzsteuer (§19 UStG)</strong><br>
+                        <small style="color: #7f8c8d;">Kleinunternehmerregelung - Keine Umsatzsteuer ausweisen</small>
+                    </div>
+                </label>
+            </div>
+        </div>
+        
+        <div class="form-group" id="manual-tax-rate" style="display: none;">
+            <label for="tax_rate">MwSt. (%) - nur bei vollem Steuersatz</label>
+            <input type="number" name="tax_rate" id="tax_rate" 
+                   value="{{ default_tax_rate }}" step="0.01" min="0">
+        </div>
+        
+        <h3 style="margin-top: 2rem; margin-bottom: 1rem;">Positionen</h3>
+        
+        <div class="line-items-container" id="lineItems">
+            <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 0.5rem; margin-bottom: 0.5rem; font-weight: 600;">
+                <div>Beschreibung</div>
+                <div>Menge</div>
+                <div>Einzelpreis (€)</div>
+                <div>Gesamt (€)</div>
+                <div></div>
+            </div>
+            
+            <div class="line-item">
+                <div style="position: relative;">
+                    <input type="hidden" name="product_id[]" class="product-id-input" value="">
+                    <input type="text" name="description[]" class="description-input" placeholder="Leistungsbeschreibung" required autocomplete="off">
+                    <div class="product-search-results" style="display: none; position: absolute; z-index: 1000; width: 100%; background: white; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-height: 200px; overflow-y: auto;"></div>
+                </div>
+                <input type="number" name="quantity[]" step="0.01" min="0" value="1" class="quantity" required>
+                <input type="number" name="unit_price[]" step="0.01" min="0" placeholder="0.00" class="unit-price" required>
+                <input type="number" step="0.01" class="line-total" readonly placeholder="0.00">
+                <button type="button" class="btn-remove" onclick="removeLineItem(this)">×</button>
+            </div>
+        </div>
+        
+        <button type="button" class="btn btn-success" onclick="addLineItem()" style="margin-top: 1rem;">+ Position hinzufügen</button>
+        
+        <div class="totals-section">
+            <div class="total-row">
+                <span>Zwischensumme:</span>
+                <span id="subtotal">0.00 €</span>
+            </div>
+            <div class="total-row">
+                <span>MwSt. (<span id="tax-rate-display">{{ default_tax_rate }}</span>%):</span>
+                <span id="tax-amount">0.00 €</span>
+            </div>
+            <div class="total-row final">
+                <span>Gesamtbetrag:</span>
+                <span id="total">0.00 €</span>
+            </div>
+        </div>
+        
+        <div class="form-group" style="margin-top: 2rem;">
+            <label for="notes">Notizen / Zahlungsbedingungen</label>
+            <textarea name="notes" id="notes" rows="4" 
+                      placeholder="z.B. Zahlbar innerhalb von 14 Tagen ohne Abzug."></textarea>
+        </div>
+        
+        <div style="margin-top: 2rem;">
+            <button type="submit" class="btn btn-primary">Rechnung erstellen</button>
+            <a href="{{ url_for('list_invoices') }}" class="btn" style="background: #95a5a6; color: white; margin-left: 0.5rem;">Abbrechen</a>
+        </div>
+    </form>
+</div>
+
+<script>
+    const DEFAULT_TAX_RATE = {{ default_tax_rate }};
+    const LANDW_TAX_RATE = {{ landw_tax_rate }};
+    
+    // Steuermodell-Auswahl stylen
+    document.querySelectorAll('input[name="tax_model"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            // Alle Labels zurücksetzen
+            document.querySelectorAll('.tax-model-option').forEach(label => {
+                label.style.border = '2px solid #ddd';
+                label.style.background = 'white';
+            });
+            
+            // Ausgewähltes Label hervorheben
+            this.closest('.tax-model-option').style.border = '2px solid #3498db';
+            this.closest('.tax-model-option').style.background = '#e3f2fd';
+            
+            // Manuelles Steuersatz-Feld nur bei "standard" anzeigen
+            const manualTaxRate = document.getElementById('manual-tax-rate');
+            if (this.value === 'standard') {
+                manualTaxRate.style.display = 'block';
+            } else {
+                manualTaxRate.style.display = 'none';
+            }
+            
+            calculateTotals();
+        });
+    });
+    
+    function addLineItem() {
+        const container = document.getElementById('lineItems');
+        const lineItem = document.createElement('div');
+        lineItem.className = 'line-item';
+        lineItem.innerHTML = `
+            <div style="position: relative;">
+                <input type="text" name="description[]" class="description-input" placeholder="Leistungsbeschreibung" required autocomplete="off">
+                <div class="product-search-results" style="display: none; position: absolute; z-index: 1000; width: 100%; background: white; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-height: 200px; overflow-y: auto;"></div>
+            </div>
+            <input type="number" name="quantity[]" step="0.01" min="0" value="1" class="quantity" required>
+            <input type="number" name="unit_price[]" step="0.01" min="0" placeholder="0.00" class="unit-price" required>
+            <input type="number" step="0.01" class="line-total" readonly placeholder="0.00">
+            <button type="button" class="btn-remove" onclick="removeLineItem(this)">×</button>
+        `;
+        container.appendChild(lineItem);
+        attachLineItemListeners(lineItem);
+        attachProductAutocomplete(lineItem);
+    }
+    
+    function removeLineItem(button) {
+        const lineItems = document.querySelectorAll('.line-item');
+        if (lineItems.length > 1) {
+            button.closest('.line-item').remove();
+            calculateTotals();
+        }
+    }
+    
+    function attachLineItemListeners(lineItem) {
+        const qty = lineItem.querySelector('.quantity');
+        const price = lineItem.querySelector('.unit-price');
+        const total = lineItem.querySelector('.line-total');
+        
+        function updateLineTotal() {
+            const quantity = parseFloat(qty.value) || 0;
+            const unitPrice = parseFloat(price.value) || 0;
+            total.value = (quantity * unitPrice).toFixed(2);
+            calculateTotals();
+        }
+        
+        qty.addEventListener('input', updateLineTotal);
+        price.addEventListener('input', updateLineTotal);
+    }
+    
+    function calculateTotals() {
+        let subtotal = 0;
+        document.querySelectorAll('.line-total').forEach(input => {
+            subtotal += parseFloat(input.value) || 0;
+        });
+        
+        // Steuermodell bestimmen
+        const taxModel = document.querySelector('input[name="tax_model"]:checked').value;
+        let taxRate, taxAmount, total;
+        
+        if (taxModel === 'kleinunternehmer') {
+            // Keine Steuer
+            taxRate = 0;
+            taxAmount = 0;
+            total = subtotal;
+            document.getElementById('tax-rate-display').textContent = '0.00';
+            
+        } else if (taxModel === 'landwirtschaft') {
+            // Durchschnittssatz: Brutto = Netto, MwSt aus Endsumme berechnen
+            taxRate = LANDW_TAX_RATE;
+            total = subtotal;
+            // Rückrechnung: MwSt = Brutto * (Steuersatz / (100 + Steuersatz))
+            taxAmount = total * (taxRate / (100 + taxRate));
+            document.getElementById('tax-rate-display').textContent = taxRate.toFixed(2);
+            
+        } else {
+            // Standard: MwSt auf Netto aufschlagen
+            taxRate = parseFloat(document.getElementById('tax_rate').value) || DEFAULT_TAX_RATE;
+            taxAmount = subtotal * (taxRate / 100);
+            total = subtotal + taxAmount;
+            document.getElementById('tax-rate-display').textContent = taxRate.toFixed(2);
+        }
+        
+        document.getElementById('subtotal').textContent = subtotal.toFixed(2) + ' €';
+        document.getElementById('tax-amount').textContent = taxAmount.toFixed(2) + ' €';
+        document.getElementById('total').textContent = total.toFixed(2) + ' €';
+    }
+    
+    // Initial setup
+    document.querySelectorAll('.line-item').forEach(lineItem => {
+        attachLineItemListeners(lineItem);
+        attachProductAutocomplete(lineItem);
+    });
+    document.getElementById('tax_rate').addEventListener('input', calculateTotals);
+    
+    // Autocomplete für Produktsuche in Beschreibungsfeldern
+    function attachProductAutocomplete(lineItem) {
+        const descriptionInput = lineItem.querySelector('.description-input');
+        const resultsDiv = lineItem.querySelector('.product-search-results');
+        const priceInput = lineItem.querySelector('.unit-price');
+        let productSearchTimeout;
+        
+        descriptionInput.addEventListener('input', function() {
+            clearTimeout(productSearchTimeout);
+            const query = this.value.trim();
+            
+            if (query.length < 2) {
+                resultsDiv.style.display = 'none';
+                return;
+            }
+            
+            productSearchTimeout = setTimeout(() => {
+                fetch(`/api/products/search?q=${encodeURIComponent(query)}`)
+                    .then(response => response.json())
+                    .then(products => {
+                        if (products.length === 0) {
+                            resultsDiv.innerHTML = '<div style="padding: 8px; color: #7f8c8d; font-size: 0.9rem;">Keine Produkte gefunden</div>';
+                        } else {
+                            resultsDiv.innerHTML = products.map(product => {
+                                const lowStock = product.number < 10;
+                                const stockWarning = lowStock ? '<br><span style="color: #e67e22; font-weight: bold;">⚠ Niedriger Bestand!</span>' : '';
+                                const bgColor = lowStock ? 'background: #fff3cd;' : '';
+                                
+                                // Preis abhängig vom Kundentyp
+                                const customerType = document.querySelector('input[name="customer_type"]:checked').value;
+                                const priceToShow = (customerType === 'wiederverkaeufer' && product.reseller_price) 
+                                    ? product.reseller_price 
+                                    : product.price;
+                                const priceLabel = (customerType === 'wiederverkaeufer' && product.reseller_price) 
+                                    ? 'Wiederverkäuferpreis' 
+                                    : 'Preis';
+                                
+                                return `
+                                    <div class="product-result" style="padding: 8px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 0.9rem; ${bgColor}" 
+                                         data-product='${JSON.stringify(product)}'>
+                                        <strong>${product.display_name}</strong>
+                                        <br><small style="color: #7f8c8d;">${priceLabel}: ${priceToShow.toFixed(2)} € | Bestand: ${product.number}${product.lot_number ? ' | Charge: ' + product.lot_number : ''}</small>${stockWarning}
+                                    </div>
+                                `;
+                            }).join('');
+                            
+                            // Event-Listener für Produktauswahl
+                            resultsDiv.querySelectorAll('.product-result').forEach(div => {
+                                div.addEventListener('click', function() {
+                                    const product = JSON.parse(this.dataset.product);
+                                    const customerType = document.querySelector('input[name="customer_type"]:checked').value;
+                                    const priceToUse = (customerType === 'wiederverkaeufer' && product.reseller_price) 
+                                        ? product.reseller_price 
+                                        : product.price;
+                                    
+                                    // Produkt-ID im hidden field speichern
+                                    const productIdInput = lineItem.querySelector('.product-id-input');
+                                    if (productIdInput) {
+                                        productIdInput.value = product.id;
+                                    }
+                                    
+                                    descriptionInput.value = product.display_name;
+                                    priceInput.value = priceToUse.toFixed(2);
+                                    resultsDiv.style.display = 'none';
+                                    
+                                    // Warnung bei niedrigem Bestand
+                                    if (product.number < 10) {
+                                        alert(`⚠ Achtung: Niedriger Bestand für "${product.display_name}"!\nNur noch ${product.number} Stück verfügbar.`);
+                                    }
+                                    
+                                    // Trigger update der Line-Total
+                                    const qty = lineItem.querySelector('.quantity');
+                                    const total = lineItem.querySelector('.line-total');
+                                    const quantity = parseFloat(qty.value) || 0;
+                                    total.value = (quantity * priceToUse).toFixed(2);
+                                    calculateTotals();
+                                });
+                                
+                                div.addEventListener('mouseenter', function() {
+                                    this.style.background = '#f8f9fa';
+                                });
+                                
+                                div.addEventListener('mouseleave', function() {
+                                    this.style.background = 'white';
+                                });
+                            });
+                        }
+                        resultsDiv.style.display = 'block';
+                    })
+                    .catch(error => {
+                        console.error('Fehler bei Produktsuche:', error);
+                        resultsDiv.innerHTML = '<div style="padding: 8px; color: #e74c3c; font-size: 0.9rem;">Fehler bei der Suche</div>';
+                        resultsDiv.style.display = 'block';
+                    });
+            }, 200);
+        });
+        
+        // Dropdown schließen bei Klick außerhalb
+        document.addEventListener('click', function(e) {
+            if (!descriptionInput.contains(e.target) && !resultsDiv.contains(e.target)) {
+                resultsDiv.style.display = 'none';
+            }
+        });
+    }
+    
+    // Autocomplete für Kundensuche
+    let searchTimeout;
+    const searchInput = document.getElementById('customer_search');
+    const searchResults = document.getElementById('search_results');
+    const resultsList = document.getElementById('results_list');
+    
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        const query = this.value.trim();
+        
+        if (query.length < 3) {
+            searchResults.style.display = 'none';
+            return;
+        }
+        
+        searchTimeout = setTimeout(() => {
+            fetch(`/api/customers/search?q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(customers => {
+                    if (customers.length === 0) {
+                        resultsList.innerHTML = '<div style="padding: 10px; color: #7f8c8d;">Keine Kunden gefunden</div>';
+                    } else {
+                        resultsList.innerHTML = customers.map(customer => `
+                            <div class="customer-result" style="padding: 10px; cursor: pointer; border-bottom: 1px solid #eee;" 
+                                 data-customer='${JSON.stringify(customer)}'>
+                                <strong>${customer.display_name}</strong>
+                                ${customer.email ? `<br><small style="color: #7f8c8d;">${customer.email}</small>` : ''}
+                            </div>
+                        `).join('');
+                        
+                        // Event-Listener für Auswahl
+                        document.querySelectorAll('.customer-result').forEach(div => {
+                            div.addEventListener('click', function() {
+                                const customer = JSON.parse(this.dataset.customer);
+                                fillCustomerData(customer);
+                                searchResults.style.display = 'none';
+                                searchInput.value = customer.display_name;
+                            });
+                            
+                            div.addEventListener('mouseenter', function() {
+                                this.style.background = '#f8f9fa';
+                            });
+                            
+                            div.addEventListener('mouseleave', function() {
+                                this.style.background = 'white';
+                            });
+                        });
+                    }
+                    searchResults.style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Fehler bei Kundensuche:', error);
+                    resultsList.innerHTML = '<div style="padding: 10px; color: #e74c3c;">Fehler bei der Suche</div>';
+                    searchResults.style.display = 'block';
+                });
+        }, 300);
+    });
+    
+    function fillCustomerData(customer) {
+        document.getElementById('company_name').value = customer.company_name || '';
+        document.getElementById('first_name').value = customer.first_name || '';
+        document.getElementById('last_name').value = customer.last_name || '';
+        document.getElementById('customer_email').value = customer.email || '';
+        document.getElementById('phone').value = customer.phone || '';
+        document.getElementById('address').value = customer.address || '';
+        document.getElementById('tax_id').value = customer.tax_id || '';
+    }
+    
+    // Dropdown schließen bei Klick außerhalb
+    document.addEventListener('click', function(e) {
+        if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+            searchResults.style.display = 'none';
+        }
+    });
+</script>
+{% endblock %}

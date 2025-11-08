@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}Zahlungsprüfung{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <h1>💰 Zahlungsprüfung</h1>
+    <div>
+        <span style="background: #e74c3c; color: white; padding: 0.5rem 1rem; border-radius: 4px; font-weight: bold;">
+            {{ checks|length }} offene Prüfungen
+        </span>
+    </div>
+</div>
+
+{% if checks|length == 0 %}
+<div class="card" style="text-align: center; padding: 3rem; background: #e8f5e9;">
+    <h2 style="color: #27ae60;">✅ Keine offenen Prüfungen</h2>
+    <p style="color: #7f8c8d; margin-top: 1rem;">Alle Zahlungseingänge wurden erfolgreich verarbeitet.</p>
+</div>
+{% else %}
+
+<div class="card">
+    <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+            <tr style="background: #ecf0f1; border-bottom: 2px solid #bdc3c7;">
+                <th style="padding: 1rem; text-align: left;">Datum</th>
+                <th style="padding: 1rem; text-align: left;">Rechnungsnummer</th>
+                <th style="padding: 1rem; text-align: right;">Erwartet</th>
+                <th style="padding: 1rem; text-align: right;">Erhalten</th>
+                <th style="padding: 1rem; text-align: right;">Differenz</th>
+                <th style="padding: 1rem; text-align: center;">Status</th>
+                <th style="padding: 1rem; text-align: center;">Aktionen</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for check in checks %}
+            <tr style="border-bottom: 1px solid #ecf0f1;">
+                <td style="padding: 1rem;">
+                    {{ check.check_date.strftime('%d.%m.%Y %H:%M') }}
+                </td>
+                <td style="padding: 1rem;">
+                    {% if check.invoice_id %}
+                        <a href="{{ url_for('view_invoice', invoice_id=check.invoice_id) }}" 
+                           style="color: #3498db; text-decoration: none; font-weight: bold;">
+                            {{ check.invoice_number }}
+                        </a>
+                    {% else %}
+                        <strong style="color: #7f8c8d;">{{ check.invoice_number }}</strong>
+                    {% endif %}
+                </td>
+                <td style="padding: 1rem; text-align: right;">
+                    {% if check.expected_amount %}
+                        {{ "%.2f"|format(check.expected_amount) }} €
+                    {% else %}
+                        <span style="color: #95a5a6;">-</span>
+                    {% endif %}
+                </td>
+                <td style="padding: 1rem; text-align: right; font-weight: bold;">
+                    {{ "%.2f"|format(check.amount_received) }} €
+                </td>
+                <td style="padding: 1rem; text-align: right; font-weight: bold; 
+                    {% if check.difference %}
+                        {% if check.difference > 0 %}color: #27ae60;{% elif check.difference < 0 %}color: #e74c3c;{% endif %}
+                    {% endif %}">
+                    {% if check.difference %}
+                        {% if check.difference > 0 %}+{% endif %}{{ "%.2f"|format(check.difference) }} €
+                    {% else %}
+                        <span style="color: #95a5a6;">-</span>
+                    {% endif %}
+                </td>
+                <td style="padding: 1rem; text-align: center;">
+                    {% if check.status == 'not_found' %}
+                        <span style="background: #e74c3c; color: white; padding: 0.3rem 0.8rem; border-radius: 4px; font-size: 0.85rem;">
+                            ❌ Nicht gefunden
+                        </span>
+                    {% elif check.status == 'duplicate' %}
+                        <span style="background: #f39c12; color: white; padding: 0.3rem 0.8rem; border-radius: 4px; font-size: 0.85rem;">
+                            ⚠️ Doppelt
+                        </span>
+                    {% elif check.status == 'mismatch' %}
+                        <span style="background: #e67e22; color: white; padding: 0.3rem 0.8rem; border-radius: 4px; font-size: 0.85rem;">
+                            💰 Differenz
+                        </span>
+                    {% endif %}
+                </td>
+                <td style="padding: 1rem; text-align: center;">
+                    <div style="display: flex; gap: 0.5rem; justify-content: center;">
+                        {% if check.invoice_id %}
+                        <form method="POST" action="{{ url_for('resolve_payment_check', check_id=check.id) }}" style="margin: 0;">
+                            <input type="hidden" name="action" value="mark_paid">
+                            <button type="submit" class="btn btn-success" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;"
+                                    onclick="return confirm('Rechnung als bezahlt markieren?');">
+                                ✓ Bezahlt
+                            </button>
+                        </form>
+                        {% endif %}
+                        
+                        <form method="POST" action="{{ url_for('resolve_payment_check', check_id=check.id) }}" style="margin: 0;">
+                            <input type="hidden" name="action" value="ignore">
+                            <button type="submit" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.85rem; background: #95a5a6; color: white;"
+                                    onclick="return confirm('Als erledigt markieren?');">
+                                ✗ Ignorieren
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% if check.notes %}
+            <tr>
+                <td colspan="7" style="padding: 0.5rem 1rem; background: #f8f9fa; border-bottom: 1px solid #ecf0f1;">
+                    <small style="color: #7f8c8d;">
+                        <strong>Hinweis:</strong> {{ check.notes }}
+                    </small>
+                </td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endif %}
+
+<div class="card" style="margin-top: 2rem; background: #e3f2fd; border-left: 4px solid #2196f3;">
+    <h3 style="color: #1976d2;">ℹ️ Hinweise zur Zahlungsprüfung</h3>
+    <ul style="color: #555; margin-top: 1rem; line-height: 1.8;">
+        <li><strong>Nicht gefunden:</strong> Rechnungsnummer existiert nicht in der Datenbank</li>
+        <li><strong>Doppelt:</strong> Rechnung ist bereits als bezahlt markiert</li>
+        <li><strong>Differenz:</strong> Erhaltener Betrag weicht vom Rechnungsbetrag ab</li>
+        <li><strong>Toleranz:</strong> Abweichungen ≤ 0,01 € werden automatisch akzeptiert</li>
+    </ul>
+</div>
+{% endblock %}

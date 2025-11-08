@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.name }}{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <h1>📦 {{ product.name }}</h1>
+    <div>
+        <a href="{{ url_for('edit_product', product_id=product.id) }}" class="btn" style="background: #f39c12; color: white;">Bearbeiten</a>
+        <a href="{{ url_for('list_products') }}" class="btn" style="background: #95a5a6; color: white; margin-left: 0.5rem;">Zurück</a>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Produktdetails</h2>
+    
+    <div style="display: grid; grid-template-columns: 200px 1fr; gap: 1rem; margin-bottom: 2rem;">
+        <div><strong>Produktname:</strong></div>
+        <div>{{ product.name }}</div>
+        
+        <div><strong>Menge/Größe:</strong></div>
+        <div>{{ product.quantity or '-' }}</div>
+        
+        <div><strong>Lagerbestand:</strong></div>
+        <div>
+            <span style="font-size: 1.5rem; font-weight: bold; {% if product.number <= 0 %}color: #e74c3c;{% elif product.number <= 10 %}color: #f39c12;{% else %}color: #27ae60;{% endif %}">
+                {{ product.number }}
+            </span>
+            {% if product.number <= 0 %}
+                <span style="color: #e74c3c; margin-left: 1rem;">⚠️ Ausverkauft</span>
+            {% elif product.number <= 10 %}
+                <span style="color: #f39c12; margin-left: 1rem;">⚠️ Niedriger Bestand</span>
+            {% endif %}
+        </div>
+        
+        <div><strong>Preis:</strong></div>
+        <div style="font-size: 1.3rem; font-weight: bold; color: #2c3e50;">{{ "%.2f"|format(product.price) }} €</div>
+        
+        <div><strong>Chargennummer:</strong></div>
+        <div>{{ product.lot_number or '-' }}</div>
+        
+        <div><strong>Status:</strong></div>
+        <div>
+            {% if product.active %}
+                <span class="badge badge-paid">Aktiv</span>
+            {% else %}
+                <span class="badge" style="background: #95a5a6;">Inaktiv</span>
+            {% endif %}
+        </div>
+        
+        <div><strong>Erstellt am:</strong></div>
+        <div>{{ product.created_at.strftime('%d.%m.%Y %H:%M') }}</div>
+        
+        {% if product.updated_at != product.created_at %}
+        <div><strong>Zuletzt geändert:</strong></div>
+        <div>{{ product.updated_at.strftime('%d.%m.%Y %H:%M') }}</div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card" style="background: #e8f5e9; border-left: 4px solid #4caf50;">
+    <h3 style="color: #2e7d32;">ℹ️ Hinweis</h3>
+    <p style="color: #7f8c8d;">
+        Das Löschen von Produkten ist aus Sicherheitsgründen deaktiviert, um die Integrität von Rechnungen zu gewährleisten.
+        Wenn ein Produkt nicht mehr verkauft werden soll, deaktivieren Sie es bitte über "Bearbeiten".
+    </p>
+</div>
+{% endblock %}

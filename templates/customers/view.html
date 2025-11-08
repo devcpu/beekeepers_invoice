@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}{{ customer.company_name or (customer.first_name + ' ' + customer.last_name) }}{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <h1>
+        {% if customer.company_name %}
+            {{ customer.company_name }}
+        {% else %}
+            {{ customer.first_name }} {{ customer.last_name }}
+        {% endif %}
+    </h1>
+    <div>
+        <a href="{{ url_for('edit_customer', customer_id=customer.id) }}" class="btn btn-primary" style="margin-right: 0.5rem;">Bearbeiten</a>
+        <a href="{{ url_for('list_customers') }}" class="btn" style="background: #95a5a6; color: white;">Zurück</a>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Kundendaten</h2>
+    
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+        <div>
+            {% if customer.company_name %}
+                <p><strong>Firma:</strong> {{ customer.company_name }}</p>
+            {% endif %}
+            <p><strong>Name:</strong> {{ customer.first_name }} {{ customer.last_name }}</p>
+            <p><strong>E-Mail:</strong> <a href="mailto:{{ customer.email }}">{{ customer.email }}</a></p>
+            {% if customer.phone %}
+                <p><strong>Telefon:</strong> {{ customer.phone }}</p>
+            {% endif %}
+        </div>
+        
+        <div>
+            {% if customer.address %}
+                <p><strong>Adresse:</strong></p>
+                <p style="white-space: pre-line;">{{ customer.address }}</p>
+            {% endif %}
+            {% if customer.tax_id %}
+                <p><strong>Steuernummer:</strong> {{ customer.tax_id }}</p>
+            {% endif %}
+            <p><strong>Kunde seit:</strong> {{ customer.created_at.strftime('%d.%m.%Y') }}</p>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Rechnungen ({{ customer.invoices|length }})</h2>
+    
+    {% if customer.invoices %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Rechnungsnr.</th>
+                    <th>Datum</th>
+                    <th>Betrag</th>
+                    <th>Status</th>
+                    <th>Aktionen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for invoice in customer.invoices|sort(attribute='invoice_date', reverse=True) %}
+                <tr>
+                    <td><strong>{{ invoice.invoice_number }}</strong></td>
+                    <td>{{ invoice.invoice_date.strftime('%d.%m.%Y') }}</td>
+                    <td><strong>{{ "%.2f"|format(invoice.total) }} €</strong></td>
+                    <td>
+                        {% if invoice.status == 'draft' %}
+                            <span class="badge badge-draft">Entwurf</span>
+                        {% elif invoice.status == 'sent' %}
+                            <span class="badge badge-sent">Versendet</span>
+                        {% elif invoice.status == 'paid' %}
+                            <span class="badge badge-paid">Bezahlt</span>
+                        {% elif invoice.status == 'cancelled' %}
+                            <span class="badge badge-cancelled">Storniert</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{{ url_for('view_invoice', invoice_id=invoice.id) }}" class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.875rem;">Ansehen</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>Noch keine Rechnungen für diesen Kunden.</p>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,404 @@
+{% extends "base.html" %}
+
+{% block title %}Kasse - Direktverkauf{% endblock %}
+
+{% block extra_css %}
+<style>
+    @media (max-width: 768px) {
+        .navbar {
+            padding: 0.5rem !important;
+        }
+        .navbar h1 {
+            font-size: 1rem !important;
+        }
+        .navbar nav {
+            display: none; /* Navigation auf Handy ausblenden */
+        }
+        .container {
+            padding: 0.5rem !important;
+        }
+        body {
+            font-size: 14px;
+        }
+    }
+    
+    .pos-grid {
+        display: grid;
+        gap: 1rem;
+    }
+    
+    @media (min-width: 769px) {
+        .pos-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+    
+    .product-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.8rem;
+        border-bottom: 1px solid #ecf0f1;
+        background: white;
+    }
+    
+    .product-item:nth-child(even) {
+        background: #f8f9fa;
+    }
+    
+    .btn-counter {
+        min-width: 45px;
+        height: 45px;
+        font-size: 1.5rem;
+        padding: 0;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .btn-minus {
+        background: #e74c3c;
+        color: white;
+    }
+    
+    .btn-plus {
+        background: #27ae60;
+        color: white;
+    }
+    
+    .btn-counter:active {
+        transform: scale(0.95);
+    }
+    
+    .btn-counter:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+    }
+    
+    .counter-display {
+        font-weight: bold;
+        font-size: 1.5rem;
+        min-width: 40px;
+        text-align: center;
+    }
+    
+    .receipt-preview {
+        background: white;
+        border: 2px solid #2c3e50;
+        border-radius: 8px;
+        padding: 1rem;
+        font-family: 'Courier New', monospace;
+        font-size: 0.9rem;
+    }
+    
+    @media (max-width: 768px) {
+        .receipt-preview {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            border-radius: 8px 8px 0 0;
+            box-shadow: 0 -4px 12px rgba(0,0,0,0.2);
+            z-index: 1000;
+            max-height: 50vh;
+            overflow-y: auto;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width: 1200px; margin: 0 auto; padding-bottom: 300px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h1 style="font-size: 1.5rem; margin: 0;">🏪 Kasse</h1>
+        <button onclick="window.location.reload()" class="btn" style="background: #95a5a6; color: white;">
+            🔄 Neu laden
+        </button>
+    </div>
+    
+    <div class="pos-grid">
+        <!-- Linke Seite: Produktliste -->
+        <div class="card">
+            <h2 style="margin-top: 0; font-size: 1.2rem;">Produkte</h2>
+            
+            {% if products %}
+                <div id="products-list">
+                    {% for product in products %}
+                    <div class="product-item">
+                        <div style="flex: 1; min-width: 0;">
+                            <strong style="font-size: 1rem; display: block;">{{ product.name }}</strong>
+                            <span style="color: #7f8c8d; font-size: 0.85rem;">
+                                Bestand: <strong>{{ product.number }}</strong> | {{ "%.2f"|format(product.price) }} €
+                            </span>
+                        </div>
+                        <div style="display: flex; gap: 0.4rem; align-items: center;">
+                            <button onclick="removeFromCart({{ product.id }})" 
+                                    class="btn-counter btn-minus"
+                                    id="btn-minus-{{ product.id }}"
+                                    disabled>
+                                −
+                            </button>
+                            <span id="count-{{ product.id }}" class="counter-display">0</span>
+                            <button onclick="addToCart({{ product.id }})" 
+                                    class="btn-counter btn-plus"
+                                    id="btn-plus-{{ product.id }}"
+                                    {% if product.number <= 0 %}disabled{% endif %}>
+                                +
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p style="color: #7f8c8d; text-align: center; padding: 2rem;">
+                    Keine Produkte verfügbar.<br>
+                    <a href="{{ url_for('create_product') }}">Produkt anlegen</a>
+                </p>
+            {% endif %}
+        </div>
+        
+        <!-- Rechte Seite: Rechnungsvorschau (Desktop) oder Sticky Bottom (Mobile) -->
+        <div>
+            <div class="receipt-preview" id="receipt">
+                <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 0.5rem; margin-bottom: 0.5rem;">
+                    <strong style="font-size: 1.1rem;">{{ config.COMPANY_NAME }}</strong><br>
+                    <span style="font-size: 0.85rem;">{{ config.COMPANY_HOLDER }}</span><br>
+                    <span style="font-size: 0.8rem;">{{ config.COMPANY_STREET }}, {{ config.COMPANY_ZIP }} {{ config.COMPANY_CITY }}</span><br>
+                    <span style="font-size: 0.8rem;">Tel: {{ config.COMPANY_PHONE }}</span>
+                </div>
+                
+                <div style="margin: 0.5rem 0;">
+                    <strong>Datum:</strong> <span id="receipt-date"></span><br>
+                    <strong>Uhrzeit:</strong> <span id="receipt-time"></span>
+                </div>
+                
+                <div style="border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 0.5rem 0; margin: 0.5rem 0;" id="receipt-items">
+                    <div style="text-align: center; color: #95a5a6; padding: 1rem;">
+                        Warenkorb leer
+                    </div>
+                </div>
+                
+                <div style="margin-top: 0.5rem;">
+                    <div style="display: flex; justify-content: space-between; padding: 0.2rem 0;">
+                        <span>Zwischensumme:</span>
+                        <strong><span id="receipt-subtotal">0,00</span> €</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 0.2rem 0; font-size: 0.9rem; color: #7f8c8d;">
+                        <span>inkl. 7,80% MwSt:</span>
+                        <span><span id="receipt-tax">0,00</span> €</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; font-size: 1.3rem; font-weight: bold; border-top: 2px solid #000; margin-top: 0.3rem;">
+                        <span>GESAMT:</span>
+                        <span><span id="receipt-total">0,00</span> €</span>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 1rem;">
+                    <button onclick="completeSale()" 
+                            id="btn-complete"
+                            class="btn btn-primary" 
+                            style="width: 100%; font-size: 1.1rem; padding: 0.8rem;"
+                            disabled>
+                        💰 Verkauf abschließen
+                    </button>
+                    <button onclick="clearCart()" 
+                            id="btn-clear"
+                            class="btn" 
+                            style="width: 100%; background: #95a5a6; color: white; margin-top: 0.5rem; font-size: 0.95rem; padding: 0.6rem;"
+                            disabled>
+                        🗑️ Warenkorb leeren
+                    </button>
+                </div>
+                
+                <div style="margin-top: 1rem; padding-top: 0.5rem; border-top: 1px dashed #000; text-align: center; font-size: 0.75rem; color: #7f8c8d;">
+                    Vielen Dank für Ihren Einkauf!<br>
+                    {{ config.COMPANY_WEBSITE }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let cart = {};
+let products = {
+    {% for product in products %}
+    {{ product.id }}: {
+        name: '{{ product.name }}',
+        price: {{ product.price }},
+        stock: {{ product.number }},
+        tax_rate: {{ product.tax_rate }}
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+};
+
+// Datum/Zeit aktualisieren
+function updateDateTime() {
+    const now = new Date();
+    document.getElementById('receipt-date').textContent = now.toLocaleDateString('de-DE');
+    document.getElementById('receipt-time').textContent = now.toLocaleTimeString('de-DE');
+}
+
+function addToCart(productId) {
+    const availableStock = products[productId].stock;
+    const currentCount = cart[productId] || 0;
+    
+    if (currentCount >= availableStock) {
+        alert('Nicht genug Bestand verfügbar!');
+        return;
+    }
+    
+    if (!cart[productId]) {
+        cart[productId] = 0;
+    }
+    cart[productId]++;
+    
+    updateDisplay();
+}
+
+function removeFromCart(productId) {
+    if (!cart[productId] || cart[productId] <= 0) {
+        return;
+    }
+    
+    cart[productId]--;
+    if (cart[productId] === 0) {
+        delete cart[productId];
+    }
+    
+    updateDisplay();
+}
+
+function updateDisplay() {
+    // Update Zähler und Buttons
+    for (let productId in products) {
+        const count = cart[productId] || 0;
+        document.getElementById('count-' + productId).textContent = count;
+        
+        // Minus-Button aktivieren/deaktivieren
+        document.getElementById('btn-minus-' + productId).disabled = (count === 0);
+    }
+    
+    // Berechne Summen
+    let subtotal = 0;
+    let itemCount = 0;
+    
+    for (let productId in cart) {
+        subtotal += cart[productId] * products[productId].price;
+        itemCount += cart[productId];
+    }
+    
+    const taxRate = 7.80; // Standard MwSt für Honig
+    const taxAmount = subtotal * (taxRate / 100);
+    const total = subtotal;
+    
+    // Update Rechnungs-Items
+    const itemsDiv = document.getElementById('receipt-items');
+    
+    if (itemCount === 0) {
+        itemsDiv.innerHTML = '<div style="text-align: center; color: #95a5a6; padding: 1rem;">Warenkorb leer</div>';
+        document.getElementById('btn-complete').disabled = true;
+        document.getElementById('btn-clear').disabled = true;
+    } else {
+        let html = '';
+        for (let productId in cart) {
+            const quantity = cart[productId];
+            const product = products[productId];
+            const lineTotal = quantity * product.price;
+            
+            html += `<div style="display: flex; justify-content: space-between; padding: 0.2rem 0;">
+                <span>${quantity}x ${product.name}</span>
+                <strong>${lineTotal.toFixed(2)} €</strong>
+            </div>`;
+        }
+        itemsDiv.innerHTML = html;
+        document.getElementById('btn-complete').disabled = false;
+        document.getElementById('btn-clear').disabled = false;
+    }
+    
+    // Update Summen
+    document.getElementById('receipt-subtotal').textContent = subtotal.toFixed(2);
+    document.getElementById('receipt-tax').textContent = taxAmount.toFixed(2);
+    document.getElementById('receipt-total').textContent = total.toFixed(2);
+}
+
+function clearCart() {
+    if (Object.keys(cart).length === 0) {
+        return;
+    }
+    
+    if (confirm('Warenkorb wirklich leeren?')) {
+        cart = {};
+        updateDisplay();
+    }
+}
+
+function completeSale() {
+    if (Object.keys(cart).length === 0) {
+        return;
+    }
+    
+    const total = Object.keys(cart).reduce((sum, productId) => {
+        return sum + (cart[productId] * products[productId].price);
+    }, 0);
+    
+    const itemCount = Object.values(cart).reduce((a, b) => a + b, 0);
+    
+    if (!confirm(`Verkauf über ${total.toFixed(2)} € abschließen?\n\n${itemCount} Artikel\nBestand wird automatisch reduziert.`)) {
+        return;
+    }
+    
+    // Button deaktivieren während des Vorgangs
+    document.getElementById('btn-complete').disabled = true;
+    document.getElementById('btn-complete').textContent = '⏳ Bitte warten...';
+    
+    // Sende an Backend
+    fetch('{{ url_for("complete_pos_sale") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            items: cart
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Zeige Erfolg
+            alert(`✅ Verkauf erfolgreich abgeschlossen!\n\nBelegnummer: ${data.receipt_number}\nGesamtsumme: ${total.toFixed(2)} €`);
+            
+            // Aktualisiere Bestand lokal
+            for (let productId in cart) {
+                products[productId].stock -= cart[productId];
+            }
+            
+            // Leere Warenkorb
+            cart = {};
+            updateDisplay();
+            
+            // Seite neu laden um aktuellen Bestand zu zeigen
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            alert('❌ Fehler: ' + (data.message || 'Unbekannter Fehler'));
+            document.getElementById('btn-complete').disabled = false;
+            document.getElementById('btn-complete').textContent = '💰 Verkauf abschließen';
+        }
+    })
+    .catch(error => {
+        alert('❌ Netzwerkfehler: ' + error);
+        console.error('Error:', error);
+        document.getElementById('btn-complete').disabled = false;
+        document.getElementById('btn-complete').textContent = '💰 Verkauf abschließen';
+    });
+}
+
+// Initial
+updateDateTime();
+setInterval(updateDateTime, 1000); // Aktualisiere Zeit jede Sekunde
+updateDisplay();
+</script>
+{% endblock %}

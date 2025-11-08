@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+
+{% block title %}Kommissionslager - {{ customer.company_name or customer.first_name + ' ' + customer.last_name }}{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <div>
+        <h1>📦 Kommissionslager</h1>
+        <h2 style="color: #7f8c8d; font-size: 1.2rem; margin-top: 0.5rem;">
+            {% if customer.company_name %}
+                {{ customer.company_name }}
+            {% else %}
+                {{ customer.first_name }} {{ customer.last_name }}
+            {% endif %}
+        </h2>
+    </div>
+    <a href="{{ url_for('list_delivery_notes') }}" class="btn" style="background: #95a5a6; color: white;">Zurück</a>
+</div>
+
+{% if stock_items %}
+<form method="POST" action="{{ url_for('create_invoice_from_consignment', customer_id=customer.id) }}" id="billing-form">
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <h2 style="margin: 0;">Aktueller Bestand</h2>
+            <div>
+                <span id="total-value" style="font-size: 1.5rem; font-weight: bold; color: #27ae60; margin-right: 2rem;">
+                    Gesamtwert: {{ "%.2f"|format(stock_items | sum(attribute='quantity') * 0) }} €
+                </span>
+            </div>
+        </div>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 40px;">
+                        <input type="checkbox" id="select-all" onchange="toggleAll(this)">
+                    </th>
+                    <th>Produkt</th>
+                    <th style="text-align: center;">Bestand</th>
+                    <th style="text-align: center;">Zu verkaufen</th>
+                    <th style="text-align: right;">Reseller-Preis</th>
+                    <th style="text-align: right;">Gesamtwert</th>
+                    <th style="text-align: center;">Aktionen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for stock in stock_items %}
+                <tr id="row-{{ stock.id }}">
+                    <td>
+                        <input type="checkbox" class="item-checkbox" name="product_id[]" value="{{ stock.product_id }}" 
+                               onchange="updateTotals()">
+                    </td>
+                    <td>
+                        <strong>{{ stock.product.name }}</strong>
+                        {% if stock.product.quantity %}
+                            <br><small style="color: #7f8c8d;">{{ stock.product.quantity }}</small>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: center;">
+                        <span class="current-qty" data-stock-id="{{ stock.id }}">{{ stock.quantity }}</span>
+                    </td>
+                    <td style="text-align: center;">
+                        <input type="number" 
+                               name="sold_quantity[]" 
+                               id="sold-{{ stock.product_id }}" 
+                               min="0" 
+                               max="{{ stock.quantity }}" 
+                               value="0" 
+                               style="width: 80px; text-align: center;"
+                               onchange="updateTotals()"
+                               data-price="{{ stock.unit_price }}">
+                    </td>
+                    <td style="text-align: right;">{{ "%.2f"|format(stock.unit_price) }} €</td>
+                    <td style="text-align: right;">
+                        <strong>{{ "%.2f"|format(stock.quantity * stock.unit_price) }} €</strong>
+                    </td>
+                    <td style="text-align: center;">
+                        <button type="button" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.875rem; background: #f39c12; color: white;" 
+                                onclick="openEditModal({{ stock.id }}, {{ stock.quantity }}, '{{ stock.product.name }}')">
+                            Korrigieren
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr style="border-top: 2px solid #2c3e50; font-weight: bold;">
+                    <td colspan="5" style="text-align: right; padding-top: 1rem;">Gesamtbestandswert:</td>
+                    <td style="text-align: right; padding-top: 1rem; font-size: 1.2rem; color: #2c3e50;">
+                        {% set total = namespace(value=0) %}
+                        {% for stock in stock_items %}
+                            {% set total.value = total.value + (stock.quantity * stock.unit_price) %}
+                        {% endfor %}
+                        {{ "%.2f"|format(total.value) }} €
+                    </td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+    
+    <div class="card" style="background: #f0fff4; border: 2px solid #27ae60;">
+        <h2 style="color: #27ae60; margin-top: 0;">💰 Rechnung erstellen</h2>
+        
+        <div style="margin-bottom: 1.5rem;">
+            <p style="font-size: 1.1rem; margin-bottom: 1rem;">
+                Markieren Sie die verkauften Artikel und geben Sie die Menge an.
+            </p>
+            
+            <div style="background: white; padding: 1rem; border-radius: 4px; border: 1px solid #ddd;">
+                <table style="width: 100%; border: none;">
+                    <tr>
+                        <td style="border: none; padding: 0.5rem;"><strong>Ausgewählte Artikel:</strong></td>
+                        <td style="border: none; padding: 0.5rem; text-align: right;" id="selected-count">0</td>
+                    </tr>
+                    <tr>
+                        <td style="border: none; padding: 0.5rem;"><strong>Rechnungsbetrag (netto):</strong></td>
+                        <td style="border: none; padding: 0.5rem; text-align: right; font-size: 1.3rem; color: #27ae60;" id="invoice-total">0,00 €</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        
+        <div class="form-group" style="margin-bottom: 1rem;">
+            <label style="display: flex; align-items: center; cursor: pointer;">
+                <input type="checkbox" name="show_tax" style="margin-right: 0.5rem; width: auto;">
+                <span>MwSt. auf Rechnung ausweisen</span>
+            </label>
+            <small style="color: #7f8c8d; margin-left: 1.7rem;">Für steuerbefreite Reseller (Freie Berufe) nicht ankreuzen</small>
+        </div>
+        
+        <button type="submit" class="btn btn-success" style="width: 100%; padding: 1rem; font-size: 1.1rem;" 
+                onclick="return confirmInvoice()">
+            📄 Rechnung jetzt erstellen
+        </button>
+        
+        <p style="margin-top: 1rem; font-size: 0.9rem; color: #7f8c8d; text-align: center;">
+            <i>Der Bestand wird automatisch um die verkauften Mengen reduziert.</i>
+        </p>
+    </div>
+</form>
+
+<!-- Modal für Bestandskorrektur -->
+<div id="edit-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div style="background: white; padding: 2rem; border-radius: 8px; max-width: 500px; width: 90%;">
+        <h2 style="margin-top: 0;">Bestand korrigieren</h2>
+        <p id="modal-product-name" style="color: #7f8c8d;"></p>
+        
+        <form method="POST" action="{{ url_for('update_consignment_stock', customer_id=customer.id) }}">
+            <input type="hidden" name="stock_id" id="modal-stock-id">
+            
+            <div class="form-group">
+                <label for="modal-quantity">Neuer Bestand:</label>
+                <input type="number" name="quantity" id="modal-quantity" min="0" required style="font-size: 1.2rem;">
+                <small style="color: #7f8c8d;">Aktueller Bestand: <span id="modal-current-qty"></span></small>
+            </div>
+            
+            <div style="margin-top: 1.5rem;">
+                <button type="submit" class="btn btn-primary">Speichern</button>
+                <button type="button" class="btn" style="background: #95a5a6; color: white; margin-left: 0.5rem;" onclick="closeEditModal()">Abbrechen</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% else %}
+<div class="card">
+    <p style="text-align: center; color: #7f8c8d; padding: 2rem;">
+        Noch keine Artikel im Kommissionslager.<br>
+        Erstellen Sie einen <a href="{{ url_for('create_delivery_note') }}">Lieferschein</a>, um Ware auszuliefern.
+    </p>
+</div>
+{% endif %}
+
+<script>
+function toggleAll(checkbox) {
+    const checkboxes = document.querySelectorAll('.item-checkbox');
+    checkboxes.forEach(cb => {
+        cb.checked = checkbox.checked;
+        if (checkbox.checked) {
+            // Menge auf Maximum setzen
+            const soldInput = cb.closest('tr').querySelector('input[name="sold_quantity[]"]');
+            soldInput.value = soldInput.max;
+        }
+    });
+    updateTotals();
+}
+
+function updateTotals() {
+    let selectedCount = 0;
+    let totalAmount = 0;
+    
+    document.querySelectorAll('.item-checkbox:checked').forEach(checkbox => {
+        const row = checkbox.closest('tr');
+        const soldInput = row.querySelector('input[name="sold_quantity[]"]');
+        const quantity = parseInt(soldInput.value) || 0;
+        const price = parseFloat(soldInput.dataset.price) || 0;
+        
+        if (quantity > 0) {
+            selectedCount++;
+            totalAmount += quantity * price;
+        }
+    });
+    
+    document.getElementById('selected-count').textContent = selectedCount;
+    document.getElementById('invoice-total').textContent = totalAmount.toFixed(2).replace('.', ',') + ' €';
+}
+
+function confirmInvoice() {
+    const selectedCount = document.querySelectorAll('.item-checkbox:checked').length;
+    
+    if (selectedCount === 0) {
+        alert('Bitte wählen Sie mindestens einen Artikel aus!');
+        return false;
+    }
+    
+    // Prüfen ob Mengen > 0
+    let hasQuantity = false;
+    document.querySelectorAll('.item-checkbox:checked').forEach(checkbox => {
+        const row = checkbox.closest('tr');
+        const soldInput = row.querySelector('input[name="sold_quantity[]"]');
+        if (parseInt(soldInput.value) > 0) {
+            hasQuantity = true;
+        }
+    });
+    
+    if (!hasQuantity) {
+        alert('Bitte geben Sie die verkauften Mengen an!');
+        return false;
+    }
+    
+    return confirm(`Rechnung für ${selectedCount} Artikel erstellen?\n\nDer Kommissionslager-Bestand wird automatisch reduziert.`);
+}
+
+function openEditModal(stockId, currentQty, productName) {
+    document.getElementById('modal-stock-id').value = stockId;
+    document.getElementById('modal-quantity').value = currentQty;
+    document.getElementById('modal-current-qty').textContent = currentQty;
+    document.getElementById('modal-product-name').textContent = productName;
+    document.getElementById('edit-modal').style.display = 'flex';
+}
+
+function closeEditModal() {
+    document.getElementById('edit-modal').style.display = 'none';
+}
+
+// Initial update
+updateTotals();
+</script>
+{% endblock %}

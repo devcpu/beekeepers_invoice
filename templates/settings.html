@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block title %}Einstellungen{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <h1>⚙️ Einstellungen</h1>
+    <form method="POST" action="{{ url_for('test_email_settings') }}" style="display: inline;">
+        <button type="submit" class="btn" style="background: #9b59b6; color: white;">
+            📧 E-Mail überprüfen
+        </button>
+    </form>
+</div>
+
+<div class="flash warning">
+    <strong>Hinweis:</strong> Um Ihre Firmendaten zu ändern, bearbeiten Sie die Datei <code>.env</code> im Projektverzeichnis und starten Sie die Anwendung neu.
+</div>
+
+<div class="card">
+    <h2>E-Mail-Konfiguration</h2>
+    <p style="color: #7f8c8d; margin-bottom: 1.5rem;">SMTP (Versand) und IMAP (Empfang) Einstellungen.</p>
+    
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+        <div>
+            <h3 style="margin-bottom: 1rem; color: #3498db;">📤 SMTP (Versand)</h3>
+            <div style="display: grid; grid-template-columns: 120px 1fr; gap: 0.5rem; font-size: 0.9rem;">
+                <div><strong>Server:</strong></div>
+                <div>{{ config.MAIL_SERVER }}</div>
+                
+                <div><strong>Port:</strong></div>
+                <div>{{ config.MAIL_PORT }}</div>
+                
+                <div><strong>Username:</strong></div>
+                <div>{{ config.MAIL_USERNAME }}</div>
+                
+                <div><strong>SSL/TLS:</strong></div>
+                <div>
+                    {% if config.MAIL_USE_SSL %}SSL
+                    {% elif config.MAIL_USE_TLS %}TLS
+                    {% else %}Keine{% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div>
+            <h3 style="margin-bottom: 1rem; color: #27ae60;">📥 IMAP (Empfang)</h3>
+            <div style="display: grid; grid-template-columns: 120px 1fr; gap: 0.5rem; font-size: 0.9rem;">
+                <div><strong>Server:</strong></div>
+                <div>{{ config.IMAP_SERVER }}</div>
+                
+                <div><strong>Port:</strong></div>
+                <div>{{ config.IMAP_PORT }}</div>
+                
+                <div><strong>Username:</strong></div>
+                <div>{{ config.IMAP_USERNAME }}</div>
+                
+                <div><strong>SSL:</strong></div>
+                <div>{% if config.IMAP_USE_SSL %}Ja{% else %}Nein{% endif %}</div>
+            </div>
+        </div>
+    </div>
+    
+    <div style="margin-top: 1.5rem; padding: 1rem; background: #e8f5e9; border-left: 4px solid #4caf50; border-radius: 4px;">
+        <strong>💡 Tipp:</strong> Klicken Sie auf "E-Mail überprüfen", um die Verbindung zu SMTP und IMAP zu testen.
+    </div>
+</div>
+
+<div class="card">
+    <h2>Firmendaten</h2>
+    <p style="color: #7f8c8d; margin-bottom: 1.5rem;">Diese Daten erscheinen auf Ihren Rechnungen und PDFs.</p>
+    
+    <div style="display: grid; grid-template-columns: 200px 1fr; gap: 1rem; margin-bottom: 2rem;">
+        <div><strong>Firmenname:</strong></div>
+        <div>{{ company.name }}</div>
+        
+        {% if company.holder %}
+        <div><strong>Inhaber:</strong></div>
+        <div>{{ company.holder }}</div>
+        {% endif %}
+        
+        <div><strong>Straße:</strong></div>
+        <div>{{ company.street }}</div>
+        
+        <div><strong>PLZ / Ort:</strong></div>
+        <div>{{ company.zip }} {{ company.city }}</div>
+        
+        <div><strong>Land:</strong></div>
+        <div>{{ company.country }}</div>
+        
+        <div><strong>E-Mail:</strong></div>
+        <div><a href="mailto:{{ company.email }}">{{ company.email }}</a></div>
+        
+        <div><strong>Telefon:</strong></div>
+        <div>{{ company.phone }}</div>
+        
+        <div><strong>Steuernummer:</strong></div>
+        <div>{{ company.tax_id }}</div>
+        
+        <div><strong>Website:</strong></div>
+        <div>{{ company.website }}</div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Steuersatz</h2>
+    <p style="color: #7f8c8d; margin-bottom: 1.5rem;">Standard-Mehrwertsteuersatz für neue Rechnungen.</p>
+    
+    <div style="display: grid; grid-template-columns: 200px 1fr; gap: 1rem;">
+        <div><strong>Standard MwSt.:</strong></div>
+        <div>
+            <span style="font-size: 1.5rem; font-weight: bold; color: #3498db;">{{ "%.2f"|format(config.DEFAULT_TAX_RATE) }}%</span>
+            <div style="margin-top: 0.5rem; color: #7f8c8d; font-size: 0.9rem;">
+                Beispiele: 19.00% (Normalsatz), 7.00% (ermäßigt), 10.70% (Landwirtschaft)
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Bankverbindung</h2>
+    <p style="color: #7f8c8d; margin-bottom: 1.5rem;">Diese Daten erscheinen auf Ihren Rechnungs-PDFs.</p>
+    
+    <div style="display: grid; grid-template-columns: 200px 1fr; gap: 1rem;">
+        <div><strong>Bank:</strong></div>
+        <div>{{ bank.name }}</div>
+        
+        <div><strong>IBAN:</strong></div>
+        <div><code style="background: #f8f9fa; padding: 0.3rem 0.6rem; border-radius: 4px;">{{ bank.iban }}</code></div>
+        
+        <div><strong>BIC:</strong></div>
+        <div><code style="background: #f8f9fa; padding: 0.3rem 0.6rem; border-radius: 4px;">{{ bank.bic }}</code></div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>📝 So ändern Sie Ihre Daten</h2>
+    
+    <ol style="line-height: 2;">
+        <li>Öffnen Sie die Datei <code>.env</code> im Projektverzeichnis:
+            <pre style="background: #2c3e50; color: #ecf0f1; padding: 1rem; border-radius: 4px; margin: 0.5rem 0;">nano .env</pre>
+        </li>
+        
+        <li>Bearbeiten Sie die folgenden Zeilen:
+            <pre style="background: #f8f9fa; padding: 1rem; border-radius: 4px; margin: 0.5rem 0; overflow-x: auto;">COMPANY_NAME=Ihre Firma GmbH
+COMPANY_HOLDER=Max Mustermann
+COMPANY_STREET=Musterstraße 123
+COMPANY_ZIP=12345
+COMPANY_CITY=Musterstadt
+COMPANY_EMAIL=info@ihre-firma.de
+COMPANY_PHONE=+49 123 456789
+COMPANY_TAX_ID=DE123456789
+
+# Standard-Steuersatz für neue Rechnungen
+DEFAULT_TAX_RATE=19.00
+
+BANK_NAME=Ihre Bank
+BANK_IBAN=DE00 0000 0000 0000 0000 00
+BANK_BIC=BANKDEFF</pre>
+        </li>
+        
+        <li>Speichern Sie die Datei (<kbd>Strg+O</kbd>, dann <kbd>Enter</kbd>, dann <kbd>Strg+X</kbd>)</li>
+        
+        <li>Starten Sie die Anwendung neu:
+            <pre style="background: #2c3e50; color: #ecf0f1; padding: 1rem; border-radius: 4px; margin: 0.5rem 0;">python app.py --port 5001</pre>
+        </li>
+    </ol>
+    
+    <div style="margin-top: 1.5rem; padding: 1rem; background: #e3f2fd; border-left: 4px solid #2196f3; border-radius: 4px;">
+        <strong>💡 Tipp:</strong> Laden Sie nach dem Neustart diese Seite neu, um die aktualisierten Daten zu sehen.
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+
+{% block title %}Rechnung {{ invoice.invoice_number }}{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <h1>Rechnung {{ invoice.invoice_number }}</h1>
+    <div>
+        <a href="{{ url_for('download_invoice_pdf', invoice_id=invoice.id) }}" class="btn btn-success">📄 PDF Download</a>
+        
+        {% if invoice.status != 'cancelled' %}
+            <a href="{{ url_for('send_invoice_email', invoice_id=invoice.id) }}" 
+               class="btn" style="background: #9b59b6; color: white; margin-left: 0.5rem;">📧 Per E-Mail versenden</a>
+        {% endif %}
+        
+        {% if invoice.status == 'draft' %}
+            <a href="{{ url_for('update_invoice_status', invoice_id=invoice.id, status='sent') }}" 
+               class="btn" style="background: #3498db; color: white; margin-left: 0.5rem;"
+               onclick="return confirm('Rechnung als versendet markieren?');">✉️ Als versendet markieren</a>
+        {% endif %}
+        
+        {% if invoice.status in ['sent', 'draft'] %}
+            <a href="{{ url_for('update_invoice_status', invoice_id=invoice.id, status='paid') }}" 
+               class="btn" style="background: #27ae60; color: white; margin-left: 0.5rem;"
+               onclick="return confirm('Rechnung als bezahlt markieren?');">✓ Als bezahlt markieren</a>
+        {% endif %}
+        
+        {% if invoice.status in ['sent', 'paid'] %}
+            <a href="{{ url_for('create_cancellation_invoice', invoice_id=invoice.id) }}" 
+               class="btn" style="background: #e74c3c; color: white; margin-left: 0.5rem;">
+                🗑️ Stornorechnung erstellen
+            </a>
+        {% endif %}
+        
+        {% if invoice.status == 'draft' %}
+            <form method="POST" action="{{ url_for('delete_invoice', invoice_id=invoice.id) }}" 
+                  style="display: inline;" 
+                  onsubmit="return confirm('Entwurf wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.');">
+                <button type="submit" class="btn" style="background: #e74c3c; color: white; margin-left: 0.5rem;">
+                    🗑️ Entwurf löschen
+                </button>
+            </form>
+        {% endif %}
+        
+        <a href="{{ url_for('list_invoices') }}" class="btn" style="background: #95a5a6; color: white; margin-left: 0.5rem;">Zurück</a>
+    </div>
+</div>
+
+{% if not is_valid %}
+<div class="flash error">
+    ⚠️ <strong>Warnung:</strong> Die Integrität dieser Rechnung konnte nicht verifiziert werden. Die Daten wurden möglicherweise manipuliert!
+</div>
+{% else %}
+<div class="flash success">
+    ✓ Datenintegrität verifiziert - Diese Rechnung ist unverändert.
+</div>
+{% endif %}
+
+{% if invoice.status_history %}
+<div class="card" style="margin-bottom: 2rem;">
+    <h3 style="margin-top: 0;">📋 Status-Historie (GoBD Audit Trail)</h3>
+    <table style="font-size: 0.9rem;">
+        <thead>
+            <tr>
+                <th style="text-align: left;">Zeitpunkt</th>
+                <th style="text-align: left;">Von</th>
+                <th style="text-align: left;">Nach</th>
+                <th style="text-align: left;">Geändert durch</th>
+                <th style="text-align: left;">Grund</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in invoice.status_history %}
+            <tr>
+                <td>{{ log.changed_at.strftime('%d.%m.%Y %H:%M:%S') }}</td>
+                <td>
+                    {% if log.old_status == 'draft' %}
+                        <span class="badge badge-draft">Entwurf</span>
+                    {% elif log.old_status == 'sent' %}
+                        <span class="badge badge-sent">Versendet</span>
+                    {% elif log.old_status == 'paid' %}
+                        <span class="badge badge-paid">Bezahlt</span>
+                    {% elif log.old_status == 'cancelled' %}
+                        <span class="badge badge-cancelled">Storniert</span>
+                    {% else %}
+                        <span style="color: #95a5a6;">-</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if log.new_status == 'draft' %}
+                        <span class="badge badge-draft">Entwurf</span>
+                    {% elif log.new_status == 'sent' %}
+                        <span class="badge badge-sent">Versendet</span>
+                    {% elif log.new_status == 'paid' %}
+                        <span class="badge badge-paid">Bezahlt</span>
+                    {% elif log.new_status == 'cancelled' %}
+                        <span class="badge badge-cancelled">Storniert</span>
+                    {% endif %}
+                </td>
+                <td>{{ log.changed_by }}</td>
+                <td style="font-style: italic; color: #7f8c8d;">{{ log.reason or '-' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+{% if invoice.pdf_archive %}
+<div class="card" style="margin-bottom: 2rem; background: #e8f5e9;">
+    <h3 style="margin-top: 0; color: #2e7d32;">🔒 PDF-Archiv (GoBD-konform)</h3>
+    {% for archive in invoice.pdf_archive %}
+    <div style="padding: 0.8rem; background: white; border-radius: 4px; margin-bottom: 0.5rem; border-left: 3px solid #4caf50;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; font-size: 0.9rem;">
+            <div>
+                <strong>Dateiname:</strong> {{ archive.pdf_filename }}<br>
+                <strong>Dateigröße:</strong> {{ "%.2f"|format(archive.file_size / 1024) }} KB<br>
+                <strong>Archiviert am:</strong> {{ archive.created_at.strftime('%d.%m.%Y %H:%M:%S') }}
+            </div>
+            <div>
+                <strong>PDF-Hash (SHA-256):</strong><br>
+                <code style="font-size: 0.75rem; word-break: break-all;">{{ archive.pdf_hash }}</code>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    <p style="margin-top: 1rem; margin-bottom: 0; font-size: 0.875rem; color: #555;">
+        ℹ️ Der PDF-Hash wird automatisch beim ersten Download erstellt und ermöglicht die Verifikation der PDF-Integrität gemäß GoBD-Anforderungen.
+    </p>
+</div>
+{% endif %}
+
+
+<div class="card">
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+        <div>
+            <h3 style="margin-bottom: 1rem;">Kundendaten</h3>
+            {% if invoice.customer.company_name %}
+                <p><strong>{{ invoice.customer.company_name }}</strong></p>
+            {% endif %}
+            <p>{{ invoice.customer.first_name }} {{ invoice.customer.last_name }}</p>
+            <p>{{ invoice.customer.email }}</p>
+            {% if invoice.customer.phone %}
+                <p>Tel: {{ invoice.customer.phone }}</p>
+            {% endif %}
+            {% if invoice.customer.address %}
+                <p style="white-space: pre-line; margin-top: 0.5rem;">{{ invoice.customer.address }}</p>
+            {% endif %}
+            {% if invoice.customer.tax_id %}
+                <p>Steuernr: {{ invoice.customer.tax_id }}</p>
+            {% endif %}
+        </div>
+        
+        <div>
+            <h3 style="margin-bottom: 1rem;">Rechnungsdetails</h3>
+            <p><strong>Status:</strong> 
+                {% if invoice.status == 'draft' %}
+                    <span class="badge badge-draft">Entwurf</span>
+                {% elif invoice.status == 'sent' %}
+                    <span class="badge badge-sent">Versendet</span>
+                {% elif invoice.status == 'paid' %}
+                    <span class="badge badge-paid">Bezahlt</span>
+                {% elif invoice.status == 'cancelled' %}
+                    <span class="badge badge-cancelled">Storniert</span>
+                {% endif %}
+            </p>
+            <p><strong>Rechnungsdatum:</strong> {{ invoice.invoice_date.strftime('%d.%m.%Y') }}</p>
+            {% if invoice.due_date %}
+                <p><strong>Fällig am:</strong> {{ invoice.due_date.strftime('%d.%m.%Y') }}</p>
+            {% endif %}
+            {% if invoice.payment_method %}
+                <p><strong>Zahlungsart:</strong> {{ invoice.payment_method }}</p>
+            {% endif %}
+            <p><strong>Erstellt am:</strong> {{ invoice.created_at.strftime('%d.%m.%Y %H:%M') }}</p>
+        </div>
+    </div>
+    
+    <h3 style="margin-top: 2rem; margin-bottom: 1rem;">Positionen</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Pos.</th>
+                <th>Beschreibung</th>
+                <th style="text-align: right;">Menge</th>
+                <th style="text-align: right;">Einzelpreis</th>
+                <th style="text-align: right;">Gesamt</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in invoice.line_items %}
+            <tr>
+                <td>{{ item.position + 1 }}</td>
+                <td>{{ item.description }}</td>
+                <td style="text-align: right;">{{ "%.2f"|format(item.quantity) }}</td>
+                <td style="text-align: right;">{{ "%.2f"|format(item.unit_price) }} €</td>
+                <td style="text-align: right;"><strong>{{ "%.2f"|format(item.total) }} €</strong></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <div style="margin-top: 2rem; max-width: 400px; margin-left: auto;">
+        {% if invoice.tax_model == 'landwirtschaft' %}
+            <div style="display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: bold; margin-bottom: 0.5rem;">
+                <span>Gesamtbetrag:</span>
+                <span>{{ "%.2f"|format(invoice.total) }} €</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; color: #7f8c8d; font-size: 0.9rem; padding: 0.5rem; background: #f8f9fa; border-radius: 4px;">
+                <span>darin enthaltene MwSt. ({{ "%.2f"|format(invoice.tax_rate) }}%):</span>
+                <span>{{ "%.2f"|format(invoice.tax_amount) }} €</span>
+            </div>
+            <div style="margin-top: 1rem; padding: 0.8rem; background: #e3f2fd; border-left: 4px solid #3498db; border-radius: 4px; font-size: 0.9rem;">
+                <strong>§24 UStG - Durchschnittssatzbesteuerung:</strong><br>
+                Landwirtschaftliche Urproduktion. Der Verkaufspreis enthält {{ "%.2f"|format(invoice.tax_rate) }}% Umsatzsteuer, die von umsatzsteuerberechtigten Kunden als Vorsteuer geltend gemacht werden kann.
+            </div>
+        {% elif invoice.tax_model == 'kleinunternehmer' %}
+            <div style="display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: bold;">
+                <span>Gesamtbetrag:</span>
+                <span>{{ "%.2f"|format(invoice.total) }} €</span>
+            </div>
+            <div style="margin-top: 1rem; padding: 0.8rem; background: #fff3cd; border-left: 4px solid #f39c12; border-radius: 4px; font-size: 0.9rem;">
+                <strong>§19 UStG - Kleinunternehmerregelung:</strong><br>
+                Aufgrund der Kleinunternehmerregelung gem. § 19 UStG wird keine Umsatzsteuer berechnet.
+            </div>
+        {% else %}
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                <span>Zwischensumme:</span>
+                <span>{{ "%.2f"|format(invoice.subtotal) }} €</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                <span>MwSt. ({{ "%.2f"|format(invoice.tax_rate) }}%):</span>
+                <span>{{ "%.2f"|format(invoice.tax_amount) }} €</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: bold; border-top: 2px solid #2c3e50; padding-top: 0.5rem; margin-top: 0.5rem;">
+                <span>Gesamtbetrag:</span>
+                <span>{{ "%.2f"|format(invoice.total) }} €</span>
+            </div>
+        {% endif %}
+    </div>
+    
+    {% if invoice.notes %}
+    <div style="margin-top: 2rem; padding: 1rem; background: #f8f9fa; border-radius: 4px;">
+        <h4>Notizen / Zahlungsbedingungen</h4>
+        <p style="white-space: pre-line; margin-top: 0.5rem;">{{ invoice.notes }}</p>
+    </div>
+    {% endif %}
+    
+    <div style="margin-top: 2rem; padding: 1rem; background: #f8f9fa; border-radius: 4px; font-size: 0.875rem; color: #7f8c8d;">
+        <p><strong>Daten-Hash (SHA-256):</strong> <code>{{ invoice.data_hash }}</code></p>
+        <p style="margin-top: 0.5rem;">Dieser Hash dient der Manipulationssicherheit und kann zur Verifikation der Rechnung verwendet werden.</p>
+    </div>
+</div>
+{% endblock %}

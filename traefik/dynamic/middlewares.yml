@@ -1,0 +1,62 @@
+# Dynamische Traefik Middlewares
+http:
+  middlewares:
+    # CrowdSec Bouncer
+    crowdsec-bouncer:
+      plugin:
+        bouncer:
+          enabled: true
+          crowdsecLapiKey: "CHANGE_ME_IN_PRODUCTION"
+          crowdsecLapiHost: "http://crowdsec:8080"
+          crowdsecLapiScheme: "http"
+          forwardedHeadersTrustedIPs:
+            - "10.0.0.0/8"
+            - "172.16.0.0/12"
+            - "192.168.0.0/16"
+    
+    # Security Headers
+    security-headers:
+      headers:
+        frameDeny: true
+        browserXssFilter: true
+        contentTypeNosniff: true
+        forceSTSHeader: true
+        stsIncludeSubdomains: true
+        stsPreload: true
+        stsSeconds: 31536000
+        customFrameOptionsValue: "SAMEORIGIN"
+        customResponseHeaders:
+          X-Robots-Tag: "none,noarchive,nosnippet,notranslate,noimageindex"
+          X-Permitted-Cross-Domain-Policies: "none"
+          Referrer-Policy: "strict-origin-when-cross-origin"
+          Permissions-Policy: "geolocation=(), microphone=(), camera=()"
+    
+    # Rate Limiting
+    rate-limit:
+      rateLimit:
+        average: 100
+        burst: 50
+        period: 1m
+    
+    # Authentifizierung für Traefik Dashboard
+    auth:
+      basicAuth:
+        users:
+          # admin:admin (ändere das Passwort!)
+          # Generiere mit: echo $(htpasswd -nB admin) | sed -e s/\\$/\\$\\$/g
+          - "admin:$$2y$$05$$BfN9CqjF.RjXJQz6VxJzFO8x8JHZqNjZKvVl9bFLJQCPxQYfqJ2O6"
+    
+    # Compression
+    compress:
+      compress: {}
+
+# TLS Options
+tls:
+  options:
+    default:
+      minVersion: VersionTLS12
+      cipherSuites:
+        - TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+        - TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+        - TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305
+      sniStrict: true

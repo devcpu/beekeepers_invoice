@@ -1,0 +1,51 @@
+# CrowdSec Konfiguration für App-Logs
+source: app
+labels:
+  type: app_logs
+  
+# Log-Format Parser
+---
+filter: "evt.Parsed.program == 'rechnungen'"
+name: rechnungen/flask-logs
+description: "Parse Flask application logs"
+pattern_syntax:
+  FLASK_LOG: '%{TIMESTAMP_ISO8601:timestamp} %{LOGLEVEL:level} in %{DATA:module}: %{GREEDYDATA:message}'
+nodes:
+  - grok:
+      pattern: '%{FLASK_LOG}'
+      apply_on: message
+statics:
+  - meta: log_type
+    value: flask_app
+  - meta: service
+    value: rechnungen
+
+# Failed Login Detection
+---
+filter: "evt.Parsed.message contains 'Ungültiger Benutzername oder Passwort'"
+name: rechnungen/failed-login
+description: "Detect failed login attempts"
+nodes:
+  - grok:
+      pattern: '%{IP:source_ip}'
+      apply_on: message
+statics:
+  - meta: log_type
+    value: failed_auth
+  - meta: service
+    value: rechnungen
+
+# Scenario: Brute Force Detection
+---
+type: leaky
+name: rechnungen/bruteforce-login
+description: "Detect login bruteforce"
+filter: "evt.Meta.log_type == 'failed_auth'"
+leakspeed: "10s"
+capacity: 5
+groupby: "evt.Meta.source_ip"
+blackhole: 5m
+labels:
+  service: rechnungen
+  type: bruteforce
+  remediation: true

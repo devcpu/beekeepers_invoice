@@ -1,0 +1,192 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Datenbank
+  db:
+    image: postgres:15-alpine
+    container_name: rechnungen-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-rechnungen}
+      POSTGRES_USER: ${DB_USER:-rechnungen_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backups:/backups
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-rechnungen_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis für Sessions (optional, aber empfohlen)
+  redis:
+    image: redis:7-alpine
+    container_name: rechnungen-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # Flask App
+  app:
+    build: .
+    container_name: rechnungen-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      # Database
+      DATABASE_URL: postgresql://${DB_USER:-rechnungen_user}:${DB_PASSWORD}@db:5432/${DB_NAME:-rechnungen}
+      
+      # Redis Session
+      SESSION_TYPE: redis
+      SESSION_REDIS: redis://redis:6379/0
+      
+      # Flask
+      FLASK_ENV: production
+      SECRET_KEY: ${SECRET_KEY}
+      
+      # Company Data (aus .env)
+      COMPANY_NAME: ${COMPANY_NAME}
+      COMPANY_HOLDER: ${COMPANY_HOLDER}
+      COMPANY_STREET: ${COMPANY_STREET}
+      COMPANY_ZIP: ${COMPANY_ZIP}
+      COMPANY_CITY: ${COMPANY_CITY}
+      COMPANY_COUNTRY: ${COMPANY_COUNTRY}
+      COMPANY_EMAIL: ${COMPANY_EMAIL}
+      COMPANY_PHONE: ${COMPANY_PHONE}
+      COMPANY_TAX_ID: ${COMPANY_TAX_ID}
+      COMPANY_WEBSITE: ${COMPANY_WEBSITE}
+      
+      # Bank
+      BANK_NAME: ${BANK_NAME}
+      BANK_IBAN: ${BANK_IBAN}
+      BANK_BIC: ${BANK_BIC}
+      
+      # Mail
+      MAIL_SERVER: ${MAIL_SERVER}
+      MAIL_PORT: ${MAIL_PORT}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MAIL_USE_TLS: ${MAIL_USE_TLS:-true}
+      MAIL_USE_SSL: ${MAIL_USE_SSL:-false}
+      
+      # IMAP
+      IMAP_SERVER: ${IMAP_SERVER}
+      IMAP_PORT: ${IMAP_PORT}
+      IMAP_USERNAME: ${IMAP_USERNAME}
+      IMAP_PASSWORD: ${IMAP_PASSWORD}
+      IMAP_USE_SSL: ${IMAP_USE_SSL:-true}
+      
+      # Steuer
+      DEFAULT_TAX_RATE: ${DEFAULT_TAX_RATE:-19.00}
+      
+      # 2FA
+      TOTP_ISSUER_NAME: ${TOTP_ISSUER_NAME:-Rechnungsverwaltung}
+      
+    volumes:
+      - ./invoices:/app/invoices
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+    networks:
+      - backend
+      - traefik
+    labels:
+      # Traefik Labels
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+      
+      # HTTP Router
+      - "traefik.http.routers.rechnungen.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.rechnungen.entrypoints=websecure"
+      - "traefik.http.routers.rechnungen.tls=true"
+      - "traefik.http.routers.rechnungen.tls.certresolver=letsencrypt"
+      
+      # Middleware: CrowdSec + Security Headers
+      - "traefik.http.routers.rechnungen.middlewares=crowdsec-bouncer@file,security-headers@file,rate-limit@file"
+      
+      # Service
+      - "traefik.http.services.rechnungen.loadbalancer.server.port=8000"
+      
+      # CrowdSec Labels (für Parsing)
+      - "crowdsec.enable=true"
+      - "crowdsec.application=rechnungen"
+
+  # CrowdSec Agent (Security)
+  crowdsec:
+    image: crowdsecurity/crowdsec:latest
+    container_name: rechnungen-crowdsec
+    restart: unless-stopped
+    environment:
+      COLLECTIONS: "crowdsecurity/linux crowdsecurity/traefik crowdsecurity/http-cve"
+      GID: "1000"
+    volumes:
+      - crowdsec_config:/etc/crowdsec
+      - crowdsec_data:/var/lib/crowdsec/data
+      - ./logs:/var/log/app:ro
+      - /var/log/auth.log:/var/log/auth.log:ro
+      - /var/log/syslog:/var/log/syslog:ro
+    networks:
+      - backend
+
+  # Traefik Reverse Proxy
+  traefik:
+    image: traefik:v3.0
+    container_name: rechnungen-traefik
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - CF_API_EMAIL=${CF_API_EMAIL}
+      - CF_API_KEY=${CF_API_KEY}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik:/etc/traefik
+      - traefik_certs:/letsencrypt
+      - ./logs/traefik:/var/log/traefik
+    networks:
+      - traefik
+      - backend
+    labels:
+      # Traefik Dashboard
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.${DOMAIN}`)"
+      - "traefik.http.routers.traefik.entrypoints=websecure"
+      - "traefik.http.routers.traefik.tls=true"
+      - "traefik.http.routers.traefik.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.traefik.service=api@internal"
+      - "traefik.http.routers.traefik.middlewares=auth@file"
+
+networks:
+  traefik:
+    name: traefik
+    driver: bridge
+  backend:
+    name: rechnungen-backend
+    driver: bridge
+
+volumes:
+  postgres_data:
+    name: rechnungen-postgres
+  redis_data:
+    name: rechnungen-redis
+  crowdsec_config:
+    name: rechnungen-crowdsec-config
+  crowdsec_data:
+    name: rechnungen-crowdsec-data
+  traefik_certs:
+    name: rechnungen-traefik-certs

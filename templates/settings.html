@@ -5,11 +5,16 @@
 {% block content %}
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
     <h1>⚙️ Einstellungen</h1>
-    <form method="POST" action="{{ url_for('test_email_settings') }}" style="display: inline;">
-        <button type="submit" class="btn" style="background: #9b59b6; color: white;">
-            📧 E-Mail überprüfen
-        </button>
-    </form>
+    <div style="display: flex; gap: 1rem;">
+        <a href="{{ url_for('list_users') }}" class="btn" style="background: #007bff; color: white;">
+            👥 Benutzerverwaltung
+        </a>
+        <form method="POST" action="{{ url_for('test_email_settings') }}" style="display: inline;">
+            <button type="submit" class="btn" style="background: #9b59b6; color: white;">
+                📧 E-Mail überprüfen
+            </button>
+        </form>
+    </div>
 </div>
 
 <div class="flash warning">

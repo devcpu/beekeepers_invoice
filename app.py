@@ -1161,6 +1161,161 @@ Mit freundlichen Grüßen
         }
         return render_template('settings.html', company=company_data, bank=bank_data, config=app.config)
     
+    @app.route('/settings/users')
+    @login_required
+    @role_required('admin')
+    def list_users():
+        """User-Verwaltung - Liste aller Benutzer"""
+        users = User.query.order_by(User.created_at.desc()).all()
+        return render_template('users/list.html', users=users)
+    
+    @app.route('/settings/users/new', methods=['GET', 'POST'])
+    @login_required
+    @role_required('admin')
+    def create_user():
+        """Neuen Benutzer erstellen"""
+        if request.method == 'POST':
+            try:
+                username = request.form.get('username')
+                email = request.form.get('email')
+                password = request.form.get('password')
+                role = request.form.get('role', 'cashier')
+                
+                # Validierung
+                if User.query.filter_by(username=username).first():
+                    flash('Benutzername bereits vergeben.', 'danger')
+                    return render_template('users/create.html')
+                
+                if User.query.filter_by(email=email).first():
+                    flash('E-Mail-Adresse bereits vergeben.', 'danger')
+                    return render_template('users/create.html')
+                
+                # Benutzer erstellen
+                user = User(
+                    username=username,
+                    email=email,
+                    role=role,
+                    is_active=True
+                )
+                user.set_password(password)
+                
+                # Optional: Reseller-Verknüpfung
+                if role == 'reseller':
+                    customer_id = request.form.get('reseller_customer_id')
+                    if customer_id:
+                        user.reseller_customer_id = int(customer_id)
+                
+                db.session.add(user)
+                db.session.commit()
+                
+                flash(f'Benutzer "{username}" wurde erfolgreich erstellt.', 'success')
+                return redirect(url_for('list_users'))
+                
+            except Exception as e:
+                db.session.rollback()
+                flash(f'Fehler beim Erstellen des Benutzers: {str(e)}', 'danger')
+        
+        # GET: Formular anzeigen
+        customers = Customer.query.order_by(Customer.company_name).all()
+        return render_template('users/create.html', customers=customers)
+    
+    @app.route('/settings/users/<int:user_id>/edit', methods=['GET', 'POST'])
+    @login_required
+    @role_required('admin')
+    def edit_user(user_id):
+        """Benutzer bearbeiten"""
+        user = User.query.get_or_404(user_id)
+        
+        if request.method == 'POST':
+            try:
+                # E-Mail aktualisieren
+                new_email = request.form.get('email')
+                if new_email != user.email:
+                    if User.query.filter_by(email=new_email).first():
+                        flash('E-Mail-Adresse bereits vergeben.', 'danger')
+                        return render_template('users/edit.html', user=user, customers=Customer.query.all())
+                    user.email = new_email
+                
+                # Rolle aktualisieren
+                user.role = request.form.get('role', user.role)
+                
+                # Reseller-Verknüpfung
+                if user.role == 'reseller':
+                    customer_id = request.form.get('reseller_customer_id')
+                    user.reseller_customer_id = int(customer_id) if customer_id else None
+                else:
+                    user.reseller_customer_id = None
+                
+                # Aktiv-Status
+                user.is_active = request.form.get('is_active') == 'on'
+                
+                # Passwort ändern (optional)
+                new_password = request.form.get('new_password')
+                if new_password:
+                    user.set_password(new_password)
+                
+                db.session.commit()
+                flash(f'Benutzer "{user.username}" wurde aktualisiert.', 'success')
+                return redirect(url_for('list_users'))
+                
+            except Exception as e:
+                db.session.rollback()
+                flash(f'Fehler beim Aktualisieren des Benutzers: {str(e)}', 'danger')
+        
+        customers = Customer.query.order_by(Customer.company_name).all()
+        return render_template('users/edit.html', user=user, customers=customers)
+    
+    @app.route('/settings/users/<int:user_id>/toggle-active', methods=['POST'])
+    @login_required
+    @role_required('admin')
+    def toggle_user_active(user_id):
+        """Benutzer aktivieren/deaktivieren"""
+        user = User.query.get_or_404(user_id)
+        
+        if user.id == current_user.id:
+            flash('Sie können sich nicht selbst deaktivieren.', 'danger')
+            return redirect(url_for('list_users'))
+        
+        user.is_active = not user.is_active
+        db.session.commit()
+        
+        status = 'aktiviert' if user.is_active else 'deaktiviert'
+        flash(f'Benutzer "{user.username}" wurde {status}.', 'success')
+        return redirect(url_for('list_users'))
+    
+    @app.route('/settings/users/<int:user_id>/reset-2fa', methods=['POST'])
+    @login_required
+    @role_required('admin')
+    def reset_user_2fa(user_id):
+        """2FA für Benutzer zurücksetzen"""
+        user = User.query.get_or_404(user_id)
+        
+        user.totp_enabled = False
+        user.totp_secret = None
+        user.backup_codes = None
+        db.session.commit()
+        
+        flash(f'2FA für "{user.username}" wurde zurückgesetzt.', 'warning')
+        return redirect(url_for('list_users'))
+    
+    @app.route('/settings/users/<int:user_id>/delete', methods=['POST'])
+    @login_required
+    @role_required('admin')
+    def delete_user(user_id):
+        """Benutzer löschen"""
+        user = User.query.get_or_404(user_id)
+        
+        if user.id == current_user.id:
+            flash('Sie können sich nicht selbst löschen.', 'danger')
+            return redirect(url_for('list_users'))
+        
+        username = user.username
+        db.session.delete(user)
+        db.session.commit()
+        
+        flash(f'Benutzer "{username}" wurde gelöscht.', 'success')
+        return redirect(url_for('list_users'))
+    
     @app.route('/payments/review')
     @login_required
     def payment_review():

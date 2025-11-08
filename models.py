@@ -214,6 +214,7 @@ class Customer(db.Model):
     phone = db.Column(db.String(50))
     address = db.Column(db.Text)
     tax_id = db.Column(db.String(50))
+    reseller = db.Column(db.Boolean, default=False)  # Wiederverkäufer-Flag
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Beziehungen

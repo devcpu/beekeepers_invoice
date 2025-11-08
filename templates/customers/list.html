@@ -50,6 +50,9 @@
                                 {{ customer.first_name }} {{ customer.last_name }}
                             {% endif %}
                         </strong>
+                        {% if customer.reseller %}
+                        <span style="background: #3498db; color: white; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem;" title="Wiederverkäufer">🏪 Reseller</span>
+                        {% endif %}
                         {% if customer.is_anonymized %}
                         <span style="color: #95a5a6; font-size: 0.85rem; margin-left: 0.5rem;" title="DSGVO-anonymisiert">🔒 Anonymisiert</span>
                         {% endif %}

@@ -1312,6 +1312,7 @@ Mit freundlichen Grüßen
                 customer.phone = request.form.get('phone')
                 customer.address = request.form.get('address')
                 customer.tax_id = request.form.get('tax_id')
+                customer.reseller = request.form.get('reseller') == '1'
                 
                 db.session.commit()
                 flash('Kundendaten erfolgreich aktualisiert!', 'success')
@@ -2510,8 +2511,8 @@ Mit freundlichen Grüßen
                 db.session.rollback()
                 flash(f'Fehler beim Erstellen des Lieferscheins: {str(e)}', 'error')
         
-        # GET: Formular anzeigen
-        customers = Customer.query.order_by(Customer.company_name, Customer.last_name).all()
+        # GET: Formular anzeigen - NUR Reseller anzeigen
+        customers = Customer.query.filter_by(reseller=True).order_by(Customer.company_name, Customer.last_name).all()
         products = Product.query.filter_by(active=True).order_by(Product.name).all()
         
         return render_template('delivery_notes/create.html', customers=customers, products=products)

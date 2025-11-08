@@ -2390,8 +2390,25 @@ Mit freundlichen Grüßen
     @app.cli.command()
     def init_db():
         """Datenbank initialisieren"""
+        from werkzeug.security import generate_password_hash
+        
         db.create_all()
-        print("Datenbank erfolgreich initialisiert!")
+        
+        # Standard-Admin-User erstellen, falls nicht vorhanden
+        admin = User.query.filter_by(username='admin').first()
+        if not admin:
+            admin = User(
+                username='admin',
+                email='admin@example.com',
+                password_hash=generate_password_hash('admin'),
+                role='admin',
+                is_active=True
+            )
+            db.session.add(admin)
+            db.session.commit()
+            print("✅ Admin-User erstellt (Username: admin, Passwort: admin)")
+        
+        print("✅ Datenbank erfolgreich initialisiert!")
     
     @app.cli.command()
     def seed_db():

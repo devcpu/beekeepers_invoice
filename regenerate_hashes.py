@@ -23,17 +23,18 @@ def regenerate_hashes():
         print(f"Regeneriere Hashes für {len(invoices)} Rechnungen...\n")
 
         for invoice in invoices:
-                old_hash = invoice.data_hash
-                invoice.generate_hash()
-                new_hash = invoice.data_hash
+            old_hash = invoice.data_hash
+            invoice.generate_hash()
+            new_hash = invoice.data_hash
 
-                print(f"Rechnung {invoice.invoice_number}:")
-                print(f"  Alt: {old_hash}")
-                print(f"  Neu: {new_hash}")
-                print(f"  {'✅ Gleich' if old_hash == new_hash else '🔄 Geändert'}\n")
+            print(f"Rechnung {invoice.invoice_number}:")
+            print(f"  Alt: {old_hash}")
+            print(f"  Neu: {new_hash}")
+            print(f"  {'✅ Gleich' if old_hash == new_hash else '🔄 Geändert'}\n")
 
-            db.session.commit()
-            print(f"\n✅ {len(invoices)} Rechnungs-Hashes aktualisiert!")
+        db.session.commit()
+        print(f"\n✅ {len(invoices)} Rechnungs-Hashes aktualisiert!")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     regenerate_hashes()

@@ -4,11 +4,11 @@ Dieses Projekt verwendet **Alembic** für datenbank-agnostische Schema-Migration
 
 ## Warum Alembic?
 
-✅ **Datenbank-agnostisch**: Unterstützt PostgreSQL, MySQL, SQLite, MariaDB, etc.  
-✅ **Versionierung**: Jede Schema-Änderung wird versioniert und kann zurückgerollt werden  
-✅ **Automatische Generierung**: Migrationen werden aus Models automatisch erstellt  
-✅ **Team-fähig**: Migrations-Historie im Git für alle Entwickler  
-✅ **Production-safe**: Migrationen können sicher auf Produktion angewendet werden  
+✅ **Datenbank-agnostisch**: Unterstützt PostgreSQL, MySQL, SQLite, MariaDB, etc.
+✅ **Versionierung**: Jede Schema-Änderung wird versioniert und kann zurückgerollt werden
+✅ **Automatische Generierung**: Migrationen werden aus Models automatisch erstellt
+✅ **Team-fähig**: Migrations-Historie im Git für alle Entwickler
+✅ **Production-safe**: Migrationen können sicher auf Produktion angewendet werden
 
 ## Unterstützte Datenbanken
 

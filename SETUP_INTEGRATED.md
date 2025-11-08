@@ -284,8 +284,8 @@ docker stats rechnungen-app
 
 # PostgreSQL-Queries
 docker exec postgres psql -U rechnungen_user rechnungen -c "
-SELECT pid, usename, application_name, state, query 
-FROM pg_stat_activity 
+SELECT pid, usename, application_name, state, query
+FROM pg_stat_activity
 WHERE datname = 'rechnungen';
 "
 ```

@@ -1,10 +1,10 @@
 # Pre-commit hooks für Rechnungs-System
 # Installation: pip install pre-commit && pre-commit install
-
+exclude: '(docs|_build|tests|logs|migrations|migrations_archive|pdfs|venv)/.*'
 repos:
   # Python Code Formatting & Linting
   - repo: https://github.com/psf/black
-    rev: 24.10.0
+    rev: 25.9.0
     hooks:
       - id: black
         language_version: python3
@@ -12,7 +12,7 @@ repos:
         exclude: 'regenerate_hashes\.py'  # Syntax error - manuell fixen
 
   - repo: https://github.com/pycqa/flake8
-    rev: 7.1.1
+    rev: 7.3.0
     hooks:
       - id: flake8
         args: ['--max-line-length=120', '--extend-ignore=E203,W503,E501,C901,F401,F841']
@@ -53,17 +53,190 @@ repos:
     hooks:
       - id: trailing-whitespace
         exclude: \.md$
-      - id: end-of-file-fixer
-      - id: check-yaml
-        exclude: 'crowdsec/parsers\.yaml'  # Multi-document YAML (valid)
-      - id: check-json
+
+      - id: check-ast
+        name: check python ast
+        description: simply checks whether the files parse as valid python.
+        entry: check-ast
+        language: python
+        exclude: '(attic|tests|docs|files)/.*'
+        types: [python]
+
       - id: check-added-large-files
-        args: ['--maxkb=1000']
-      - id: check-merge-conflict
+        name: check for added large files
+        description: prevents giant files from being committed.
+        entry: check-added-large-files
+        exclude: '(attic|tests|docs|files)/.*'
+        language: python
+        args: [--maxkb=500]
+
+      - id: fix-byte-order-marker
+        name: 'check BOM - deprecated: use fix-byte-order-marker'
+        description: forbids files which have a utf-8 byte-order marker.
+        entry: check-byte-order-marker
+        language: python
+        exclude: '(attic|tests|docs|files)/.*'
+        types: [text]
+
+      - id: check-builtin-literals
+        name: check builtin type constructor use
+        description: requires literal syntax when initializing empty or zero python builtin types.
+        entry: check-builtin-literals
+        language: python
+        types: [python]
+
+      - id: check-executables-have-shebangs
+        name: check that executables have shebangs
+        description: ensures that (non-binary) executables have a shebang.
+        entry: check-executables-have-shebangs
+        language: python
+        types: [text, executable]
+        stages: [pre-commit, pre-push, manual]
+
+      - id: check-shebang-scripts-are-executable
+        name: check that shebang scripts are executable
+        description: ensures that files with a shebang are marked executable.
+        entry: check-shebang-scripts-are-executable
+
       - id: check-case-conflict
-      - id: mixed-line-ending
-        args: ['--fix=lf']
+        name: check for case conflicts
+        description: checks for files that would conflict in case-insensitive filesystems.
+        entry: check-case-conflict
+        language: python
+
+      - id: check-merge-conflict
+        name: check for merge conflicts
+        description: checks for files that contain merge conflict strings.
+        entry: check-merge-conflict
+        language: python
+        types: [text]
+
+      - id: forbid-new-submodules
+        name: forbid new submodules
+        description: prevents addition of new git submodules.
+        language: python
+        entry: forbid-new-submodules
+        types: [directory]
+
+      - id: check-json
+        name: check json
+        description: checks json files for parseable syntax.
+        entry: check-json
+        language: python
+        types: [json]
+
+      - id: pretty-format-json
+        name: pretty format json
+        description: sets a standard for formatting json files.
+        entry: pretty-format-json
+        language: python
+        exclude: .vscode
+        types: [json]
+        args: [--autofix]
+
+      - id: check-xml
+        name: check xml
+        description: checks xml files for parseable syntax.
+        entry: check-xml
+        language: python
+        types: [xml]
+
+      - id: check-yaml
+        name: check yaml
+        description: checks yaml files for parseable syntax.
+        entry: check-yaml
+        exclude: 'crowdsec/parsers\.yaml'  # Multi-document YAML (valid
+        language: python
+        types: [yaml]
+
+      - id: sort-simple-yaml
+        name: sort simple yaml files
+        description: sorts simple yaml files which consist only of top-level keys, preserving comments and blocks.
+        language: python
+        entry: sort-simple-yaml
+        files: '^$'
+
+      - id: check-toml
+        name: check toml
+        description: checks toml files for parseable syntax.
+        entry: check-toml
+        language: python
+        exclude: '(attic|tests|docs|files)/.*'
+        types: [toml]
+
+      - id: check-vcs-permalinks
+        name: check vcs permalinks
+        description: ensures that links to vcs websites are permalinks.
+        entry: check-vcs-permalinks
+        language: python
+        exclude: '(attic|tests|docs|files)/.*'
+        types: [text]
+
+      - id: check-docstring-first
+        name: check docstring is first
+        description: checks a common error of defining a docstring after code.
+        entry: check-docstring-first
+        language: python
+        types: [python]
+        exclude: vz2kvm/utils.py
+
+      - id: debug-statements
+        name: debug statements (python)
+        description: checks for debugger imports and py37+ `breakpoint()` calls in python source.
+        entry: debug-statement-hook
+        language: python
+        types: [python]
+
       - id: detect-private-key
+        name: detect private key
+        description: detects the presence of private keys.
+        entry: detect-private-key
+        language: python
+        types: [text]
+        exclude: loadgenerator/testenv/id_testVPS_RSA
+
+      - id: end-of-file-fixer
+        name: fix end of files
+        description: ensures that a file is either empty, or ends with one newline.
+        entry: end-of-file-fixer
+        language: python
+        exclude: '(attic|tests|docs|files)/.*'
+        types: [text]
+        stages: [pre-commit, pre-push, manual]
+
+      - id: mixed-line-ending
+        name: mixed line ending
+        description: replaces or checks mixed line ending.
+        args: [--fix=lf]
+        entry: mixed-line-ending
+        exclude: '(attic|tests|docs|files)/.*'
+        language: python
+        types: [text]
+
+      - id: requirements-txt-fixer
+        name: fix requirements.txt
+        description: sorts entries in requirements.txt.
+        entry: requirements-txt-fixer
+        language: python
+        files: requirements.*\.txt$
+
+      - id: trailing-whitespace
+        name: trim trailing whitespace
+        description: trims trailing whitespace.
+        entry: trailing-whitespace-fixer
+        language: python
+        exclude: '(attic|tests|docs|files)/.*'
+        types: [text]
+        stages: [pre-commit, pre-push, manual]
+
+      - id: name-tests-test
+        name: tests should end in _test.py
+        description: this verifies that test files are named correctly.
+        entry: name-tests-test
+        language: python
+        exclude: tests/testRunner.py
+        files: (^|/)tests/.+\.py$
+
 
   # SQL Linting
   - repo: https://github.com/sqlfluff/sqlfluff
@@ -78,7 +251,7 @@ repos:
 
   # Security Checks
   - repo: https://github.com/PyCQA/bandit
-    rev: 1.7.10
+    rev: 1.8.6
     hooks:
       - id: bandit
         args: ['-c', 'pyproject.toml', '--skip', 'B201,B110,B404,B603,B608']
@@ -86,11 +259,70 @@ repos:
         exclude: 'regenerate_hashes\.py'
 
   # Requirements.txt Check
-  - repo: https://github.com/Lucas-C/pre-commit-hooks-safety
-    rev: v1.4.2
+  - repo: https://github.com/Lucas-C/pre-commit-hooks
+    rev: v1.5.5
     hooks:
-      - id: python-safety-dependencies-check
-        files: requirements.txt
+
+      - id: forbid-crlf
+
+      - id: remove-crlf
+
+      - id: forbid-tabs
+        exclude: '(attic|tests|docs|files)/.*'
+
+      - id: remove-tabs
+        args: [--whitespaces-count, '2']  # defaults to: 4
+        exclude: '(attic|tests|docs|files)/.*'
+
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: 'v1.5.0'
+    hooks:
+      - id: detect-secrets
+        exclude: '(attic|tests|docs|files)/.*|.*/tests/.*'
+
+  - repo: https://github.com/pre-commit/mirrors-pylint
+    rev: v3.0.0a5
+    hooks:
+    - id: pylint
+      language: system
+      types: [python]
+      args:
+        - --rcfile=setup.cfg
+        # - --reports=yes
+
+  - repo: local
+    hooks:
+
+    - id: py-compile
+      name: python compile check
+      description: checks python files for compilation errors
+      entry: python -m py_compile
+      language: system
+      types: [python]
+      exclude: '(attic|tests|docs|files)/.*'
+
+    # - id: pytest
+    #   name: run_pytest
+    #   entry: python3 test_runner.py
+    #   language: system
+    #   types: [python]
+    #   pass_filenames: false
+
+    # - id: make_html_doc
+    #   name: make_html_doc
+    #   entry: make html
+    #   language: system
+    #   types: [python]
+    #   pass_filenames: false
+
+    - id: python-safety-dependencies-check
+      name: python-safety-dependencies-check
+      entry: python scripts/safety_check.py
+      language: system
+      files: setup.cfg
+      pass_filenames: false
+
+
 
 # CI Mode: Schnellere Checks
 ci:

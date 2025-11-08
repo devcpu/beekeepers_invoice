@@ -1354,20 +1354,20 @@ Die Bestandsverwaltungs-Endpoints sind speziell für die Integration mit Microco
 void addStock(String lotNumber, int amount) {
   HTTPClient http;
   String url = "http://192.168.1.100:5000/api/products/lot/" + lotNumber + "/stock/add";
-  
+
   http.begin(url);
   http.addHeader("Content-Type", "application/json");
-  
+
   String payload = "{\"amount\":" + String(amount) + "}";
   int httpCode = http.POST(payload);
-  
+
   if (httpCode == 200 || httpCode == 201) {
     String response = http.getString();
     Serial.println("Erfolg: " + response);
   } else {
     Serial.println("Fehler: " + String(httpCode));
   }
-  
+
   http.end();
 }
 
@@ -1711,4 +1711,3 @@ Geplante Features:
 - [ ] Push-Notifications für Zahlungseingänge
 - [ ] QR-Code-Zahlung (SEPA/PayPal)
 - [ ] Automatisches Backup zu Cloud (S3, Dropbox)
-

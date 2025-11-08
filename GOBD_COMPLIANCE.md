@@ -4,8 +4,8 @@
 
 Dieses System erfüllt die Anforderungen der **GoBD (Grundsätze zur ordnungsmäßigen Führung und Aufbewahrung von Büchern, Aufzeichnungen und Unterlagen in elektronischer Form sowie zum Datenzugriff)** für die elektronische Rechnungsstellung und -verwaltung.
 
-**Implementierungsdatum:** Dezember 2024  
-**Version:** 1.1  
+**Implementierungsdatum:** Dezember 2024
+**Version:** 1.1
 **Rechtsgrundlage:** BMF-Schreiben vom 28.11.2019
 
 **Erfasste Geschäftsvorfälle:**
@@ -63,7 +63,7 @@ DELETE    cancelled
 
 **Wichtig:** Entwürfe sind noch nicht geschäftsrelevant und unterliegen **nicht** der Aufbewahrungspflicht.
 
-**Route:** `/invoices/<id>/delete` (POST)  
+**Route:** `/invoices/<id>/delete` (POST)
 **Datei:** `app.py` - Funktion `delete_invoice()`
 
 ```python
@@ -173,7 +173,7 @@ Rechnungen dürfen nicht gelöscht werden. Stornierungen müssen durch Gegenbuch
 
 #### Stornorechnung-Workflow
 
-**Route:** `/invoices/<id>/cancel` (GET + POST)  
+**Route:** `/invoices/<id>/cancel` (GET + POST)
 **Datei:** `app.py` - Funktion `create_cancellation_invoice()`
 
 **Ablauf:**
@@ -254,7 +254,7 @@ CREATE TABLE invoice_pdf_archive (
 - **archived_by**: Benutzer
 
 #### Automatische Archivierung beim Download
-**Route:** `/invoices/<id>/pdf`  
+**Route:** `/invoices/<id>/pdf`
 **Datei:** `app.py` - Funktion `download_invoice_pdf()`
 
 **Ablauf:**
@@ -357,7 +357,7 @@ python migrate_add_gobd_tables.py
    - Kundendaten eingeben
    - Positionen hinzufügen
    - Rechnung kann noch bearbeitet oder gelöscht werden
-   
+
 2. **Optional: Entwurf löschen**
    - ℹ️ Solange Status `draft`, kann die Rechnung gelöscht werden
    - Button "Entwurf löschen" in Rechnungsansicht
@@ -542,7 +542,7 @@ def create_stock_adjustment():
     if new_stock < 0:
         flash('Bestand würde negativ werden!', 'error')
         return redirect(...)
-    
+
     # Erstelle Anpassung
     adjustment = StockAdjustment(
         product_id=product.id,
@@ -554,7 +554,7 @@ def create_stock_adjustment():
         adjusted_by=current_user.id,
         document_number=document_number  # Falls eigenentnahme/geschenk
     )
-    
+
     # Bestand aktualisieren
     product.number = new_stock
     db.session.commit()
@@ -710,13 +710,13 @@ CREATE TABLE invoices (
 def anonymize_gdpr(self):
     """
     Anonymisiert Kundendaten gemäß DSGVO Art. 17.
-    
+
     WICHTIG: Bestehende Rechnungen bleiben unverändert (GoBD-konform).
-    Die denormalisierten Kundendaten in den Rechnungen (customer_company, 
+    Die denormalisierten Kundendaten in den Rechnungen (customer_company,
     customer_name, etc.) werden NICHT verändert, um die Manipulationssicherheit
     (data_hash) zu erhalten und die steuerrechtlichen Aufbewahrungspflichten
     (§147 AO - 10 Jahre) zu erfüllen.
-    
+
     DSGVO Art. 17 Abs. 3 Buchstabe b: Das Recht auf Löschung gilt nicht,
     wenn die Verarbeitung zur Erfüllung einer rechtlichen Verpflichtung
     erforderlich ist.
@@ -746,15 +746,15 @@ def is_anonymized(self):
 @login_required
 def anonymize_customer(customer_id):
     customer = Customer.query.get_or_404(customer_id)
-    
+
     # Bereits anonymisiert?
     if customer.is_anonymized:
         flash('Dieser Kunde wurde bereits anonymisiert.', 'warning')
         return redirect(url_for('list_customers'))
-    
+
     # Anzahl verknüpfter Rechnungen ermitteln
     invoice_count = Invoice.query.filter_by(customer_id=customer_id).count()
-    
+
     # Audit-Log
     app.logger.info(
         f"DSGVO-Anonymisierung durchgeführt | "
@@ -763,11 +763,11 @@ def anonymize_customer(customer_id):
         f"Benutzer: {current_user.username} | "
         f"Verknüpfte Rechnungen: {invoice_count} (bleiben unverändert gemäß §147 AO)"
     )
-    
+
     # Anonymisierung durchführen
     customer.anonymize_gdpr()
     db.session.commit()
-    
+
     if invoice_count > 0:
         flash(
             f'Kunde erfolgreich anonymisiert. '
@@ -788,7 +788,7 @@ Anonymisierte Kunden werden markiert:
 <td>
     <strong>{{ customer.display_name }}</strong>
     {% if customer.is_anonymized %}
-    <span style="color: #95a5a6; font-size: 0.85rem; margin-left: 0.5rem;" 
+    <span style="color: #95a5a6; font-size: 0.85rem; margin-left: 0.5rem;"
           title="DSGVO-anonymisiert">
         🔒 Anonymisiert
     </span>
@@ -802,7 +802,7 @@ Anonymisierte Kunden werden markiert:
 **Anonymisierungs-Button:**
 ```html
 {% if not customer.is_anonymized %}
-<button type="button" class="btn" style="background: #e74c3c; color: white;" 
+<button type="button" class="btn" style="background: #e74c3c; color: white;"
         onclick="document.getElementById('anonymize-modal').style.display='block'">
     DSGVO Anonymisieren
 </button>
@@ -813,7 +813,7 @@ Anonymisierte Kunden werden markiert:
 ```html
 {% if customer.is_anonymized %}
 <div class="alert alert-warning">
-    <strong>⚠️ Anonymisiert:</strong> Dieser Kunde wurde gemäß DSGVO anonymisiert. 
+    <strong>⚠️ Anonymisiert:</strong> Dieser Kunde wurde gemäß DSGVO anonymisiert.
     Die personenbezogenen Daten wurden gelöscht.
 </div>
 {% endif %}
@@ -867,13 +867,13 @@ wir haben Ihre Löschungsanfrage vom [Datum] erhalten und bearbeitet.
 - Ihr Kundenprofil wurde anonymisiert
 
 ℹ️ AUFBEWAHRUNGSPFLICHT:
-Gemäß § 147 AO (Abgabenordnung) sind wir verpflichtet, Rechnungen 
-10 Jahre lang aufzubewahren. Diese enthalten weiterhin Ihre Daten 
+Gemäß § 147 AO (Abgabenordnung) sind wir verpflichtet, Rechnungen
+10 Jahre lang aufzubewahren. Diese enthalten weiterhin Ihre Daten
 zum Zeitpunkt der Rechnungsstellung.
 
 RECHTLICHE GRUNDLAGE:
-DSGVO Art. 17 Abs. 3 Buchstabe b: Das Recht auf Löschung gilt nicht, 
-wenn die Verarbeitung zur Erfüllung einer rechtlichen Verpflichtung 
+DSGVO Art. 17 Abs. 3 Buchstabe b: Das Recht auf Löschung gilt nicht,
+wenn die Verarbeitung zur Erfüllung einer rechtlichen Verpflichtung
 erforderlich ist.
 
 Bei Fragen stehen wir Ihnen gerne zur Verfügung.
@@ -952,16 +952,16 @@ Mit freundlichen Grüßen
 **Frage des Finanzamts:** "Warum sind hier anonymisierte Kunden?"
 
 **Antwort:**
-> "Wir haben DSGVO-Löschanträge erhalten. Die Kundenstammdaten wurden anonymisiert, 
-> aber alle steuerrelevanten Rechnungen sind vollständig erhalten und durch SHA-256 
-> Hashes geschützt. Die Rechnungen zeigen weiterhin die korrekten Kundendaten zum 
+> "Wir haben DSGVO-Löschanträge erhalten. Die Kundenstammdaten wurden anonymisiert,
+> aber alle steuerrelevanten Rechnungen sind vollständig erhalten und durch SHA-256
+> Hashes geschützt. Die Rechnungen zeigen weiterhin die korrekten Kundendaten zum
 > Zeitpunkt der Rechnungsstellung."
 
 **Frage der Datenschutzbehörde:** "Warum speichern Sie noch Kundendaten in Rechnungen?"
 
 **Antwort:**
-> "Diese Daten unterliegen der 10-jährigen Aufbewahrungspflicht gemäß § 147 AO. 
-> DSGVO Art. 17 Abs. 3 Buchstabe b erlaubt die Speicherung zur Erfüllung rechtlicher 
+> "Diese Daten unterliegen der 10-jährigen Aufbewahrungspflicht gemäß § 147 AO.
+> DSGVO Art. 17 Abs. 3 Buchstabe b erlaubt die Speicherung zur Erfüllung rechtlicher
 > Verpflichtungen. Personenbezogene Daten im Kundenstamm wurden gelöscht."
 
 ### 9.11 Weitere personenbezogene Daten im System
@@ -1006,10 +1006,10 @@ Mit freundlichen Grüßen
    #!/bin/bash
    # Datenbank
    pg_dump -U user rechnungen > backup_$(date +%Y%m%d).sql
-   
+
    # PDFs
    tar -czf pdfs_$(date +%Y%m%d).tar.gz invoices/pdfs/
-   
+
    # Hashes exportieren
    psql -U user -d rechnungen -c "COPY invoice_pdf_archive TO '/backups/hashes_$(date +%Y%m%d).csv' CSV HEADER;"
    ```
@@ -1062,16 +1062,16 @@ Das System ermöglicht den gesetzlich geforderten Datenzugriff:
        FROM invoices i
        LEFT JOIN customers c ON i.customer_id = c.id
    ) TO '/export/invoices.csv' CSV HEADER;"
-   
+
    # Status-Historie exportieren
    psql -U user -d rechnungen -c "COPY invoice_status_log TO '/export/audit_trail.csv' CSV HEADER;"
-   
+
    # PDF-Hashes exportieren
    psql -U user -d rechnungen -c "COPY invoice_pdf_archive TO '/export/pdf_hashes.csv' CSV HEADER;"
-   
+
    # Bestandsanpassungen exportieren (NEU)
    psql -U user -d rechnungen -c "COPY stock_adjustments TO '/export/stock_adjustments.csv' CSV HEADER;"
-   
+
    # Oder: PDF-Export über Weboberfläche
    # → Navigation: 📝 Anpassungen → "PDF exportieren"
    ```
@@ -1169,35 +1169,35 @@ Zusätzlich bereithalten:
 
 ## 15. Häufige Fragen (FAQ)
 
-**Q: Kann ich eine Rechnung löschen?**  
+**Q: Kann ich eine Rechnung löschen?**
 A: **Entwürfe (Status `draft`) JA** - Diese sind noch nicht geschäftsrelevant und können gelöscht werden. **Versendete/Bezahlte Rechnungen NEIN** - Diese müssen 10 Jahre aufbewahrt werden. Verwenden Sie stattdessen die Stornorechnung.
 
-**Q: Warum kann ich einen Entwurf löschen, aber eine versendete Rechnung nicht?**  
+**Q: Warum kann ich einen Entwurf löschen, aber eine versendete Rechnung nicht?**
 A: Ein Entwurf ist noch keine Rechnung im steuerrechtlichen Sinne. Die GoBD-Aufbewahrungspflicht beginnt erst mit der Versendung (Status `sent`). Ab diesem Zeitpunkt ist die Rechnung unveränderbar und muss 10 Jahre aufbewahrt werden.
 
-**Q: Was ist der Unterschied zwischen Löschen und Stornieren?**  
-A: 
+**Q: Was ist der Unterschied zwischen Löschen und Stornieren?**
+A:
 - **Löschen** (nur Entwürfe): Rechnung wird komplett aus der Datenbank entfernt
 - **Stornieren** (versendete/bezahlte): Originalrechnung bleibt bestehen, neue Stornorechnung mit negativen Beträgen wird erstellt
 
-**Q: Was passiert, wenn der Hash nicht übereinstimmt?**  
+**Q: Was passiert, wenn der Hash nicht übereinstimmt?**
 A: Das System zeigt eine Warnung an. Die Daten wurden möglicherweise manipuliert oder die Datenbankintegrität ist beschädigt.
 
-**Q: Muss ich PDFs archivieren?**  
+**Q: Muss ich PDFs archivieren?**
 A: Ja. Das System speichert automatisch einen Hash beim ersten Download. Die PDF-Dateien selbst sollten in einem separaten Backup gesichert werden.
 
-**Q: Was ist, wenn ein Kunde Löschung seiner Daten fordert (DSGVO)?**  
+**Q: Was ist, wenn ein Kunde Löschung seiner Daten fordert (DSGVO)?**
 A: Anonymisieren Sie die Kundendaten. Die Rechnung selbst muss 10 Jahre aufbewahrt werden (GoBD hat Vorrang).
 
-**Q: Wie kann ich die Integrität einer PDF-Datei prüfen?**  
+**Q: Wie kann ich die Integrität einer PDF-Datei prüfen?**
 A: Verwenden Sie die `verify_pdf()` Methode oder berechnen Sie den SHA-256 Hash manuell und vergleichen Sie ihn mit dem gespeicherten Hash.
 
 ---
 
 ## 16. Kontakt & Support
 
-**Entwickler:** [Ihr Name]  
-**Version:** 1.0  
+**Entwickler:** [Ihr Name]
+**Version:** 1.0
 **Letzte Aktualisierung:** Dezember 2024
 
 **Bei Fragen zur GoBD-Konformität:**
@@ -1211,7 +1211,7 @@ A: Verwenden Sie die `verify_pdf()` Methode oder berechnen Sie den SHA-256 Hash 
 
 Dieses System wurde nach bestem Wissen und Gewissen entwickelt, um die GoBD-Anforderungen zu erfüllen. Eine rechtliche Prüfung durch einen Steuerberater wird empfohlen.
 
-**Keine Gewährleistung:**  
+**Keine Gewährleistung:**
 Die korrekte Implementierung und Anwendung der GoBD liegt in der Verantwortung des Anwenders.
 
 ---

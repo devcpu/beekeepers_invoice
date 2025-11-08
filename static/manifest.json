@@ -1,127 +1,131 @@
 {
-  "name": "Rechnungsverwaltung",
-  "short_name": "Rechnungen",
-  "description": "GoBD-konforme Rechnungsverwaltung mit JWT-API, Offline-Unterstützung und manipulationssicherer Datenspeicherung",
-  "start_url": "/",
-  "scope": "/",
-  "display": "standalone",
-  "orientation": "portrait-primary",
-  "theme_color": "#0d6efd",
   "background_color": "#ffffff",
-  "categories": ["business", "finance", "productivity"],
-  "lang": "de-DE",
+  "categories": [
+    "business",
+    "finance",
+    "productivity"
+  ],
+  "description": "GoBD-konforme Rechnungsverwaltung mit JWT-API, Offline-Unterst\u00fctzung und manipulationssicherer Datenspeicherung",
   "dir": "ltr",
+  "display": "standalone",
   "icons": [
     {
-      "src": "/static/icons/icon-72x72.png",
+      "purpose": "any",
       "sizes": "72x72",
-      "type": "image/png",
-      "purpose": "any"
+      "src": "/static/icons/icon-72x72.png",
+      "type": "image/png"
     },
     {
-      "src": "/static/icons/icon-96x96.png",
+      "purpose": "any",
       "sizes": "96x96",
-      "type": "image/png",
-      "purpose": "any"
+      "src": "/static/icons/icon-96x96.png",
+      "type": "image/png"
     },
     {
-      "src": "/static/icons/icon-128x128.png",
+      "purpose": "any",
       "sizes": "128x128",
-      "type": "image/png",
-      "purpose": "any"
+      "src": "/static/icons/icon-128x128.png",
+      "type": "image/png"
     },
     {
-      "src": "/static/icons/icon-144x144.png",
+      "purpose": "any",
       "sizes": "144x144",
-      "type": "image/png",
-      "purpose": "any"
+      "src": "/static/icons/icon-144x144.png",
+      "type": "image/png"
     },
     {
-      "src": "/static/icons/icon-152x152.png",
+      "purpose": "any",
       "sizes": "152x152",
-      "type": "image/png",
-      "purpose": "any"
+      "src": "/static/icons/icon-152x152.png",
+      "type": "image/png"
     },
     {
-      "src": "/static/icons/icon-192x192.png",
+      "purpose": "any maskable",
       "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "src": "/static/icons/icon-192x192.png",
+      "type": "image/png"
     },
     {
-      "src": "/static/icons/icon-384x384.png",
+      "purpose": "any",
       "sizes": "384x384",
-      "type": "image/png",
-      "purpose": "any"
+      "src": "/static/icons/icon-384x384.png",
+      "type": "image/png"
     },
     {
-      "src": "/static/icons/icon-512x512.png",
+      "purpose": "any maskable",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "src": "/static/icons/icon-512x512.png",
+      "type": "image/png"
     }
   ],
-  "shortcuts": [
-    {
-      "name": "Neue Rechnung",
-      "short_name": "Neu",
-      "description": "Neue Rechnung erstellen",
-      "url": "/invoices/create",
-      "icons": [
-        {
-          "src": "/static/icons/shortcut-new.png",
-          "sizes": "96x96"
-        }
-      ]
-    },
-    {
-      "name": "Rechnungsliste",
-      "short_name": "Liste",
-      "description": "Alle Rechnungen anzeigen",
-      "url": "/invoices",
-      "icons": [
-        {
-          "src": "/static/icons/shortcut-list.png",
-          "sizes": "96x96"
-        }
-      ]
-    },
-    {
-      "name": "Kunden",
-      "short_name": "Kunden",
-      "description": "Kundenliste anzeigen",
-      "url": "/customers",
-      "icons": [
-        {
-          "src": "/static/icons/shortcut-customers.png",
-          "sizes": "96x96"
-        }
-      ]
-    }
-  ],
+  "lang": "de-DE",
+  "name": "Rechnungsverwaltung",
+  "orientation": "portrait-primary",
+  "scope": "/",
   "screenshots": [
     {
-      "src": "/static/screenshots/desktop-1.png",
-      "sizes": "1280x720",
-      "type": "image/png",
       "form_factor": "wide",
-      "label": "Rechnungsübersicht"
+      "label": "Rechnungs\u00fcbersicht",
+      "sizes": "1280x720",
+      "src": "/static/screenshots/desktop-1.png",
+      "type": "image/png"
     },
     {
-      "src": "/static/screenshots/mobile-1.png",
-      "sizes": "750x1334",
-      "type": "image/png",
       "form_factor": "narrow",
-      "label": "Mobile Ansicht"
+      "label": "Mobile Ansicht",
+      "sizes": "750x1334",
+      "src": "/static/screenshots/mobile-1.png",
+      "type": "image/png"
     }
   ],
   "share_target": {
     "action": "/invoices/create",
-    "method": "GET",
     "enctype": "application/x-www-form-urlencoded",
+    "method": "GET",
     "params": {
-      "title": "customer_name",
-      "text": "notes"
+      "text": "notes",
+      "title": "customer_name"
     }
-  }
+  },
+  "short_name": "Rechnungen",
+  "shortcuts": [
+    {
+      "description": "Neue Rechnung erstellen",
+      "icons": [
+        {
+          "sizes": "96x96",
+          "src": "/static/icons/shortcut-new.png"
+        }
+      ],
+      "name": "Neue Rechnung",
+      "short_name": "Neu",
+      "url": "/invoices/create"
+    },
+    {
+      "description": "Alle Rechnungen anzeigen",
+      "icons": [
+        {
+          "sizes": "96x96",
+          "src": "/static/icons/shortcut-list.png"
+        }
+      ],
+      "name": "Rechnungsliste",
+      "short_name": "Liste",
+      "url": "/invoices"
+    },
+    {
+      "description": "Kundenliste anzeigen",
+      "icons": [
+        {
+          "sizes": "96x96",
+          "src": "/static/icons/shortcut-customers.png"
+        }
+      ],
+      "name": "Kunden",
+      "short_name": "Kunden",
+      "url": "/customers"
+    }
+  ],
+  "start_url": "/",
+  "theme_color": "#0d6efd"
 }

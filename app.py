@@ -157,6 +157,28 @@ def create_app(config_name='default'):
         flash('Sie wurden erfolgreich abgemeldet.', 'success')
         return redirect(url_for('login'))
     
+    @app.route('/select-stock-source', methods=['GET', 'POST'])
+    @login_required
+    def select_stock_source():
+        """Bestandsquelle auswählen (Hauptbestand oder Marktbestand)"""
+        if request.method == 'POST':
+            stock_source = request.form.get('stock_source')
+            if stock_source in ['main', 'market']:
+                session['stock_source'] = stock_source
+                flash(f'Bestandsquelle gewählt: {"Hauptbestand (Zuhause)" if stock_source == "main" else "Marktbestand (Markt)"}', 'success')
+                return redirect(url_for('index'))
+            else:
+                flash('Ungültige Auswahl.', 'error')
+        
+        # Prüfe ob Marktbestand existiert
+        has_market_stock = False
+        if current_user.reseller_customer_id:
+            has_market_stock = ConsignmentStock.query.filter_by(
+                customer_id=current_user.reseller_customer_id
+            ).first() is not None
+        
+        return render_template('select_stock_source.html', has_market_stock=has_market_stock)
+    
     @app.route('/offline')
     def offline():
         """PWA Offline-Fallback Seite"""
@@ -602,6 +624,16 @@ def create_app(config_name='default'):
     @login_required
     def index():
         """Startseite mit Übersicht"""
+        # Prüfe ob Bestandsauswahl nötig ist
+        if current_user.reseller_customer_id and 'stock_source' not in session:
+            # Prüfe ob ConsignmentStock existiert
+            has_stock = ConsignmentStock.query.filter_by(
+                customer_id=current_user.reseller_customer_id
+            ).first() is not None
+            
+            if has_stock:
+                return redirect(url_for('select_stock_source'))
+        
         recent_invoices = Invoice.query.order_by(Invoice.created_at.desc()).limit(10).all()
         stats = {
             'total_invoices': Invoice.query.count(),
@@ -1350,8 +1382,36 @@ Mit freundlichen Grüßen
     @role_required('cashier', 'admin')
     def pos():
         """Kassenseite für schnellen Direktverkauf"""
-        products = Product.query.filter_by(active=True).order_by(Product.name).all()
-        return render_template('pos.html', products=products)
+        stock_source = session.get('stock_source', 'main')
+        
+        if stock_source == 'market' and current_user.reseller_customer_id:
+            # Marktbestand: Lade ConsignmentStock
+            consignment_items = ConsignmentStock.query.filter_by(
+                customer_id=current_user.reseller_customer_id
+            ).filter(ConsignmentStock.quantity > 0).all()
+            
+            # Konvertiere zu Product-ähnlicher Struktur für Template
+            products = []
+            for item in consignment_items:
+                product = item.product
+                # Erstelle Product-Kopie mit Marktbestand und Reseller-Preis
+                product_data = {
+                    'id': product.id,
+                    'name': product.name,
+                    'price': float(item.unit_price),  # Reseller-Preis!
+                    'number': item.quantity,  # Marktbestand
+                    'tax_rate': product.tax_rate,
+                    'is_market_stock': True,
+                    'consignment_stock_id': item.id
+                }
+                products.append(type('obj', (object,), product_data))
+        else:
+            # Hauptbestand: Lade normale Produkte
+            products = Product.query.filter_by(active=True).filter(Product.number > 0).order_by(Product.name).all()
+            for p in products:
+                p.is_market_stock = False
+        
+        return render_template('pos.html', products=products, stock_source=stock_source)
     
     @app.route('/pos/complete-sale', methods=['POST'])
     @login_required
@@ -1361,11 +1421,79 @@ Mit freundlichen Grüßen
         try:
             data = request.get_json()
             items = data.get('items', {})
+            stock_source = session.get('stock_source', 'main')
             
             if not items:
                 return jsonify({'success': False, 'message': 'Warenkorb ist leer'}), 400
             
-            # Generiere Belegnummer (GoBD-konform)
+            # Prüfe ob Rechnung erstellt werden soll (abhängig vom reseller_type)
+            create_invoice = True
+            if current_user.reseller_type == 'type3_non_ust_pwa':
+                create_invoice = False
+            
+            # Berechne Summen und reduziere Bestand
+            subtotal = Decimal('0.00')
+            line_items_data = []
+            
+            for product_id, quantity in items.items():
+                product = Product.query.get(int(product_id))
+                if not product:
+                    return jsonify({'success': False, 'message': f'Produkt {product_id} nicht gefunden'}), 404
+                
+                if stock_source == 'market' and current_user.reseller_customer_id:
+                    # Marktbestand: ConsignmentStock reduzieren
+                    consignment = ConsignmentStock.query.filter_by(
+                        customer_id=current_user.reseller_customer_id,
+                        product_id=product.id
+                    ).first()
+                    
+                    if not consignment or consignment.quantity < quantity:
+                        available = consignment.quantity if consignment else 0
+                        return jsonify({
+                            'success': False,
+                            'message': f'Nicht genug Marktbestand für {product.name}. Verfügbar: {available}, Benötigt: {quantity}'
+                        }), 400
+                    
+                    # Bestand umbuchen
+                    consignment.quantity -= quantity
+                    consignment.quantity_sold += quantity
+                    
+                    line_total = Decimal(str(consignment.unit_price)) * Decimal(str(quantity))
+                    unit_price = consignment.unit_price
+                else:
+                    # Hauptbestand: Product.number reduzieren
+                    if product.number < quantity:
+                        return jsonify({
+                            'success': False,
+                            'message': f'Nicht genug Bestand für {product.name}. Verfügbar: {product.number}, Benötigt: {quantity}'
+                        }), 400
+                    
+                    product.number -= quantity
+                    line_total = Decimal(str(product.price)) * Decimal(str(quantity))
+                    unit_price = product.price
+                
+                subtotal += line_total
+                
+                if create_invoice:
+                    line_items_data.append({
+                        'product': product,
+                        'quantity': quantity,
+                        'unit_price': unit_price,
+                        'tax_rate': product.tax_rate,
+                        'total': line_total
+                    })
+            
+            # Falls keine Rechnung erstellt werden soll (Typ 3)
+            if not create_invoice:
+                db.session.commit()
+                return jsonify({
+                    'success': True,
+                    'message': 'Verkauf erfolgreich (nur Bestandsumbuchung, keine Rechnung)',
+                    'receipt_number': None,
+                    'total': float(subtotal)
+                })
+            
+            # Ab hier: Rechnung erstellen (Typ 4 / normale Kasse)
             today = datetime.now().date()
             prefix = f"BAR-{today.strftime('%Y%m%d')}"
             
@@ -1380,35 +1508,6 @@ Mit freundlichen Grüßen
                 next_num = 1
             
             receipt_number = f"{prefix}-{next_num:04d}"
-            
-            # Berechne Summen
-            subtotal = Decimal('0.00')
-            line_items_data = []
-            
-            for product_id, quantity in items.items():
-                product = Product.query.get(int(product_id))
-                if not product:
-                    return jsonify({'success': False, 'message': f'Produkt {product_id} nicht gefunden'}), 404
-                
-                if product.number < quantity:
-                    return jsonify({
-                        'success': False, 
-                        'message': f'Nicht genug Bestand für {product.name}. Verfügbar: {product.number}, Benötigt: {quantity}'
-                    }), 400
-                
-                line_total = Decimal(str(product.price)) * Decimal(str(quantity))
-                subtotal += line_total
-                
-                line_items_data.append({
-                    'product': product,
-                    'quantity': quantity,
-                    'unit_price': product.price,
-                    'tax_rate': product.tax_rate,
-                    'total': line_total
-                })
-                
-                # Bestand reduzieren
-                product.number -= quantity
             
             # Erstelle "Kunde" für Barverkauf (falls nicht vorhanden)
             bar_customer = Customer.query.filter_by(email='barverkauf@system.local').first()
@@ -2407,6 +2506,20 @@ Mit freundlichen Grüßen
             db.session.add(admin)
             db.session.commit()
             print("✅ Admin-User erstellt (Username: admin, Passwort: admin)")
+        
+        # Marktstand-Customer für Marktbestand erstellen
+        marktstand = Customer.query.filter_by(email='marktstand@system.local').first()
+        if not marktstand:
+            marktstand = Customer(
+                company_name='Marktstand',
+                first_name='Markt',
+                last_name='Bestand',
+                email='marktstand@system.local',
+                address='Interner Bestand für Marktverkäufe'
+            )
+            db.session.add(marktstand)
+            db.session.commit()
+            print("✅ Marktstand-Customer erstellt (für Marktbestand)")
         
         print("✅ Datenbank erfolgreich initialisiert!")
     

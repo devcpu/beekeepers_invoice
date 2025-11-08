@@ -41,6 +41,18 @@ class User(UserMixin, db.Model):
     reseller_customer_id = db.Column(db.Integer, db.ForeignKey('customers.id'), nullable=True)
     reseller_customer = db.relationship('Customer', backref='reseller_user')
     
+    # Reseller-Typ (bestimmt POS-Verhalten)
+    # none: Kein Reseller
+    # type1_ust_extern: USt.-pflichtig mit eigenem Kassensystem (nur Kommissionsware)
+    # type2_non_ust_extern: Nicht USt.-pflichtig ohne PWA (nur Kommissionsware)
+    # type3_non_ust_pwa: Nicht USt.-pflichtig mit PWA (Bestandsumbuchung, keine Rechnung)
+    # type4_owner_market: Owner auf Markt (Bestandsumbuchung + BAR-Rechnung)
+    reseller_type = db.Column(
+        db.Enum('none', 'type1_ust_extern', 'type2_non_ust_extern', 'type3_non_ust_pwa', 'type4_owner_market', name='reseller_type_enum'),
+        default='none',
+        nullable=False
+    )
+    
     # Tracking
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     last_login = db.Column(db.DateTime, nullable=True)
@@ -613,6 +625,9 @@ class ConsignmentStock(db.Model):
     
     # Bestand beim Reseller
     quantity = db.Column(db.Integer, default=0, nullable=False)
+    
+    # Verkaufsstatistik (für Marktbestand/Reseller)
+    quantity_sold = db.Column(db.Integer, default=0, nullable=False)
     
     # Reseller-Preis (kann sich über Zeit ändern, daher hier gespeichert)
     unit_price = db.Column(db.Numeric(10, 2), nullable=False)

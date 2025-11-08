@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Bestandsquelle wählen{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 600px; margin-top: 80px;">
+    <div class="card shadow">
+        <div class="card-body text-center p-5">
+            <h2 class="mb-4">🏪 Bestandsquelle wählen</h2>
+            <p class="text-muted mb-4">
+                Wählen Sie, mit welchem Bestand Sie arbeiten möchten.
+            </p>
+
+            <form method="POST">
+                <div class="d-grid gap-3">
+                    <!-- Hauptbestand -->
+                    <button type="submit" name="stock_source" value="main" 
+                            class="btn btn-primary btn-lg py-4">
+                        <div style="font-size: 3rem; margin-bottom: 10px;">🏠</div>
+                        <h4 class="mb-1">Hauptbestand</h4>
+                        <small class="d-block text-white-50">
+                            Zuhause / Lager
+                        </small>
+                    </button>
+
+                    <!-- Marktbestand -->
+                    {% if has_market_stock %}
+                    <button type="submit" name="stock_source" value="market" 
+                            class="btn btn-success btn-lg py-4">
+                        <div style="font-size: 3rem; margin-bottom: 10px;">🏪</div>
+                        <h4 class="mb-1">Marktbestand</h4>
+                        <small class="d-block text-white-50">
+                            Unterwegs / Markt
+                        </small>
+                    </button>
+                    {% else %}
+                    <button type="button" class="btn btn-secondary btn-lg py-4" disabled>
+                        <div style="font-size: 3rem; margin-bottom: 10px;">🏪</div>
+                        <h4 class="mb-1">Marktbestand</h4>
+                        <small class="d-block">
+                            Kein Marktbestand vorhanden
+                        </small>
+                    </button>
+                    {% endif %}
+                </div>
+            </form>
+
+            <div class="mt-4">
+                <small class="text-muted">
+                    Diese Auswahl gilt für die aktuelle Sitzung.
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

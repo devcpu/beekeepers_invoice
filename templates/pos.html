@@ -111,7 +111,23 @@
 {% block content %}
 <div style="max-width: 1200px; margin: 0 auto; padding-bottom: 300px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-        <h1 style="font-size: 1.5rem; margin: 0;">🏪 Kasse</h1>
+        <div>
+            <h1 style="font-size: 1.5rem; margin: 0;">🏪 Kasse</h1>
+            <div style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.3rem;">
+                {% if stock_source == 'market' %}
+                <span class="badge bg-success" style="font-size: 0.9rem;">
+                    📦 Marktbestand
+                </span>
+                {% else %}
+                <span class="badge bg-primary" style="font-size: 0.9rem;">
+                    🏠 Hauptbestand
+                </span>
+                {% endif %}
+                <a href="{{ url_for('select_stock_source') }}" class="btn btn-sm btn-outline-secondary">
+                    🔄 Wechseln
+                </a>
+            </div>
+        </div>
         <button onclick="window.location.reload()" class="btn" style="background: #95a5a6; color: white;">
             🔄 Neu laden
         </button>
@@ -130,6 +146,11 @@
                             <strong style="font-size: 1rem; display: block;">{{ product.name }}</strong>
                             <span style="color: #7f8c8d; font-size: 0.85rem;">
                                 Bestand: <strong>{{ product.number }}</strong> | {{ "%.2f"|format(product.price) }} €
+                                {% if product.is_market_stock %}
+                                <span class="badge bg-warning text-dark" style="font-size: 0.7rem; margin-left: 0.3rem;">
+                                    Marktpreis
+                                </span>
+                                {% endif %}
                             </span>
                         </div>
                         <div style="display: flex; gap: 0.4rem; align-items: center;">

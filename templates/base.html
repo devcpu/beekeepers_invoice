@@ -2,8 +2,40 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>{% block title %}Rechnungsverwaltung{% endblock %}</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="description" content="GoBD-konforme Rechnungsverwaltung mit JWT-API, Offline-Unterstützung und manipulationssicherer Datenspeicherung">
+    <meta name="application-name" content="Rechnungsverwaltung">
+    <meta name="theme-color" content="#0d6efd">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Rechnungen">
+    
+    <!-- Web App Manifest -->
+    <link rel="manifest" href="/static/manifest.json">
+    
+    <!-- Favicons -->
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="48x48" href="/static/icons/favicon-48x48.png">
+    
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="/static/icons/apple-touch-icon-120x120.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/static/icons/apple-touch-icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="167x167" href="/static/icons/apple-touch-icon-167x167.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/icons/apple-touch-icon-180x180.png">
+    
+    <!-- iOS Splash Screens (optional) -->
+    <link rel="apple-touch-startup-image" href="/static/icons/icon-512x512.png">
+    
+    <!-- Microsoft Tiles -->
+    <meta name="msapplication-TileColor" content="#0d6efd">
+    <meta name="msapplication-TileImage" content="/static/icons/icon-144x144.png">
     <style>
         * {
             margin: 0;
@@ -292,5 +324,244 @@
     </div>
     
     {% block extra_js %}{% endblock %}
+    
+    <!-- PWA Service Worker Registration -->
+    <script>
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/static/service-worker.js')
+                    .then((registration) => {
+                        console.log('✅ Service Worker registered:', registration.scope);
+                        
+                        // Check for updates
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            console.log('🔄 Service Worker update found');
+                            
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // Neuer SW installiert, aber alter noch aktiv
+                                    showUpdateNotification();
+                                }
+                            });
+                        });
+                    })
+                    .catch((error) => {
+                        console.error('❌ Service Worker registration failed:', error);
+                    });
+                
+                // Handle Service Worker Messages
+                navigator.serviceWorker.addEventListener('message', (event) => {
+                    console.log('📨 Message from SW:', event.data);
+                    
+                    if (event.data.type === 'sync-complete') {
+                        showNotification('✅ ' + event.data.message, 'success');
+                    }
+                });
+            });
+        }
+        
+        // PWA Install Prompt
+        let deferredPrompt;
+        const installButton = document.getElementById('pwa-install-btn');
+        
+        window.addEventListener('beforeinstallprompt', (e) => {
+            console.log('💾 PWA installierbar');
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // Zeige Install-Button
+            if (installButton) {
+                installButton.style.display = 'block';
+            } else {
+                // Erstelle dynamischen Install-Button
+                showInstallPrompt();
+            }
+        });
+        
+        function showInstallPrompt() {
+            const prompt = document.createElement('div');
+            prompt.id = 'pwa-install-prompt';
+            prompt.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                background: #0d6efd;
+                color: white;
+                padding: 1rem 1.5rem;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                z-index: 10000;
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+                animation: slideIn 0.3s ease-out;
+            `;
+            
+            prompt.innerHTML = `
+                <div>
+                    <strong>📱 Als App installieren?</strong><br>
+                    <small>Schnellerer Zugriff und Offline-Nutzung</small>
+                </div>
+                <button id="pwa-install-btn" style="
+                    background: white;
+                    color: #0d6efd;
+                    border: none;
+                    padding: 0.5rem 1rem;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-weight: bold;
+                ">Installieren</button>
+                <button id="pwa-dismiss-btn" style="
+                    background: transparent;
+                    color: white;
+                    border: 1px solid white;
+                    padding: 0.5rem 1rem;
+                    border-radius: 4px;
+                    cursor: pointer;
+                ">Später</button>
+            `;
+            
+            document.body.appendChild(prompt);
+            
+            document.getElementById('pwa-install-btn').addEventListener('click', installPWA);
+            document.getElementById('pwa-dismiss-btn').addEventListener('click', () => {
+                prompt.remove();
+                localStorage.setItem('pwa-install-dismissed', Date.now());
+            });
+            
+            // Verstecke nach 10 Sekunden automatisch
+            setTimeout(() => {
+                if (document.getElementById('pwa-install-prompt')) {
+                    prompt.remove();
+                }
+            }, 10000);
+        }
+        
+        async function installPWA() {
+            if (!deferredPrompt) return;
+            
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            
+            console.log(`PWA install outcome: ${outcome}`);
+            
+            if (outcome === 'accepted') {
+                showNotification('✅ App erfolgreich installiert!', 'success');
+            }
+            
+            deferredPrompt = null;
+            
+            const prompt = document.getElementById('pwa-install-prompt');
+            if (prompt) prompt.remove();
+        }
+        
+        // PWA Installation erfolgt
+        window.addEventListener('appinstalled', () => {
+            console.log('✅ PWA installed');
+            showNotification('✅ App wurde installiert!', 'success');
+            deferredPrompt = null;
+        });
+        
+        // Service Worker Update-Benachrichtigung
+        function showUpdateNotification() {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #28a745;
+                color: white;
+                padding: 1rem 1.5rem;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                z-index: 10000;
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+            `;
+            
+            notification.innerHTML = `
+                <div>
+                    <strong>🔄 Update verfügbar</strong><br>
+                    <small>Neue Version der App ist bereit</small>
+                </div>
+                <button id="sw-update-btn" style="
+                    background: white;
+                    color: #28a745;
+                    border: none;
+                    padding: 0.5rem 1rem;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-weight: bold;
+                ">Aktualisieren</button>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            document.getElementById('sw-update-btn').addEventListener('click', () => {
+                navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
+                window.location.reload();
+            });
+        }
+        
+        // Benachrichtigungs-Helper
+        function showNotification(message, type = 'info') {
+            const flashContainer = document.querySelector('.flash-messages') || createFlashContainer();
+            
+            const flash = document.createElement('div');
+            flash.className = `flash ${type}`;
+            flash.textContent = message;
+            
+            flashContainer.appendChild(flash);
+            
+            setTimeout(() => {
+                flash.remove();
+            }, 5000);
+        }
+        
+        function createFlashContainer() {
+            const container = document.createElement('div');
+            container.className = 'flash-messages';
+            document.querySelector('.container').insertBefore(
+                container,
+                document.querySelector('.container').firstChild
+            );
+            return container;
+        }
+        
+        // Online/Offline Status
+        window.addEventListener('online', () => {
+            console.log('🌐 Online');
+            showNotification('🌐 Verbindung wiederhergestellt', 'success');
+        });
+        
+        window.addEventListener('offline', () => {
+            console.log('📴 Offline');
+            showNotification('📴 Offline-Modus aktiv', 'warning');
+        });
+        
+        // CSS für Animationen
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+            
+            .flash.warning {
+                background: #ffc107;
+                color: #000;
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
 </body>
 </html>

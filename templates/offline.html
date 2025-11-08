@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline - Rechnungsverwaltung</title>
+    <meta name="theme-color" content="#0d6efd">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            padding: 2rem;
+        }
+        
+        .offline-container {
+            text-align: center;
+            max-width: 500px;
+        }
+        
+        .offline-icon {
+            font-size: 6rem;
+            margin-bottom: 2rem;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.7;
+                transform: scale(0.95);
+            }
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+        
+        p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+        
+        .status {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #dc3545;
+            margin-right: 8px;
+            animation: blink 1.5s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        .status.online .status-indicator {
+            background: #28a745;
+            animation: none;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid white;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        
+        button:hover {
+            background: white;
+            color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .cached-pages {
+            margin-top: 3rem;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+        
+        .cached-pages h3 {
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+        }
+        
+        .cached-pages ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .cached-pages li {
+            padding: 0.5rem 0;
+        }
+        
+        .cached-pages a {
+            color: white;
+            text-decoration: none;
+            opacity: 0.9;
+            transition: opacity 0.3s;
+        }
+        
+        .cached-pages a:hover {
+            opacity: 1;
+            text-decoration: underline;
+        }
+        
+        .info {
+            margin-top: 2rem;
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <div class="offline-container">
+        <div class="offline-icon">📴</div>
+        
+        <h1>Offline</h1>
+        
+        <p>Keine Internetverbindung verfügbar. Die Rechnungsverwaltung ist derzeit nicht erreichbar.</p>
+        
+        <div class="status" id="status">
+            <span class="status-indicator"></span>
+            <span id="status-text">Offline</span>
+        </div>
+        
+        <div class="actions">
+            <button onclick="checkConnection()">🔄 Erneut versuchen</button>
+            <button onclick="goToHome()">🏠 Zur Startseite</button>
+            <button onclick="viewCached()">📁 Gecachte Seiten</button>
+        </div>
+        
+        <div class="cached-pages" id="cached-pages" style="display: none;">
+            <h3>📦 Verfügbare Offline-Inhalte</h3>
+            <ul id="cached-list">
+                <li><a href="/">🏠 Startseite</a></li>
+                <li><a href="/invoices">📄 Rechnungsliste</a></li>
+                <li><a href="/customers">👥 Kundenliste</a></li>
+            </ul>
+        </div>
+        
+        <div class="info">
+            💡 Tipp: Diese App funktioniert auch offline. Ihre Änderungen werden automatisch synchronisiert, sobald Sie wieder online sind.
+        </div>
+    </div>
+    
+    <script>
+        // Online/Offline Status überwachen
+        function updateStatus() {
+            const status = document.getElementById('status');
+            const statusText = document.getElementById('status-text');
+            
+            if (navigator.onLine) {
+                status.classList.add('online');
+                statusText.textContent = 'Online - Verbindung wiederhergestellt!';
+                
+                // Automatisch zur vorherigen Seite zurück nach 2 Sekunden
+                setTimeout(() => {
+                    if (document.referrer) {
+                        window.location.href = document.referrer;
+                    } else {
+                        window.location.href = '/';
+                    }
+                }, 2000);
+            } else {
+                status.classList.remove('online');
+                statusText.textContent = 'Offline - Keine Verbindung';
+            }
+        }
+        
+        // Verbindung prüfen
+        async function checkConnection() {
+            const status = document.getElementById('status');
+            const statusText = document.getElementById('status-text');
+            
+            statusText.textContent = 'Prüfe Verbindung...';
+            
+            try {
+                const response = await fetch('/', { 
+                    method: 'HEAD',
+                    cache: 'no-cache'
+                });
+                
+                if (response.ok) {
+                    statusText.textContent = 'Verbindung erfolgreich!';
+                    status.classList.add('online');
+                    
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 1000);
+                } else {
+                    throw new Error('Keine Verbindung');
+                }
+            } catch (error) {
+                statusText.textContent = 'Offline - Keine Verbindung';
+                status.classList.remove('online');
+            }
+        }
+        
+        // Zur Startseite (aus Cache)
+        function goToHome() {
+            window.location.href = '/';
+        }
+        
+        // Gecachte Seiten anzeigen
+        function viewCached() {
+            const cachedPages = document.getElementById('cached-pages');
+            cachedPages.style.display = cachedPages.style.display === 'none' ? 'block' : 'none';
+        }
+        
+        // Event Listeners
+        window.addEventListener('online', updateStatus);
+        window.addEventListener('offline', updateStatus);
+        
+        // Initial check
+        updateStatus();
+        
+        // Periodisch prüfen (alle 10 Sekunden)
+        setInterval(() => {
+            if (!navigator.onLine) {
+                // Versuche Ping zum Server
+                fetch('/', { method: 'HEAD', cache: 'no-cache' })
+                    .then(() => {
+                        // Manuell online-Event triggern
+                        window.dispatchEvent(new Event('online'));
+                    })
+                    .catch(() => {
+                        // Bleibt offline
+                    });
+            }
+        }, 10000);
+    </script>
+</body>
+</html>

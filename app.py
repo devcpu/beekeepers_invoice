@@ -157,6 +157,11 @@ def create_app(config_name='default'):
         flash('Sie wurden erfolgreich abgemeldet.', 'success')
         return redirect(url_for('login'))
     
+    @app.route('/offline')
+    def offline():
+        """PWA Offline-Fallback Seite"""
+        return render_template('offline.html')
+    
     @app.route('/forgot-password', methods=['GET', 'POST'])
     def forgot_password():
         """Passwort vergessen - E-Mail-Anfrage"""

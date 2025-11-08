@@ -1354,6 +1354,222 @@ Dieses Projekt steht unter der MIT-Lizenz.
 
 Bei Fragen oder Problemen erstellen Sie bitte ein Issue im Repository oder kontaktieren Sie den Entwickler.
 
+---
+
+## Progressive Web App (PWA)
+
+Die Rechnungsverwaltung ist eine **installierbare Progressive Web App** mit Offline-Unterstützung.
+
+### Features
+
+✅ **Installierbar auf allen Geräten**
+- Desktop (Windows, macOS, Linux)
+- Mobile (iOS, Android)
+- "Add to Home Screen" für schnellen Zugriff
+
+✅ **Offline-Funktionalität**
+- Rechnungen ansehen ohne Internet
+- Automatische Synchronisation bei Verbindung
+- Background-Sync für POST-Requests
+
+✅ **App-ähnliches Erlebnis**
+- Vollbild-Modus (ohne Browser-UI)
+- Custom App-Icon
+- Splash-Screen
+- Native Shortcuts (Neue Rechnung, Liste, Kunden)
+
+✅ **Performance**
+- Cache-First Strategy für Static Assets
+- Network-First für API-Calls
+- Schnelle Ladezeiten
+
+### Installation
+
+#### Desktop (Chrome/Edge/Brave)
+
+1. Öffne die App im Browser: `https://ihr-server.de`
+2. Klicke auf das **⊕ Install**-Icon in der Adressleiste
+3. Oder: **Menü → App installieren**
+4. Die App erscheint im Anwendungsmenü
+
+**Shortcut:** App ist jetzt wie ein natives Programm nutzbar!
+
+#### Android
+
+1. Öffne die App im Chrome-Browser
+2. Tippe auf **Menü (⋮) → Zum Startbildschirm hinzufügen**
+3. Bestätige mit "Hinzufügen"
+4. Icon erscheint auf dem Startbildschirm
+
+#### iOS/iPadOS
+
+1. Öffne die App in Safari
+2. Tippe auf das **Teilen-Icon** (Viereck mit Pfeil)
+3. Scrolle und wähle **"Zum Home-Bildschirm"**
+4. Bestätige mit "Hinzufügen"
+
+**Hinweis:** iOS unterstützt Service Worker teilweise - Background-Sync funktioniert nur auf Android/Desktop.
+
+### Offline-Nutzung
+
+**Was funktioniert offline:**
+- ✅ Rechnungsliste ansehen (gecacht)
+- ✅ Rechnungsdetails öffnen (gecacht)
+- ✅ Kundenliste durchsuchen (gecacht)
+- ✅ Neue Rechnung erstellen (wird gespeichert)
+- ✅ PDF-Downloads (wenn vorher geladen)
+
+**Was erfordert Online-Verbindung:**
+- ❌ Rechnungen versenden (Status ändern)
+- ❌ Neue Kunden anlegen (POST)
+- ❌ Zahlungen verbuchen
+
+**Automatische Synchronisation:**
+- Sobald Verbindung verfügbar, werden offline-erstellte Rechnungen automatisch hochgeladen
+- Benachrichtigung über erfolgreiche Sync
+
+### Service Worker
+
+Der Service Worker cached automatisch:
+- Static Assets (CSS, JS, Icons)
+- HTML-Seiten (Network-First)
+- API-Responses (für Offline-Zugriff)
+- CDN-Ressourcen (Bootstrap)
+
+**Cache-Strategie:**
+- **Network-First**: HTML, API → Aktuelle Daten bevorzugt, Cache als Fallback
+- **Cache-First**: CSS, JS, Bilder → Schnelle Auslieferung, Background-Update
+
+**Version:** `v1` (siehe `service-worker.js`)
+
+### Updates
+
+PWA-Updates erfolgen automatisch:
+
+1. Neue Version wird im Hintergrund heruntergeladen
+2. **Update-Benachrichtigung** erscheint oben rechts
+3. Klick auf "Aktualisieren" lädt neue Version
+4. Seite wird neu geladen mit neuem Service Worker
+
+**Manuelles Update:**
+- Browser-DevTools → Application → Service Workers → "Update"
+
+### Manifest
+
+**Datei:** `static/manifest.json`
+
+Wichtige Einstellungen:
+```json
+{
+  "name": "Rechnungsverwaltung",
+  "short_name": "Rechnungen",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#0d6efd",
+  "background_color": "#ffffff"
+}
+```
+
+**Custom Shortcuts:**
+- 📝 Neue Rechnung → `/invoices/create`
+- 📋 Rechnungsliste → `/invoices`
+- 👥 Kunden → `/customers`
+
+(Rechtsklick auf App-Icon zeigt Shortcuts)
+
+### Icons
+
+**Generiert mit:** `python generate_icons.py`
+
+**Verfügbare Größen:**
+- PWA: 72x72, 96x96, 128x128, 144x144, 152x152, 192x192, 384x384, 512x512
+- iOS: 120x120, 152x152, 167x167, 180x180
+- Favicon: 16x16, 32x32, 48x48, favicon.ico
+- Maskable: 192x192, 512x512 (für Android Adaptive Icons)
+
+**Custom Icons:**
+```bash
+# Eigenes Logo verwenden (mind. 512x512 PNG)
+python generate_icons.py /pfad/zu/logo.png
+```
+
+### Push Notifications (Optional)
+
+Service Worker unterstützt Push-Notifications für:
+- Neue Rechnungen
+- Zahlungseingänge
+- Mahnungen
+
+**Aktivierung:** Siehe `service-worker.js` → `push` Event
+
+**Backend-Setup erforderlich:** Web Push Protocol (VAPID Keys)
+
+### Deinstallation
+
+**Desktop:**
+- Chrome: `chrome://apps` → Rechtsklick → Deinstallieren
+- Edge: Einstellungen → Apps → Installierte Apps
+
+**Android:**
+- Wie jede andere App: Lange drücken → Deinstallieren
+
+**iOS:**
+- Icon gedrückt halten → "App entfernen"
+
+### Entwicklung & Debugging
+
+**Service Worker debuggen:**
+
+```bash
+# Chrome DevTools
+1. F12 → Application Tab
+2. Service Workers
+3. "Update on reload" aktivieren (während Entwicklung)
+4. Console für SW-Logs
+```
+
+**PWA-Audit:**
+```bash
+# Lighthouse
+1. Chrome DevTools → Lighthouse Tab
+2. "Progressive Web App" auswählen
+3. "Generate report"
+```
+
+**Cache löschen:**
+```bash
+# Chrome
+chrome://settings/clearBrowserData
+→ "Cached images and files"
+
+# Oder: DevTools → Application → Clear storage
+```
+
+### Troubleshooting
+
+**PWA lässt sich nicht installieren:**
+- ✅ HTTPS aktiv? (oder localhost)
+- ✅ `manifest.json` korrekt verlinkt?
+- ✅ Icons vorhanden? (min. 192x192 + 512x512)
+- ✅ Service Worker registriert?
+
+**Offline-Modus funktioniert nicht:**
+- Prüfe DevTools → Application → Service Workers → Status
+- Prüfe Cache Storage → Sind Dateien gecacht?
+- Console-Logs für Fehler
+
+**Alte Version wird angezeigt:**
+- Hard-Refresh: `Ctrl+Shift+R` (Windows/Linux) / `Cmd+Shift+R` (macOS)
+- Service Worker Update erzwingen (DevTools)
+- Cache leeren
+
+**iOS Safari-Probleme:**
+- Service Worker-Unterstützung eingeschränkt
+- Background-Sync nicht verfügbar
+- IndexedDB-Limits beachten (50MB)
+
+---
+
 ## Roadmap
 
 Geplante Features:
@@ -1363,7 +1579,12 @@ Geplante Features:
 - [x] Zahlungserinnerungen / Mahnwesen
 - [ ] Statistiken und Reports
 - [x] REST API für externe Integrationen
-- [ ] Mobile App
+- [x] **Progressive Web App (PWA)** ✅
+- [x] **Offline-Funktionalität** ✅
+- [x] **JWT-API für Mobile Apps** ✅
 - [x] Bestandsverwaltung mit Autocomplete
-- [x] Automatische Zahlungsabgleich
+- [x] Automatischer Zahlungsabgleich
+- [ ] Push-Notifications für Zahlungseingänge
+- [ ] QR-Code-Zahlung (SEPA/PayPal)
+- [ ] Automatisches Backup zu Cloud (S3, Dropbox)
 

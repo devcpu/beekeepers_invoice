@@ -1,89 +1,113 @@
 {% extends "base.html" %}
-
 {% block title %}Rechnungen{% endblock %}
-
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-    <h1>Alle Rechnungen</h1>
-    <a href="{{ url_for('create_invoice') }}" class="btn btn-primary">+ Neue Rechnung</a>
-</div>
-
-<div class="card">
-    <div style="margin-bottom: 1rem;">
-        <strong>Filter:</strong>
-        <a href="{{ url_for('list_invoices') }}" style="margin-left: 1rem;">Alle</a>
-        <a href="{{ url_for('list_invoices', status='draft') }}" style="margin-left: 1rem;">Entwürfe</a>
-        <a href="{{ url_for('list_invoices', status='sent') }}" style="margin-left: 1rem;">Versendet</a>
-        <a href="{{ url_for('list_invoices', status='paid') }}" style="margin-left: 1rem;">Bezahlt</a>
-        <a href="{{ url_for('list_invoices', status='cancelled') }}" style="margin-left: 1rem;">Storniert</a>
-        <span style="margin: 0 0.5rem; color: #ddd;">|</span>
-        <a href="{{ url_for('list_invoices', filter='storno') }}" style="margin-left: 0.5rem; color: #e74c3c;">🗑️ Stornorechnungen</a>
-        <a href="{{ url_for('list_invoices', filter='open') }}" style="margin-left: 0.5rem; color: #f39c12;">Offen</a>
-        <a href="{{ url_for('list_invoices', filter='overdue') }}" style="margin-left: 1rem; color: #e74c3c;">Überfällig</a>
+    <div style="display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 2rem">
+        <h1>Alle Rechnungen</h1>
+        <a href="{{ url_for('create_invoice') }}" class="btn btn-primary">+ Neue Rechnung</a>
     </div>
-
-    {% if invoices %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Rechnungsnr.</th>
-                    <th>Kunde</th>
-                    <th>Rechnungsdatum</th>
-                    <th>Fällig am</th>
-                    <th>Betrag</th>
-                    <th>Status</th>
-                    <th>Aktionen</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for invoice in invoices %}
-                {% set days_overdue = (now.date() - invoice.due_date).days if invoice.due_date and invoice.status == 'sent' else 0 %}
-                {% set is_overdue = days_overdue > 10 %}
-                <tr>
-                    <td><strong>{{ invoice.invoice_number }}</strong></td>
-                    <td>
-                        {% if invoice.customer.company_name %}
-                            {{ invoice.customer.company_name }}
-                        {% else %}
-                            {{ invoice.customer.first_name }} {{ invoice.customer.last_name }}
-                        {% endif %}
-                    </td>
-                    <td>{{ invoice.invoice_date.strftime('%d.%m.%Y') }}</td>
-                    <td>
-                        {% if invoice.due_date %}
-                            {{ invoice.due_date.strftime('%d.%m.%Y') }}
-                            {% if is_overdue %}
-                                <span style="color: #e74c3c; font-size: 0.75rem; display: block;">{{ days_overdue }} Tage überfällig</span>
-                            {% endif %}
-                        {% else %}
-                            -
-                        {% endif %}
-                    </td>
-                    <td><strong>{{ "%.2f"|format(invoice.total) }} €</strong></td>
-                    <td>
-                        {% if invoice.status == 'draft' %}
-                            <span class="badge badge-draft">Entwurf</span>
-                        {% elif invoice.status == 'sent' %}
-                            <span class="badge badge-sent">Versendet</span>
-                        {% elif invoice.status == 'paid' %}
-                            <span class="badge badge-paid">Bezahlt</span>
-                        {% elif invoice.status == 'cancelled' %}
-                            <span class="badge badge-cancelled">Storniert</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        <a href="{{ url_for('view_invoice', invoice_id=invoice.id) }}" class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.875rem;">Ansehen</a>
-                        <a href="{{ url_for('download_invoice_pdf', invoice_id=invoice.id) }}" class="btn btn-success" style="padding: 0.4rem 0.8rem; font-size: 0.875rem;">PDF</a>
-                        {% if is_overdue %}
-                            <a href="{{ url_for('create_reminder', invoice_id=invoice.id) }}" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.875rem; background: #e74c3c; color: white;">Mahnung</a>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    {% else %}
-        <p>Keine Rechnungen gefunden.</p>
-    {% endif %}
-</div>
+    <div class="card">
+        <div style="margin-bottom: 1rem;">
+            <strong>Filter:</strong>
+            <a href="{{ url_for('list_invoices') }}" style="margin-left: 1rem;">Alle</a>
+            <a href="{{ url_for('list_invoices', status='draft') }}"
+               style="margin-left: 1rem">Entwürfe</a>
+            <a href="{{ url_for('list_invoices', status='sent') }}"
+               style="margin-left: 1rem">Versendet</a>
+            <a href="{{ url_for('list_invoices', status='paid') }}"
+               style="margin-left: 1rem">Bezahlt</a>
+            <a href="{{ url_for('list_invoices', status='cancelled') }}"
+               style="margin-left: 1rem">Storniert</a>
+            <span style="margin: 0 0.5rem; color: #ddd;">|</span>
+            <a href="{{ url_for('list_invoices', filter='storno') }}"
+               style="margin-left: 0.5rem;
+                      color: #e74c3c">🗑️ Stornorechnungen</a>
+            <a href="{{ url_for('list_invoices', filter='open') }}"
+               style="margin-left: 0.5rem;
+                      color: #f39c12">Offen</a>
+            <a href="{{ url_for('list_invoices', filter='overdue') }}"
+               style="margin-left: 1rem;
+                      color: #e74c3c">Überfällig</a>
+        </div>
+        {% if invoices %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Rechnungsnr.</th>
+                        <th>Kunde</th>
+                        <th>Rechnungsdatum</th>
+                        <th>Fällig am</th>
+                        <th>Betrag</th>
+                        <th>Status</th>
+                        <th>Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for invoice in invoices %}
+                        {% set days_overdue = (now.date() - invoice.due_date).days if invoice.due_date and invoice.status == 'sent' else 0 %}
+                        {% set is_overdue = days_overdue > 10 %}
+                        <tr>
+                            <td>
+                                <strong>{{ invoice.invoice_number }}</strong>
+                            </td>
+                            <td>
+                                {% if invoice.customer.company_name %}
+                                    {{ invoice.customer.company_name }}
+                                {% else %}
+                                    {{ invoice.customer.first_name }} {{ invoice.customer.last_name }}
+                                {% endif %}
+                            </td>
+                            <td>{{ invoice.invoice_date.strftime("%d.%m.%Y") }}</td>
+                            <td>
+                                {% if invoice.due_date %}
+                                    {{ invoice.due_date.strftime("%d.%m.%Y") }}
+                                    {% if is_overdue %}
+                                        <span style="color: #e74c3c; font-size: 0.75rem; display: block;">{{ days_overdue }} Tage überfällig</span>
+                                    {% endif %}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong>{{ "%.2f"|format(invoice.total) }} €</strong>
+                            </td>
+                            <td>
+                                {% if invoice.status == 'draft' %}
+                                    <span class="badge badge-draft">Entwurf</span>
+                                {% elif invoice.status == 'sent' %}
+                                    <span class="badge badge-sent">Versendet</span>
+                                {% elif invoice.status == 'paid' %}
+                                    <span class="badge badge-paid">Bezahlt</span>
+                                {% elif invoice.status == 'cancelled' %}
+                                    <span class="badge badge-cancelled">Storniert</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('view_invoice', invoice_id=invoice.id) }}"
+                                   class="btn btn-primary"
+                                   style="padding: 0.4rem 0.8rem;
+                                          font-size: 0.875rem">Ansehen</a>
+                                <a href="{{ url_for('download_invoice_pdf', invoice_id=invoice.id) }}"
+                                   class="btn btn-success"
+                                   style="padding: 0.4rem 0.8rem;
+                                          font-size: 0.875rem">PDF</a>
+                                {% if is_overdue %}
+                                    <a href="{{ url_for('create_reminder', invoice_id=invoice.id) }}"
+                                       class="btn"
+                                       style="padding: 0.4rem 0.8rem;
+                                              font-size: 0.875rem;
+                                              background: #e74c3c;
+                                              color: white">Mahnung</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>Keine Rechnungen gefunden.</p>
+        {% endif %}
+    </div>
 {% endblock %}

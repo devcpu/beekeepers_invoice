@@ -1,106 +1,104 @@
 {% extends "base.html" %}
-
 {% block title %}Bestandsanpassungen{% endblock %}
-
 {% block content %}
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>📦 Bestandsanpassungen</h1>
-        <div>
-            <a href="{{ url_for('export_stock_adjustments_pdf') }}" class="btn btn-secondary me-2">
-                <i class="bi bi-file-pdf"></i> PDF exportieren
-            </a>
-            <a href="{{ url_for('create_stock_adjustment') }}" class="btn btn-primary">
-                <i class="bi bi-plus-circle"></i> Neue Anpassung
-            </a>
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>📦 Bestandsanpassungen</h1>
+            <div>
+                <a href="{{ url_for('export_stock_adjustments_pdf') }}"
+                   class="btn btn-secondary me-2">
+                    <i class="bi bi-file-pdf"></i> PDF exportieren
+                </a>
+                <a href="{{ url_for('create_stock_adjustment') }}"
+                   class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Neue Anpassung
+                </a>
+            </div>
         </div>
-    </div>
-
-    <div class="card">
-        <div class="card-body">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Datum</th>
-                        <th>Produkt</th>
-                        <th>Typ</th>
-                        <th>Menge</th>
-                        <th>Bestand</th>
-                        <th>Grund</th>
-                        <th>Benutzer</th>
-                        <th>Beleg-Nr.</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% if adjustments %}
-                        {% for adj in adjustments %}
+        <div class="card">
+            <div class="card-body">
+                <table class="table table-hover">
+                    <thead>
                         <tr>
-                            <td>{{ adj.adjusted_at.strftime('%d.%m.%Y %H:%M') }}</td>
-                            <td>{{ adj.product.name }}</td>
-                            <td>
-                                {% if adj.adjustment_type == 'eigenentnahme' %}
-                                    <span class="badge bg-warning text-dark">🏠 Eigenentnahme</span>
-                                {% elif adj.adjustment_type == 'geschenk' %}
-                                    <span class="badge bg-info">🎁 Geschenk</span>
-                                {% elif adj.adjustment_type == 'verderb' %}
-                                    <span class="badge bg-danger">🗑️ Verderb</span>
-                                {% elif adj.adjustment_type == 'bruch' %}
-                                    <span class="badge bg-danger">💥 Bruch</span>
-                                {% elif adj.adjustment_type == 'inventur_plus' %}
-                                    <span class="badge bg-success">📊 Inventur +</span>
-                                {% elif adj.adjustment_type == 'inventur_minus' %}
-                                    <span class="badge bg-warning">📊 Inventur -</span>
-                                {% elif adj.adjustment_type == 'korrektur' %}
-                                    <span class="badge bg-secondary">✏️ Korrektur</span>
-                                {% else %}
-                                    <span class="badge bg-secondary">{{ adj.adjustment_type }}</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if adj.quantity > 0 %}
-                                    <span class="text-success">+{{ adj.quantity }}</span>
-                                {% else %}
-                                    <span class="text-danger">{{ adj.quantity }}</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <small class="text-muted">{{ adj.old_stock }}</small>
-                                →
-                                <strong>{{ adj.new_stock }}</strong>
-                            </td>
-                            <td>
-                                <small class="text-muted">{{ adj.reason[:50] }}{% if adj.reason|length > 50 %}...{% endif %}</small>
-                            </td>
-                            <td>{{ adj.adjusted_by_user.username }}</td>
-                            <td>
-                                {% if adj.document_number %}
-                                    <code style="font-size: 0.8rem;">{{ adj.document_number }}</code>
-                                {% else %}
-                                    <span class="text-muted">-</span>
-                                {% endif %}
-                            </td>
+                            <th>Datum</th>
+                            <th>Produkt</th>
+                            <th>Typ</th>
+                            <th>Menge</th>
+                            <th>Bestand</th>
+                            <th>Grund</th>
+                            <th>Benutzer</th>
+                            <th>Beleg-Nr.</th>
                         </tr>
-                        {% endfor %}
-                    {% else %}
-                        <tr>
-                            <td colspan="8" class="text-center text-muted">
-                                Noch keine Bestandsanpassungen vorhanden.
-                            </td>
-                        </tr>
-                    {% endif %}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {% if adjustments %}
+                            {% for adj in adjustments %}
+                                <tr>
+                                    <td>{{ adj.adjusted_at.strftime("%d.%m.%Y %H:%M") }}</td>
+                                    <td>{{ adj.product.name }}</td>
+                                    <td>
+                                        {% if adj.adjustment_type == 'eigenentnahme' %}
+                                            <span class="badge bg-warning text-dark">🏠 Eigenentnahme</span>
+                                        {% elif adj.adjustment_type == 'geschenk' %}
+                                            <span class="badge bg-info">🎁 Geschenk</span>
+                                        {% elif adj.adjustment_type == 'verderb' %}
+                                            <span class="badge bg-danger">🗑️ Verderb</span>
+                                        {% elif adj.adjustment_type == 'bruch' %}
+                                            <span class="badge bg-danger">💥 Bruch</span>
+                                        {% elif adj.adjustment_type == 'inventur_plus' %}
+                                            <span class="badge bg-success">📊 Inventur +</span>
+                                        {% elif adj.adjustment_type == 'inventur_minus' %}
+                                            <span class="badge bg-warning">📊 Inventur -</span>
+                                        {% elif adj.adjustment_type == 'korrektur' %}
+                                            <span class="badge bg-secondary">✏️ Korrektur</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ adj.adjustment_type }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if adj.quantity > 0 %}
+                                            <span class="text-success">+{{ adj.quantity }}</span>
+                                        {% else %}
+                                            <span class="text-danger">{{ adj.quantity }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ adj.old_stock }}</small>
+                                        →
+                                        <strong>{{ adj.new_stock }}</strong>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ adj.reason[:50] }}
+                                            {% if adj.reason|length > 50 %}...{% endif %}
+                                        </small>
+                                    </td>
+                                    <td>{{ adj.adjusted_by_user.username }}</td>
+                                    <td>
+                                        {% if adj.document_number %}
+                                            <code style="font-size: 0.8rem;">{{ adj.document_number }}</code>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="8" class="text-center text-muted">Noch keine Bestandsanpassungen vorhanden.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="mt-4">
+            <div class="alert alert-info">
+                <h5>ℹ️ Hinweis zur GoBD-Konformität</h5>
+                <p class="mb-0">
+                    Alle Bestandsanpassungen werden vollständig dokumentiert und können nicht mehr gelöscht werden.
+                    Dies ist notwendig für die Einhaltung der GoBD-Richtlinien.
+                </p>
+            </div>
         </div>
     </div>
-
-    <div class="mt-4">
-        <div class="alert alert-info">
-            <h5>ℹ️ Hinweis zur GoBD-Konformität</h5>
-            <p class="mb-0">
-                Alle Bestandsanpassungen werden vollständig dokumentiert und können nicht mehr gelöscht werden.
-                Dies ist notwendig für die Einhaltung der GoBD-Richtlinien.
-            </p>
-        </div>
-    </div>
-</div>
 {% endblock %}

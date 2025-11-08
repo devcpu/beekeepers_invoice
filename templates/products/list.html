@@ -1,71 +1,92 @@
 {% extends "base.html" %}
-
 {% block title %}Produkte{% endblock %}
-
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-    <h1>📦 Produktverwaltung</h1>
-    <a href="{{ url_for('create_product') }}" class="btn btn-primary">+ Neues Produkt</a>
-</div>
-
-<div class="card">
-    <div style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
-        <div>
-            <strong>Filter:</strong>
-            <a href="{{ url_for('list_products') }}" style="margin-left: 1rem;">Aktive Produkte</a>
-            <a href="{{ url_for('list_products', show_inactive='true') }}" style="margin-left: 1rem;">Alle Produkte</a>
-        </div>
+    <div style="display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 2rem">
+        <h1>📦 Produktverwaltung</h1>
+        <a href="{{ url_for('create_product') }}" class="btn btn-primary">+ Neues Produkt</a>
     </div>
-
-    {% if products %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Produktname</th>
-                    <th>Menge/Größe</th>
-                    <th style="text-align: right;">Lagerbestand</th>
-                    <th style="text-align: right;">Preis</th>
-                    <th>Chargennr.</th>
-                    <th>Status</th>
-                    <th>Aktionen</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for product in products %}
-                <tr style="{% if not product.active %}opacity: 0.6;{% endif %}">
-                    <td><strong>{{ product.name }}</strong></td>
-                    <td>{{ product.quantity or '-' }}</td>
-                    <td style="text-align: right;">
-                        <span style="{% if product.number <= 0 %}color: #e74c3c; font-weight: bold;{% elif product.number <= 10 %}color: #f39c12; font-weight: bold;{% endif %}">
-                            {{ product.number }}
-                        </span>
-                    </td>
-                    <td style="text-align: right;"><strong>{{ "%.2f"|format(product.price) }} €</strong></td>
-                    <td>{{ product.lot_number or '-' }}</td>
-                    <td>
-                        {% if product.active %}
-                            <span class="badge badge-paid">Aktiv</span>
-                        {% else %}
-                            <span class="badge" style="background: #95a5a6;">Inaktiv</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        <a href="{{ url_for('view_product', product_id=product.id) }}" class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.875rem;">Ansehen</a>
-                        <a href="{{ url_for('edit_product', product_id=product.id) }}" class="btn" style="padding: 0.4rem 0.8rem; font-size: 0.875rem; background: #f39c12; color: white;">Bearbeiten</a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-
-        <div style="margin-top: 1rem; padding: 1rem; background: #f8f9fa; border-radius: 4px;">
-            <strong>Legende:</strong>
-            <span style="color: #e74c3c; margin-left: 1rem;">● Rot = Ausverkauft (0)</span>
-            <span style="color: #f39c12; margin-left: 1rem;">● Orange = Niedriger Bestand (≤10)</span>
-            <span style="color: #2c3e50; margin-left: 1rem;">● Schwarz = Normaler Bestand (>10)</span>
+    <div class="card">
+        <div style="margin-bottom: 1rem;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center">
+            <div>
+                <strong>Filter:</strong>
+                <a href="{{ url_for('list_products') }}" style="margin-left: 1rem;">Aktive Produkte</a>
+                <a href="{{ url_for('list_products', show_inactive='true') }}"
+                   style="margin-left: 1rem">Alle Produkte</a>
+            </div>
         </div>
-    {% else %}
-        <p>Noch keine Produkte vorhanden. <a href="{{ url_for('create_product') }}">Erstes Produkt anlegen</a></p>
-    {% endif %}
-</div>
+        {% if products %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Produktname</th>
+                        <th>Menge/Größe</th>
+                        <th style="text-align: right;">Lagerbestand</th>
+                        <th style="text-align: right;">Preis</th>
+                        <th>Chargennr.</th>
+                        <th>Status</th>
+                        <th>Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in products %}
+                        <tr style="{% if not product.active %}opacity: 0.6;{% endif %}">
+                            <td>
+                                <strong>{{ product.name }}</strong>
+                            </td>
+                            <td>{{ product.quantity or '-' }}</td>
+                            <td style="text-align: right;">
+                                <span style="{% if product.number <= 0 %}color: #e74c3c;
+                                             font-weight: bold;
+                                             {% elif product.number <= 10 %}color: #f39c12;
+                                             font-weight: bold;
+                                             {% endif %}">{{ product.number }}</span>
+                            </td>
+                            <td style="text-align: right;">
+                                <strong>{{ "%.2f"|format(product.price) }} €</strong>
+                            </td>
+                            <td>{{ product.lot_number or '-' }}</td>
+                            <td>
+                                {% if product.active %}
+                                    <span class="badge badge-paid">Aktiv</span>
+                                {% else %}
+                                    <span class="badge" style="background: #95a5a6;">Inaktiv</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('view_product', product_id=product.id) }}"
+                                   class="btn btn-primary"
+                                   style="padding: 0.4rem 0.8rem;
+                                          font-size: 0.875rem">Ansehen</a>
+                                <a href="{{ url_for('edit_product', product_id=product.id) }}"
+                                   class="btn"
+                                   style="padding: 0.4rem 0.8rem;
+                                          font-size: 0.875rem;
+                                          background: #f39c12;
+                                          color: white">Bearbeiten</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div style="margin-top: 1rem;
+                        padding: 1rem;
+                        background: #f8f9fa;
+                        border-radius: 4px">
+                <strong>Legende:</strong>
+                <span style="color: #e74c3c; margin-left: 1rem;">● Rot = Ausverkauft (0)</span>
+                <span style="color: #f39c12; margin-left: 1rem;">● Orange = Niedriger Bestand (≤10)</span>
+                <span style="color: #2c3e50; margin-left: 1rem;">● Schwarz = Normaler Bestand (>10)</span>
+            </div>
+        {% else %}
+            <p>
+                Noch keine Produkte vorhanden. <a href="{{ url_for('create_product') }}">Erstes Produkt anlegen</a>
+            </p>
+        {% endif %}
+    </div>
 {% endblock %}

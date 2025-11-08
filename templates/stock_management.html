@@ -1,9 +1,7 @@
 {% extends "base.html" %}
-
 {% block title %}Bestandsverwaltung{% endblock %}
-
 {% block extra_css %}
-<style>
+    <style>
     .autocomplete-container {
         position: relative;
     }
@@ -64,92 +62,104 @@
         background: #f8d7da;
         color: #721c24;
     }
-</style>
+    </style>
 {% endblock %}
-
 {% block content %}
-<h1>📦 Bestandsverwaltung</h1>
-
-<div class="card">
-    <h2>Produkt auswählen</h2>
-
-    <div class="form-group autocomplete-container">
-        <label for="product-search">Produkt suchen</label>
-        <input
-            type="text"
-            id="product-search"
-            placeholder="Produktname oder Chargennummer eingeben..."
-            autocomplete="off">
-        <div id="product-results" class="autocomplete-results" style="display: none;"></div>
-    </div>
-</div>
-
-<div id="stock-control" style="display: none;">
-    <div class="card" style="margin-top: 2rem;">
-        <h2 id="selected-product-name"></h2>
-
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
-            <div class="stat-card">
-                <h3 id="current-stock" style="font-size: 2.5rem; color: #3498db;">-</h3>
-                <p>Aktueller Bestand</p>
-            </div>
-            <div class="stat-card">
-                <h3 id="product-price" style="font-size: 1.5rem; color: #27ae60;">-</h3>
-                <p>Endkundenpreis</p>
-            </div>
-            <div class="stat-card">
-                <h3 id="product-lot" style="font-size: 1.2rem; color: #9b59b6;">-</h3>
-                <p>Chargennummer</p>
-            </div>
+    <h1>📦 Bestandsverwaltung</h1>
+    <div class="card">
+        <h2>Produkt auswählen</h2>
+        <div class="form-group autocomplete-container">
+            <label for="product-search">Produkt suchen</label>
+            <input type="text"
+                   id="product-search"
+                   placeholder="Produktname oder Chargennummer eingeben..."
+                   autocomplete="off">
+            <div id="product-results"
+                 class="autocomplete-results"
+                 style="display: none"></div>
         </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
-            <!-- Zugang -->
-            <div style="border: 2px solid #27ae60; border-radius: 8px; padding: 1.5rem; background: #f0fff4;">
-                <h3 style="color: #27ae60; margin-bottom: 1rem;">➕ Zugang buchen</h3>
-
-                <div class="form-group">
-                    <label for="add_lot_number">Chargennummer</label>
-                    <input type="text" id="add_lot_number" placeholder="z.B. 2024-001">
-                    <small style="color: #7f8c8d;">Optional: Neue oder bestehende Charge</small>
-                </div>
-
-                <div class="form-group">
-                    <label for="add_amount">Menge *</label>
-                    <input type="number" id="add_amount" min="1" placeholder="Anzahl hinzufügen" required>
-                </div>
-
-                <button type="button" class="btn btn-success" onclick="addStock()" style="width: 100%; background: #27ae60;">
-                    + Bestand erhöhen
-                </button>
-            </div>
-
-            <!-- Abgang -->
-            <div style="border: 2px solid #e74c3c; border-radius: 8px; padding: 1.5rem; background: #fff5f5;">
-                <h3 style="color: #e74c3c; margin-bottom: 1rem;">➖ Abgang buchen</h3>
-
-                <div class="form-group">
-                    <label for="reduce_lot_number">Chargennummer</label>
-                    <input type="text" id="reduce_lot_number" placeholder="z.B. 2024-001">
-                    <small style="color: #7f8c8d;">Optional: Für Tracking</small>
-                </div>
-
-                <div class="form-group">
-                    <label for="reduce_amount">Menge *</label>
-                    <input type="number" id="reduce_amount" min="1" placeholder="Anzahl abziehen" required>
-                </div>
-
-                <button type="button" class="btn" onclick="reduceStock()" style="width: 100%; background: #e74c3c; color: white;">
-                    - Bestand verringern
-                </button>
-            </div>
-        </div>
-
-        <div id="stock-message" style="margin-top: 1rem; padding: 1rem; border-radius: 4px; display: none;"></div>
     </div>
-</div>
-
-<script>
+    <div id="stock-control" style="display: none;">
+        <div class="card" style="margin-top: 2rem;">
+            <h2 id="selected-product-name"></h2>
+            <div style="display: grid;
+                        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                        gap: 1rem;
+                        margin-bottom: 2rem">
+                <div class="stat-card">
+                    <h3 id="current-stock" style="font-size: 2.5rem; color: #3498db;">-</h3>
+                    <p>Aktueller Bestand</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="product-price" style="font-size: 1.5rem; color: #27ae60;">-</h3>
+                    <p>Endkundenpreis</p>
+                </div>
+                <div class="stat-card">
+                    <h3 id="product-lot" style="font-size: 1.2rem; color: #9b59b6;">-</h3>
+                    <p>Chargennummer</p>
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                <!-- Zugang -->
+                <div style="border: 2px solid #27ae60;
+                            border-radius: 8px;
+                            padding: 1.5rem;
+                            background: #f0fff4">
+                    <h3 style="color: #27ae60; margin-bottom: 1rem;">➕ Zugang buchen</h3>
+                    <div class="form-group">
+                        <label for="add_lot_number">Chargennummer</label>
+                        <input type="text" id="add_lot_number" placeholder="z.B. 2024-001">
+                        <small style="color: #7f8c8d;">Optional: Neue oder bestehende Charge</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="add_amount">Menge *</label>
+                        <input type="number"
+                               id="add_amount"
+                               min="1"
+                               placeholder="Anzahl hinzufügen"
+                               required>
+                    </div>
+                    <button type="button"
+                            class="btn btn-success"
+                            onclick="addStock()"
+                            style="width: 100%;
+                                   background: #27ae60">+ Bestand erhöhen</button>
+                </div>
+                <!-- Abgang -->
+                <div style="border: 2px solid #e74c3c;
+                            border-radius: 8px;
+                            padding: 1.5rem;
+                            background: #fff5f5">
+                    <h3 style="color: #e74c3c; margin-bottom: 1rem;">➖ Abgang buchen</h3>
+                    <div class="form-group">
+                        <label for="reduce_lot_number">Chargennummer</label>
+                        <input type="text" id="reduce_lot_number" placeholder="z.B. 2024-001">
+                        <small style="color: #7f8c8d;">Optional: Für Tracking</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="reduce_amount">Menge *</label>
+                        <input type="number"
+                               id="reduce_amount"
+                               min="1"
+                               placeholder="Anzahl abziehen"
+                               required>
+                    </div>
+                    <button type="button"
+                            class="btn"
+                            onclick="reduceStock()"
+                            style="width: 100%;
+                                   background: #e74c3c;
+                                   color: white">- Bestand verringern</button>
+                </div>
+            </div>
+            <div id="stock-message"
+                 style="margin-top: 1rem;
+                        padding: 1rem;
+                        border-radius: 4px;
+                        display: none"></div>
+        </div>
+    </div>
+    <script>
 let selectedProductId = null;
 let searchTimeout = null;
 
@@ -344,5 +354,5 @@ function showMessage(message, type) {
         msgDiv.style.display = 'none';
     }, 5000);
 }
-</script>
+    </script>
 {% endblock %}

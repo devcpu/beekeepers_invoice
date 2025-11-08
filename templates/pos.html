@@ -1,9 +1,7 @@
 {% extends "base.html" %}
-
 {% block title %}Kasse - Direktverkauf{% endblock %}
-
 {% block extra_css %}
-<style>
+    <style>
     @media (max-width: 768px) {
         .navbar {
             padding: 0.5rem !important;
@@ -105,143 +103,162 @@
             overflow-y: auto;
         }
     }
-</style>
+    </style>
 {% endblock %}
-
 {% block content %}
-<div style="max-width: 1200px; margin: 0 auto; padding-bottom: 300px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-        <div>
-            <h1 style="font-size: 1.5rem; margin: 0;">🏪 Kasse</h1>
-            <div style="display: flex; gap: 0.5rem; align-items: center; margin-top: 0.3rem;">
-                {% if stock_source == 'market' %}
-                <span class="badge bg-success" style="font-size: 0.9rem;">
-                    📦 Marktbestand
-                </span>
+    <div style="max-width: 1200px; margin: 0 auto; padding-bottom: 300px;">
+        <div style="display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 1rem">
+            <div>
+                <h1 style="font-size: 1.5rem; margin: 0;">🏪 Kasse</h1>
+                <div style="display: flex;
+                            gap: 0.5rem;
+                            align-items: center;
+                            margin-top: 0.3rem">
+                    {% if stock_source == 'market' %}
+                        <span class="badge bg-success" style="font-size: 0.9rem;">📦 Marktbestand</span>
+                    {% else %}
+                        <span class="badge bg-primary" style="font-size: 0.9rem;">🏠 Hauptbestand</span>
+                    {% endif %}
+                    <a href="{{ url_for('select_stock_source') }}"
+                       class="btn btn-sm btn-outline-secondary">🔄 Wechseln</a>
+                </div>
+            </div>
+            <button onclick="window.location.reload()"
+                    class="btn"
+                    style="background: #95a5a6;
+                           color: white">🔄 Neu laden</button>
+        </div>
+        <div class="pos-grid">
+            <!-- Linke Seite: Produktliste -->
+            <div class="card">
+                <h2 style="margin-top: 0; font-size: 1.2rem;">Produkte</h2>
+                {% if products %}
+                    <div id="products-list">
+                        {% for product in products %}
+                            <div class="product-item">
+                                <div style="flex: 1; min-width: 0;">
+                                    <strong style="font-size: 1rem; display: block;">{{ product.name }}</strong>
+                                    <span style="color: #7f8c8d; font-size: 0.85rem;">
+                                        Bestand: <strong>{{ product.number }}</strong> | {{ "%.2f"|format(product.price) }} €
+                                        {% if product.is_market_stock %}
+                                            <span class="badge bg-warning text-dark"
+                                                  style="font-size: 0.7rem;
+                                                         margin-left: 0.3rem">Marktpreis</span>
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <div style="display: flex; gap: 0.4rem; align-items: center;">
+                                    <button onclick="removeFromCart({{ product.id }})"
+                                            class="btn-counter btn-minus"
+                                            id="btn-minus-{{ product.id }}"
+                                            disabled>−</button>
+                                    <span id="count-{{ product.id }}" class="counter-display">0</span>
+                                    <button onclick="addToCart({{ product.id }})"
+                                            class="btn-counter btn-plus"
+                                            id="btn-plus-{{ product.id }}"
+                                            {% if product.number <= 0 %}disabled{% endif %}>+</button>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
                 {% else %}
-                <span class="badge bg-primary" style="font-size: 0.9rem;">
-                    🏠 Hauptbestand
-                </span>
+                    <p style="color: #7f8c8d; text-align: center; padding: 2rem;">
+                        Keine Produkte verfügbar.
+                        <br>
+                        <a href="{{ url_for('create_product') }}">Produkt anlegen</a>
+                    </p>
                 {% endif %}
-                <a href="{{ url_for('select_stock_source') }}" class="btn btn-sm btn-outline-secondary">
-                    🔄 Wechseln
-                </a>
             </div>
-        </div>
-        <button onclick="window.location.reload()" class="btn" style="background: #95a5a6; color: white;">
-            🔄 Neu laden
-        </button>
-    </div>
-
-    <div class="pos-grid">
-        <!-- Linke Seite: Produktliste -->
-        <div class="card">
-            <h2 style="margin-top: 0; font-size: 1.2rem;">Produkte</h2>
-
-            {% if products %}
-                <div id="products-list">
-                    {% for product in products %}
-                    <div class="product-item">
-                        <div style="flex: 1; min-width: 0;">
-                            <strong style="font-size: 1rem; display: block;">{{ product.name }}</strong>
-                            <span style="color: #7f8c8d; font-size: 0.85rem;">
-                                Bestand: <strong>{{ product.number }}</strong> | {{ "%.2f"|format(product.price) }} €
-                                {% if product.is_market_stock %}
-                                <span class="badge bg-warning text-dark" style="font-size: 0.7rem; margin-left: 0.3rem;">
-                                    Marktpreis
-                                </span>
-                                {% endif %}
-                            </span>
+            <!-- Rechte Seite: Rechnungsvorschau (Desktop) oder Sticky Bottom (Mobile) -->
+            <div>
+                <div class="receipt-preview" id="receipt">
+                    <div style="text-align: center;
+                                border-bottom: 2px solid #000;
+                                padding-bottom: 0.5rem;
+                                margin-bottom: 0.5rem">
+                        <strong style="font-size: 1.1rem;">{{ config.COMPANY_NAME }}</strong>
+                        <br>
+                        <span style="font-size: 0.85rem;">{{ config.COMPANY_HOLDER }}</span>
+                        <br>
+                        <span style="font-size: 0.8rem;">{{ config.COMPANY_STREET }}, {{ config.COMPANY_ZIP }} {{ config.COMPANY_CITY }}</span>
+                        <br>
+                        <span style="font-size: 0.8rem;">Tel: {{ config.COMPANY_PHONE }}</span>
+                    </div>
+                    <div style="margin: 0.5rem 0;">
+                        <strong>Datum:</strong> <span id="receipt-date"></span>
+                        <br>
+                        <strong>Uhrzeit:</strong> <span id="receipt-time"></span>
+                    </div>
+                    <div style="border-top: 1px dashed #000;
+                                border-bottom: 1px dashed #000;
+                                padding: 0.5rem 0;
+                                margin: 0.5rem 0"
+                         id="receipt-items">
+                        <div style="text-align: center; color: #95a5a6; padding: 1rem;">Warenkorb leer</div>
+                    </div>
+                    <div style="margin-top: 0.5rem;">
+                        <div style="display: flex;
+                                    justify-content: space-between;
+                                    padding: 0.2rem 0">
+                            <span>Zwischensumme:</span>
+                            <strong><span id="receipt-subtotal">0,00</span> €</strong>
                         </div>
-                        <div style="display: flex; gap: 0.4rem; align-items: center;">
-                            <button onclick="removeFromCart({{ product.id }})"
-                                    class="btn-counter btn-minus"
-                                    id="btn-minus-{{ product.id }}"
-                                    disabled>
-                                −
-                            </button>
-                            <span id="count-{{ product.id }}" class="counter-display">0</span>
-                            <button onclick="addToCart({{ product.id }})"
-                                    class="btn-counter btn-plus"
-                                    id="btn-plus-{{ product.id }}"
-                                    {% if product.number <= 0 %}disabled{% endif %}>
-                                +
-                            </button>
+                        <div style="display: flex;
+                                    justify-content: space-between;
+                                    padding: 0.2rem 0;
+                                    font-size: 0.9rem;
+                                    color: #7f8c8d">
+                            <span>inkl. 7,80% MwSt:</span>
+                            <span><span id="receipt-tax">0,00</span> €</span>
+                        </div>
+                        <div style="display: flex;
+                                    justify-content: space-between;
+                                    padding: 0.5rem 0;
+                                    font-size: 1.3rem;
+                                    font-weight: bold;
+                                    border-top: 2px solid #000;
+                                    margin-top: 0.3rem">
+                            <span>GESAMT:</span>
+                            <span><span id="receipt-total">0,00</span> €</span>
                         </div>
                     </div>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <p style="color: #7f8c8d; text-align: center; padding: 2rem;">
-                    Keine Produkte verfügbar.<br>
-                    <a href="{{ url_for('create_product') }}">Produkt anlegen</a>
-                </p>
-            {% endif %}
-        </div>
-
-        <!-- Rechte Seite: Rechnungsvorschau (Desktop) oder Sticky Bottom (Mobile) -->
-        <div>
-            <div class="receipt-preview" id="receipt">
-                <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 0.5rem; margin-bottom: 0.5rem;">
-                    <strong style="font-size: 1.1rem;">{{ config.COMPANY_NAME }}</strong><br>
-                    <span style="font-size: 0.85rem;">{{ config.COMPANY_HOLDER }}</span><br>
-                    <span style="font-size: 0.8rem;">{{ config.COMPANY_STREET }}, {{ config.COMPANY_ZIP }} {{ config.COMPANY_CITY }}</span><br>
-                    <span style="font-size: 0.8rem;">Tel: {{ config.COMPANY_PHONE }}</span>
-                </div>
-
-                <div style="margin: 0.5rem 0;">
-                    <strong>Datum:</strong> <span id="receipt-date"></span><br>
-                    <strong>Uhrzeit:</strong> <span id="receipt-time"></span>
-                </div>
-
-                <div style="border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 0.5rem 0; margin: 0.5rem 0;" id="receipt-items">
-                    <div style="text-align: center; color: #95a5a6; padding: 1rem;">
-                        Warenkorb leer
+                    <div style="margin-top: 1rem;">
+                        <button onclick="completeSale()"
+                                id="btn-complete"
+                                class="btn btn-primary"
+                                style="width: 100%;
+                                       font-size: 1.1rem;
+                                       padding: 0.8rem"
+                                disabled>💰 Verkauf abschließen</button>
+                        <button onclick="clearCart()"
+                                id="btn-clear"
+                                class="btn"
+                                style="width: 100%;
+                                       background: #95a5a6;
+                                       color: white;
+                                       margin-top: 0.5rem;
+                                       font-size: 0.95rem;
+                                       padding: 0.6rem"
+                                disabled>🗑️ Warenkorb leeren</button>
                     </div>
-                </div>
-
-                <div style="margin-top: 0.5rem;">
-                    <div style="display: flex; justify-content: space-between; padding: 0.2rem 0;">
-                        <span>Zwischensumme:</span>
-                        <strong><span id="receipt-subtotal">0,00</span> €</strong>
+                    <div style="margin-top: 1rem;
+                                padding-top: 0.5rem;
+                                border-top: 1px dashed #000;
+                                text-align: center;
+                                font-size: 0.75rem;
+                                color: #7f8c8d">
+                        Vielen Dank für Ihren Einkauf!
+                        <br>
+                        {{ config.COMPANY_WEBSITE }}
                     </div>
-                    <div style="display: flex; justify-content: space-between; padding: 0.2rem 0; font-size: 0.9rem; color: #7f8c8d;">
-                        <span>inkl. 7,80% MwSt:</span>
-                        <span><span id="receipt-tax">0,00</span> €</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; font-size: 1.3rem; font-weight: bold; border-top: 2px solid #000; margin-top: 0.3rem;">
-                        <span>GESAMT:</span>
-                        <span><span id="receipt-total">0,00</span> €</span>
-                    </div>
-                </div>
-
-                <div style="margin-top: 1rem;">
-                    <button onclick="completeSale()"
-                            id="btn-complete"
-                            class="btn btn-primary"
-                            style="width: 100%; font-size: 1.1rem; padding: 0.8rem;"
-                            disabled>
-                        💰 Verkauf abschließen
-                    </button>
-                    <button onclick="clearCart()"
-                            id="btn-clear"
-                            class="btn"
-                            style="width: 100%; background: #95a5a6; color: white; margin-top: 0.5rem; font-size: 0.95rem; padding: 0.6rem;"
-                            disabled>
-                        🗑️ Warenkorb leeren
-                    </button>
-                </div>
-
-                <div style="margin-top: 1rem; padding-top: 0.5rem; border-top: 1px dashed #000; text-align: center; font-size: 0.75rem; color: #7f8c8d;">
-                    Vielen Dank für Ihren Einkauf!<br>
-                    {{ config.COMPANY_WEBSITE }}
                 </div>
             </div>
         </div>
     </div>
-</div>
-
-<script>
+    <script>
 let cart = {};
 let products = {
     {% for product in products %}
@@ -421,5 +438,5 @@ function completeSale() {
 updateDateTime();
 setInterval(updateDateTime, 1000); // Aktualisiere Zeit jede Sekunde
 updateDisplay();
-</script>
+    </script>
 {% endblock %}

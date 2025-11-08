@@ -28,9 +28,9 @@ repos:
   - repo: https://github.com/Riverside-Healthcare/djLint
     rev: v1.36.4
     hooks:
-      - id: djlint-jinja
+      - id: djlint-reformat-jinja
         types_or: [html]
-        args: ['--check', '--ignore=H006,H030,H031']  # Nur kritische Fehler
+        args: ['--ignore=H006,H030,H031']
 
   # HTML Validation & Linting
   - repo: https://github.com/Lucas-C/pre-commit-hooks-markup

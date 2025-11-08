@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Offline - Rechnungsverwaltung</title>
-    <meta name="theme-color" content="#0d6efd">
-    <style>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Offline - Rechnungsverwaltung</title>
+        <meta name="theme-color" content="#0d6efd">
+        <style>
         * {
             margin: 0;
             padding: 0;
@@ -156,42 +156,41 @@
             font-size: 0.9rem;
             opacity: 0.7;
         }
-    </style>
-</head>
-<body>
-    <div class="offline-container">
-        <div class="offline-icon">📴</div>
-
-        <h1>Offline</h1>
-
-        <p>Keine Internetverbindung verfügbar. Die Rechnungsverwaltung ist derzeit nicht erreichbar.</p>
-
-        <div class="status" id="status">
-            <span class="status-indicator"></span>
-            <span id="status-text">Offline</span>
+        </style>
+    </head>
+    <body>
+        <div class="offline-container">
+            <div class="offline-icon">📴</div>
+            <h1>Offline</h1>
+            <p>Keine Internetverbindung verfügbar. Die Rechnungsverwaltung ist derzeit nicht erreichbar.</p>
+            <div class="status" id="status">
+                <span class="status-indicator"></span>
+                <span id="status-text">Offline</span>
+            </div>
+            <div class="actions">
+                <button onclick="checkConnection()">🔄 Erneut versuchen</button>
+                <button onclick="goToHome()">🏠 Zur Startseite</button>
+                <button onclick="viewCached()">📁 Gecachte Seiten</button>
+            </div>
+            <div class="cached-pages" id="cached-pages" style="display: none;">
+                <h3>📦 Verfügbare Offline-Inhalte</h3>
+                <ul id="cached-list">
+                    <li>
+                        <a href="/">🏠 Startseite</a>
+                    </li>
+                    <li>
+                        <a href="/invoices">📄 Rechnungsliste</a>
+                    </li>
+                    <li>
+                        <a href="/customers">👥 Kundenliste</a>
+                    </li>
+                </ul>
+            </div>
+            <div class="info">
+                💡 Tipp: Diese App funktioniert auch offline. Ihre Änderungen werden automatisch synchronisiert, sobald Sie wieder online sind.
+            </div>
         </div>
-
-        <div class="actions">
-            <button onclick="checkConnection()">🔄 Erneut versuchen</button>
-            <button onclick="goToHome()">🏠 Zur Startseite</button>
-            <button onclick="viewCached()">📁 Gecachte Seiten</button>
-        </div>
-
-        <div class="cached-pages" id="cached-pages" style="display: none;">
-            <h3>📦 Verfügbare Offline-Inhalte</h3>
-            <ul id="cached-list">
-                <li><a href="/">🏠 Startseite</a></li>
-                <li><a href="/invoices">📄 Rechnungsliste</a></li>
-                <li><a href="/customers">👥 Kundenliste</a></li>
-            </ul>
-        </div>
-
-        <div class="info">
-            💡 Tipp: Diese App funktioniert auch offline. Ihre Änderungen werden automatisch synchronisiert, sobald Sie wieder online sind.
-        </div>
-    </div>
-
-    <script>
+        <script>
         // Online/Offline Status überwachen
         function updateStatus() {
             const status = document.getElementById('status');
@@ -276,6 +275,6 @@
                     });
             }
         }, 10000);
-    </script>
-</body>
+        </script>
+    </body>
 </html>

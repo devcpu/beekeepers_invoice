@@ -1,100 +1,107 @@
 {% extends "base.html" %}
-
 {% block title %}Neue Bestandsanpassung{% endblock %}
-
 {% block content %}
-<div class="container mt-4">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">
-                    <h2 class="mb-0">📦 Neue Bestandsanpassung</h2>
+    <div class="container mt-4">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="mb-0">📦 Neue Bestandsanpassung</h2>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST">
+                            <!-- Produkt auswählen -->
+                            <div class="mb-3">
+                                <label for="product_id" class="form-label">Produkt *</label>
+                                <select name="product_id"
+                                        id="product_id"
+                                        class="form-select"
+                                        required
+                                        onchange="updateCurrentStock()">
+                                    <option value="">-- Produkt auswählen --</option>
+                                    {% for product in products %}
+                                        <option value="{{ product.id }}" data-stock="{{ product.number }}">
+                                            {{ product.name }} (Aktuell: {{ product.number }} Stk)
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                <div id="current-stock-info" class="mt-2"></div>
+                            </div>
+                            <!-- Typ der Anpassung -->
+                            <div class="mb-3">
+                                <label for="adjustment_type" class="form-label">Typ der Anpassung *</label>
+                                <select name="adjustment_type"
+                                        id="adjustment_type"
+                                        class="form-select"
+                                        required>
+                                    <optgroup label="Abgang">
+                                        <option value="eigenentnahme">🏠 Eigenentnahme (privat)</option>
+                                        <option value="geschenk">🎁 Geschenk</option>
+                                        <option value="verderb">🗑️ Verderb</option>
+                                        <option value="bruch">💥 Bruch/Beschädigung</option>
+                                    </optgroup>
+                                    <optgroup label="Inventur">
+                                        <option value="inventur_plus">📊 Inventur-Zugang (mehr als erwartet)</option>
+                                        <option value="inventur_minus">📊 Inventur-Abgang (weniger als erwartet)</option>
+                                    </optgroup>
+                                    <optgroup label="Sonstige">
+                                        <option value="korrektur">✏️ Korrektur (Fehleingabe)</option>
+                                        <option value="sonstiges">Sonstiges</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                            <!-- Menge -->
+                            <div class="mb-3">
+                                <label for="quantity" class="form-label">Menge *</label>
+                                <input type="number"
+                                       name="quantity"
+                                       id="quantity"
+                                       class="form-control"
+                                       required
+                                       placeholder="Negativ für Abgang, Positiv für Zugang"
+                                       onchange="updatePreview()">
+                                <small class="form-text text-muted">Negativ für Abgang (z.B. -5), Positiv für Zugang (z.B. +10)</small>
+                                <div id="stock-preview" class="mt-2"></div>
+                            </div>
+                            <!-- Grund -->
+                            <div class="mb-3">
+                                <label for="reason" class="form-label">Grund / Bemerkung *</label>
+                                <textarea name="reason"
+                                          id="reason"
+                                          class="form-control"
+                                          rows="3"
+                                          required
+                                          placeholder="Detaillierte Beschreibung für die Dokumentation (GoBD-Pflicht)"></textarea>
+                                <small class="form-text text-muted">
+                                    Pflichtfeld für GoBD-Konformität. Beschreiben Sie den Grund für die Bestandsänderung.
+                                </small>
+                            </div>
+                            <!-- Buttons -->
+                            <div class="d-flex justify-content-between">
+                                <a href="{{ url_for('list_stock_adjustments') }}"
+                                   class="btn btn-secondary">
+                                    <i class="bi bi-arrow-left"></i> Zurück
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check-circle"></i> Anpassung erstellen
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <form method="POST">
-                        <!-- Produkt auswählen -->
-                        <div class="mb-3">
-                            <label for="product_id" class="form-label">Produkt *</label>
-                            <select name="product_id" id="product_id" class="form-select" required onchange="updateCurrentStock()">
-                                <option value="">-- Produkt auswählen --</option>
-                                {% for product in products %}
-                                <option value="{{ product.id }}" data-stock="{{ product.number }}">
-                                    {{ product.name }} (Aktuell: {{ product.number }} Stk)
-                                </option>
-                                {% endfor %}
-                            </select>
-                            <div id="current-stock-info" class="mt-2"></div>
-                        </div>
-
-                        <!-- Typ der Anpassung -->
-                        <div class="mb-3">
-                            <label for="adjustment_type" class="form-label">Typ der Anpassung *</label>
-                            <select name="adjustment_type" id="adjustment_type" class="form-select" required>
-                                <optgroup label="Abgang">
-                                    <option value="eigenentnahme">🏠 Eigenentnahme (privat)</option>
-                                    <option value="geschenk">🎁 Geschenk</option>
-                                    <option value="verderb">🗑️ Verderb</option>
-                                    <option value="bruch">💥 Bruch/Beschädigung</option>
-                                </optgroup>
-                                <optgroup label="Inventur">
-                                    <option value="inventur_plus">📊 Inventur-Zugang (mehr als erwartet)</option>
-                                    <option value="inventur_minus">📊 Inventur-Abgang (weniger als erwartet)</option>
-                                </optgroup>
-                                <optgroup label="Sonstige">
-                                    <option value="korrektur">✏️ Korrektur (Fehleingabe)</option>
-                                    <option value="sonstiges">Sonstiges</option>
-                                </optgroup>
-                            </select>
-                        </div>
-
-                        <!-- Menge -->
-                        <div class="mb-3">
-                            <label for="quantity" class="form-label">Menge *</label>
-                            <input type="number" name="quantity" id="quantity" class="form-control" required
-                                   placeholder="Negativ für Abgang, Positiv für Zugang" onchange="updatePreview()">
-                            <small class="form-text text-muted">
-                                Negativ für Abgang (z.B. -5), Positiv für Zugang (z.B. +10)
-                            </small>
-                            <div id="stock-preview" class="mt-2"></div>
-                        </div>
-
-                        <!-- Grund -->
-                        <div class="mb-3">
-                            <label for="reason" class="form-label">Grund / Bemerkung *</label>
-                            <textarea name="reason" id="reason" class="form-control" rows="3" required
-                                      placeholder="Detaillierte Beschreibung für die Dokumentation (GoBD-Pflicht)"></textarea>
-                            <small class="form-text text-muted">
-                                Pflichtfeld für GoBD-Konformität. Beschreiben Sie den Grund für die Bestandsänderung.
-                            </small>
-                        </div>
-
-                        <!-- Buttons -->
-                        <div class="d-flex justify-content-between">
-                            <a href="{{ url_for('list_stock_adjustments') }}" class="btn btn-secondary">
-                                <i class="bi bi-arrow-left"></i> Zurück
-                            </a>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-check-circle"></i> Anpassung erstellen
-                            </button>
-                        </div>
-                    </form>
+                <!-- Hinweise -->
+                <div class="alert alert-warning mt-4">
+                    <h5>⚠️ Wichtiger Hinweis</h5>
+                    <ul class="mb-0">
+                        <li>Bestandsanpassungen können nicht rückgängig gemacht werden</li>
+                        <li>Alle Anpassungen werden vollständig dokumentiert (GoBD)</li>
+                        <li>Bei Eigenentnahmen wird automatisch eine Beleg-Nummer erstellt</li>
+                    </ul>
                 </div>
-            </div>
-
-            <!-- Hinweise -->
-            <div class="alert alert-warning mt-4">
-                <h5>⚠️ Wichtiger Hinweis</h5>
-                <ul class="mb-0">
-                    <li>Bestandsanpassungen können nicht rückgängig gemacht werden</li>
-                    <li>Alle Anpassungen werden vollständig dokumentiert (GoBD)</li>
-                    <li>Bei Eigenentnahmen wird automatisch eine Beleg-Nummer erstellt</li>
-                </ul>
             </div>
         </div>
     </div>
-</div>
-
-<script>
+    <script>
 function updateCurrentStock() {
     const select = document.getElementById('product_id');
     const option = select.options[select.selectedIndex];
@@ -142,5 +149,5 @@ function updatePreview() {
         previewDiv.innerHTML = '';
     }
 }
-</script>
+    </script>
 {% endblock %}

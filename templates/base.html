@@ -1,42 +1,58 @@
 <!DOCTYPE html>
 <html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>{% block title %}Rechnungsverwaltung{% endblock %}</title>
-
-    <!-- PWA Meta Tags -->
-    <meta name="description" content="GoBD-konforme Rechnungsverwaltung mit JWT-API, Offline-Unterstützung und manipulationssicherer Datenspeicherung">
-    <meta name="application-name" content="Rechnungsverwaltung">
-    <meta name="theme-color" content="#0d6efd">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="Rechnungen">
-
-    <!-- Web App Manifest -->
-    <link rel="manifest" href="/static/manifest.json">
-
-    <!-- Favicons -->
-    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
-    <link rel="icon" type="image/png" sizes="16x16" href="/static/icons/favicon-16x16.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/static/icons/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="48x48" href="/static/icons/favicon-48x48.png">
-
-    <!-- Apple Touch Icons -->
-    <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
-    <link rel="apple-touch-icon" sizes="120x120" href="/static/icons/apple-touch-icon-120x120.png">
-    <link rel="apple-touch-icon" sizes="152x152" href="/static/icons/apple-touch-icon-152x152.png">
-    <link rel="apple-touch-icon" sizes="167x167" href="/static/icons/apple-touch-icon-167x167.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="/static/icons/apple-touch-icon-180x180.png">
-
-    <!-- iOS Splash Screens (optional) -->
-    <link rel="apple-touch-startup-image" href="/static/icons/icon-512x512.png">
-
-    <!-- Microsoft Tiles -->
-    <meta name="msapplication-TileColor" content="#0d6efd">
-    <meta name="msapplication-TileImage" content="/static/icons/icon-144x144.png">
-    <style>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport"
+              content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+        <title>
+            {% block title %}Rechnungsverwaltung{% endblock %}
+        </title>
+        <!-- PWA Meta Tags -->
+        <meta name="description"
+              content="GoBD-konforme Rechnungsverwaltung mit JWT-API, Offline-Unterstützung und manipulationssicherer Datenspeicherung">
+        <meta name="application-name" content="Rechnungsverwaltung">
+        <meta name="theme-color" content="#0d6efd">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="default">
+        <meta name="apple-mobile-web-app-title" content="Rechnungen">
+        <!-- Web App Manifest -->
+        <link rel="manifest" href="/static/manifest.json">
+        <!-- Favicons -->
+        <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+        <link rel="icon"
+              type="image/png"
+              sizes="16x16"
+              href="/static/icons/favicon-16x16.png">
+        <link rel="icon"
+              type="image/png"
+              sizes="32x32"
+              href="/static/icons/favicon-32x32.png">
+        <link rel="icon"
+              type="image/png"
+              sizes="48x48"
+              href="/static/icons/favicon-48x48.png">
+        <!-- Apple Touch Icons -->
+        <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+        <link rel="apple-touch-icon"
+              sizes="120x120"
+              href="/static/icons/apple-touch-icon-120x120.png">
+        <link rel="apple-touch-icon"
+              sizes="152x152"
+              href="/static/icons/apple-touch-icon-152x152.png">
+        <link rel="apple-touch-icon"
+              sizes="167x167"
+              href="/static/icons/apple-touch-icon-167x167.png">
+        <link rel="apple-touch-icon"
+              sizes="180x180"
+              href="/static/icons/apple-touch-icon-180x180.png">
+        <!-- iOS Splash Screens (optional) -->
+        <link rel="apple-touch-startup-image" href="/static/icons/icon-512x512.png">
+        <!-- Microsoft Tiles -->
+        <meta name="msapplication-TileColor" content="#0d6efd">
+        <meta name="msapplication-TileImage"
+              content="/static/icons/icon-144x144.png">
+        <style>
         * {
             margin: 0;
             padding: 0;
@@ -266,69 +282,78 @@
             color: #7f8c8d;
             font-size: 0.9rem;
         }
-    </style>
-    {% block extra_css %}{% endblock %}
-</head>
-<body>
-    <div class="navbar">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div>
-                <h1>📄 Rechnungsverwaltung</h1>
-                <nav>
-                    {% if current_user.is_authenticated %}
-                        <a href="{{ url_for('index') }}">Dashboard</a>
-                        <a href="{{ url_for('list_invoices') }}">Rechnungen</a>
-                        <a href="{{ url_for('create_invoice') }}">Neue Rechnung</a>
-                        <a href="{{ url_for('pos') }}" style="background: #27ae60; padding: 0.3rem 0.8rem; border-radius: 4px;">🏪 Kasse</a>
-                        <a href="{{ url_for('list_delivery_notes') }}">📦 Lieferscheine</a>
-                        <a href="{{ url_for('list_customers') }}">Kunden</a>
-                        <a href="{{ url_for('list_products') }}">Produkte</a>
-                        <a href="{{ url_for('stock_management') }}">📦 Bestand</a>
-                        <a href="{{ url_for('list_stock_adjustments') }}" style="background: #e74c3c; padding: 0.3rem 0.8rem; border-radius: 4px;">📝 Anpassungen</a>
-                        <a href="{{ url_for('payment_review') }}">💰 Zahlungen</a>
-                        <a href="{{ url_for('annual_revenue_report') }}" style="background: #9b59b6; padding: 0.3rem 0.8rem; border-radius: 4px;">📊 Berichte</a>
-                        <a href="{{ url_for('settings') }}">⚙️ Einstellungen</a>
-                    {% endif %}
-                </nav>
-            </div>
-            {% if current_user.is_authenticated %}
-            <div style="text-align: right;">
-                <div style="margin-bottom: 0.3rem;">
-                    <span style="opacity: 0.8; font-size: 0.9rem;">
-                        👤 {{ current_user.username }}
-                        <span style="background: rgba(255,255,255,0.2); padding: 0.2rem 0.5rem; border-radius: 3px; font-size: 0.8rem; margin-left: 0.5rem;">
-                            {{ current_user.role }}
-                        </span>
-                    </span>
-                </div>
+        </style>
+        {% block extra_css %}{% endblock %}
+    </head>
+    <body>
+        <div class="navbar">
+            <div style="display: flex;
+                        justify-content: space-between;
+                        align-items: center">
                 <div>
-                    <a href="{{ url_for('logout') }}" style="background: rgba(231, 76, 60, 0.8); padding: 0.3rem 0.8rem; border-radius: 4px; font-size: 0.9rem;">
-                        🔓 Abmelden
-                    </a>
+                    <h1>📄 Rechnungsverwaltung</h1>
+                    <nav>
+                        {% if current_user.is_authenticated %}
+                            <a href="{{ url_for('index') }}">Dashboard</a>
+                            <a href="{{ url_for('list_invoices') }}">Rechnungen</a>
+                            <a href="{{ url_for('create_invoice') }}">Neue Rechnung</a>
+                            <a href="{{ url_for('pos') }}"
+                               style="background: #27ae60;
+                                      padding: 0.3rem 0.8rem;
+                                      border-radius: 4px">🏪 Kasse</a>
+                            <a href="{{ url_for('list_delivery_notes') }}">📦 Lieferscheine</a>
+                            <a href="{{ url_for('list_customers') }}">Kunden</a>
+                            <a href="{{ url_for('list_products') }}">Produkte</a>
+                            <a href="{{ url_for('stock_management') }}">📦 Bestand</a>
+                            <a href="{{ url_for('list_stock_adjustments') }}"
+                               style="background: #e74c3c;
+                                      padding: 0.3rem 0.8rem;
+                                      border-radius: 4px">📝 Anpassungen</a>
+                            <a href="{{ url_for('payment_review') }}">💰 Zahlungen</a>
+                            <a href="{{ url_for('annual_revenue_report') }}"
+                               style="background: #9b59b6;
+                                      padding: 0.3rem 0.8rem;
+                                      border-radius: 4px">📊 Berichte</a>
+                            <a href="{{ url_for('settings') }}">⚙️ Einstellungen</a>
+                        {% endif %}
+                    </nav>
                 </div>
+                {% if current_user.is_authenticated %}
+                    <div style="text-align: right;">
+                        <div style="margin-bottom: 0.3rem;">
+                            <span style="opacity: 0.8; font-size: 0.9rem;">
+                                👤 {{ current_user.username }}
+                                <span style="background: rgba(255,255,255,0.2);
+                                             padding: 0.2rem 0.5rem;
+                                             border-radius: 3px;
+                                             font-size: 0.8rem;
+                                             margin-left: 0.5rem">{{ current_user.role }}</span>
+                            </span>
+                        </div>
+                        <div>
+                            <a href="{{ url_for('logout') }}"
+                               style="background: rgba(231, 76, 60, 0.8);
+                                      padding: 0.3rem 0.8rem;
+                                      border-radius: 4px;
+                                      font-size: 0.9rem">🔓 Abmelden</a>
+                        </div>
+                    </div>
+                {% endif %}
             </div>
-            {% endif %}
         </div>
-    </div>
-
-    <div class="container">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <div class="flash-messages">
-                    {% for category, message in messages %}
-                        <div class="flash {{ category }}">{{ message }}</div>
-                    {% endfor %}
-                </div>
-            {% endif %}
-        {% endwith %}
-
-        {% block content %}{% endblock %}
-    </div>
-
-    {% block extra_js %}{% endblock %}
-
-    <!-- PWA Service Worker Registration -->
-    <script>
+        <div class="container">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flash-messages">
+                        {% for category, message in messages %}<div class="flash {{ category }}">{{ message }}</div>{% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+            {% block content %}{% endblock %}
+        </div>
+        {% block extra_js %}{% endblock %}
+        <!-- PWA Service Worker Registration -->
+        <script>
         // Service Worker Registration
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
@@ -406,23 +431,8 @@
                     <strong>📱 Als App installieren?</strong><br>
                     <small>Schnellerer Zugriff und Offline-Nutzung</small>
                 </div>
-                <button id="pwa-install-btn" style="
-                    background: white;
-                    color: #0d6efd;
-                    border: none;
-                    padding: 0.5rem 1rem;
-                    border-radius: 4px;
-                    cursor: pointer;
-                    font-weight: bold;
-                ">Installieren</button>
-                <button id="pwa-dismiss-btn" style="
-                    background: transparent;
-                    color: white;
-                    border: 1px solid white;
-                    padding: 0.5rem 1rem;
-                    border-radius: 4px;
-                    cursor: pointer;
-                ">Später</button>
+                <button id="pwa-install-btn" style=" background: white; color: #0d6efd; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; font-weight: bold; ">Installieren</button>
+                <button id="pwa-dismiss-btn" style=" background: transparent; color: white; border: 1px solid white; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; ">Später</button>
             `;
 
             document.body.appendChild(prompt);
@@ -489,15 +499,7 @@
                     <strong>🔄 Update verfügbar</strong><br>
                     <small>Neue Version der App ist bereit</small>
                 </div>
-                <button id="sw-update-btn" style="
-                    background: white;
-                    color: #28a745;
-                    border: none;
-                    padding: 0.5rem 1rem;
-                    border-radius: 4px;
-                    cursor: pointer;
-                    font-weight: bold;
-                ">Aktualisieren</button>
+                <button id="sw-update-btn" style=" background: white; color: #28a745; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; font-weight: bold; ">Aktualisieren</button>
             `;
 
             document.body.appendChild(notification);
@@ -564,6 +566,6 @@
             }
         `;
         document.head.appendChild(style);
-    </script>
-</body>
+        </script>
+    </body>
 </html>

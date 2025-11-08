@@ -1,79 +1,80 @@
 {% extends 'base.html' %}
-
 {% block title %}2FA Einrichten{% endblock %}
-
 {% block content %}
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="mb-0"><i class="bi bi-shield-lock"></i> Zwei-Faktor-Authentifizierung einrichten</h4>
-                </div>
-                <div class="card-body">
-                    <div class="alert alert-info">
-                        <i class="bi bi-info-circle"></i> Mit 2FA wird Ihr Account durch einen zweiten Faktor zusätzlich abgesichert.
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">
+                            <i class="bi bi-shield-lock"></i> Zwei-Faktor-Authentifizierung einrichten
+                        </h4>
                     </div>
-
-                    <h5 class="mt-4">Schritt 1: Authenticator-App installieren</h5>
-                    <p>Installieren Sie eine der folgenden Apps auf Ihrem Smartphone:</p>
-                    <ul>
-                        <li><strong>Google Authenticator</strong> (iOS/Android)</li>
-                        <li><strong>Authy</strong> (iOS/Android/Desktop)</li>
-                        <li><strong>Microsoft Authenticator</strong> (iOS/Android)</li>
-                    </ul>
-
-                    <hr>
-
-                    <h5>Schritt 2: QR-Code scannen</h5>
-                    <p>Scannen Sie diesen QR-Code mit Ihrer Authenticator-App:</p>
-
-                    <div class="text-center my-4">
-                        <img src="data:image/png;base64,{{ qr_code }}" alt="2FA QR-Code" class="img-fluid" style="max-width: 300px;">
-                    </div>
-
-                    <div class="alert alert-warning">
-                        <strong>Manueller Setup-Key (falls QR-Code nicht funktioniert):</strong><br>
-                        <code class="fs-5">{{ totp_secret }}</code>
-                    </div>
-
-                    <hr>
-
-                    <h5>Schritt 3: Code eingeben</h5>
-                    <p>Geben Sie den 6-stelligen Code aus Ihrer Authenticator-App ein:</p>
-
-                    <form method="POST" action="{{ url_for('setup_2fa') }}">
-                        <div class="mb-3">
-                            <label for="token" class="form-label">6-stelliger Code</label>
-                            <input type="text"
-                                   class="form-control form-control-lg text-center"
-                                   id="token"
-                                   name="token"
-                                   placeholder="123 456"
-                                   maxlength="7"
-                                   pattern="[0-9 ]{6,7}"
-                                   required
-                                   autofocus
-                                   style="letter-spacing: 0.5em; font-size: 2rem;">
-                            <div class="form-text">Der Code ändert sich alle 30 Sekunden.</div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> Mit 2FA wird Ihr Account durch einen zweiten Faktor zusätzlich abgesichert.
                         </div>
-
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary btn-lg">
-                                <i class="bi bi-check-circle"></i> 2FA aktivieren
-                            </button>
-                            <a href="{{ url_for('settings') }}" class="btn btn-secondary">
-                                <i class="bi bi-x-circle"></i> Abbrechen
-                            </a>
+                        <h5 class="mt-4">Schritt 1: Authenticator-App installieren</h5>
+                        <p>Installieren Sie eine der folgenden Apps auf Ihrem Smartphone:</p>
+                        <ul>
+                            <li>
+                                <strong>Google Authenticator</strong> (iOS/Android)
+                            </li>
+                            <li>
+                                <strong>Authy</strong> (iOS/Android/Desktop)
+                            </li>
+                            <li>
+                                <strong>Microsoft Authenticator</strong> (iOS/Android)
+                            </li>
+                        </ul>
+                        <hr>
+                        <h5>Schritt 2: QR-Code scannen</h5>
+                        <p>Scannen Sie diesen QR-Code mit Ihrer Authenticator-App:</p>
+                        <div class="text-center my-4">
+                            <img src="data:image/png;base64,{{ qr_code }}"
+                                 alt="2FA QR-Code"
+                                 class="img-fluid"
+                                 style="max-width: 300px">
                         </div>
-                    </form>
+                        <div class="alert alert-warning">
+                            <strong>Manueller Setup-Key (falls QR-Code nicht funktioniert):</strong>
+                            <br>
+                            <code class="fs-5">{{ totp_secret }}</code>
+                        </div>
+                        <hr>
+                        <h5>Schritt 3: Code eingeben</h5>
+                        <p>Geben Sie den 6-stelligen Code aus Ihrer Authenticator-App ein:</p>
+                        <form method="POST" action="{{ url_for('setup_2fa') }}">
+                            <div class="mb-3">
+                                <label for="token" class="form-label">6-stelliger Code</label>
+                                <input type="text"
+                                       class="form-control form-control-lg text-center"
+                                       id="token"
+                                       name="token"
+                                       placeholder="123 456"
+                                       maxlength="7"
+                                       pattern="[0-9 ]{6,7}"
+                                       required
+                                       autofocus
+                                       style="letter-spacing: 0.5em;
+                                              font-size: 2rem">
+                                <div class="form-text">Der Code ändert sich alle 30 Sekunden.</div>
+                            </div>
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="bi bi-check-circle"></i> 2FA aktivieren
+                                </button>
+                                <a href="{{ url_for('settings') }}" class="btn btn-secondary">
+                                    <i class="bi bi-x-circle"></i> Abbrechen
+                                </a>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
-
-<script>
+    <script>
 // Auto-format 2FA code (add space after 3 digits)
 document.getElementById('token').addEventListener('input', function(e) {
     let value = e.target.value.replace(/\s/g, '').replace(/\D/g, '');
@@ -82,5 +83,5 @@ document.getElementById('token').addEventListener('input', function(e) {
     }
     e.target.value = value;
 });
-</script>
+    </script>
 {% endblock %}

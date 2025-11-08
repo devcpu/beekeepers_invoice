@@ -1,78 +1,97 @@
 {% extends "base.html" %}
-
 {% block title %}Kunden{% endblock %}
-
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-    <h1>Alle Kunden</h1>
-</div>
-
-<div class="card">
-    <form method="GET" style="margin-bottom: 2rem;">
-        <div style="display: flex; gap: 1rem;">
-            <input type="text"
-                   name="search"
-                   placeholder="Suche nach Firma, Name oder E-Mail..."
-                   value="{{ search_query or '' }}"
-                   style="flex: 1; padding: 0.75rem; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem;">
-            <button type="submit" class="btn btn-primary" style="white-space: nowrap;">🔍 Suchen</button>
-            {% if search_query %}
-                <a href="{{ url_for('list_customers') }}" class="btn" style="background: #95a5a6; color: white;">✕ Zurücksetzen</a>
-            {% endif %}
-        </div>
-    </form>
-
-    {% if search_query %}
-        <p style="margin-bottom: 1rem; color: #7f8c8d;">
-            <strong>Suchergebnis für "{{ search_query }}":</strong> {{ customers|length }} Kunde(n) gefunden
-        </p>
-    {% endif %}
-
-    {% if customers %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Name/Firma</th>
-                    <th>E-Mail</th>
-                    <th>Telefon</th>
-                    <th>Rechnungen</th>
-                    <th>Aktionen</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for customer in customers %}
-                <tr>
-                    <td>
-                        <strong>
-                            {% if customer.company_name %}
-                                {{ customer.company_name }}
-                            {% else %}
-                                {{ customer.first_name }} {{ customer.last_name }}
-                            {% endif %}
-                        </strong>
-                        {% if customer.reseller %}
-                        <span style="background: #3498db; color: white; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem;" title="Wiederverkäufer">🏪 Reseller</span>
-                        {% endif %}
-                        {% if customer.is_anonymized %}
-                        <span style="color: #95a5a6; font-size: 0.85rem; margin-left: 0.5rem;" title="DSGVO-anonymisiert">🔒 Anonymisiert</span>
-                        {% endif %}
-                    </td>
-                    <td>{{ customer.email or '-' }}</td>
-                    <td>{{ customer.phone or '-' }}</td>
-                    <td>{{ customer.invoices|length }}</td>
-                    <td>
-                        <a href="{{ url_for('view_customer', customer_id=customer.id) }}" class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.875rem;">Details</a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    {% else %}
+    <div style="display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 2rem">
+        <h1>Alle Kunden</h1>
+    </div>
+    <div class="card">
+        <form method="GET" style="margin-bottom: 2rem;">
+            <div style="display: flex; gap: 1rem;">
+                <input type="text"
+                       name="search"
+                       placeholder="Suche nach Firma, Name oder E-Mail..."
+                       value="{{ search_query or '' }}"
+                       style="flex: 1;
+                              padding: 0.75rem;
+                              border: 1px solid #ddd;
+                              border-radius: 4px;
+                              font-size: 1rem">
+                <button type="submit" class="btn btn-primary" style="white-space: nowrap;">🔍 Suchen</button>
+                {% if search_query %}
+                    <a href="{{ url_for('list_customers') }}"
+                       class="btn"
+                       style="background: #95a5a6;
+                              color: white">✕ Zurücksetzen</a>
+                {% endif %}
+            </div>
+        </form>
         {% if search_query %}
-            <p>Keine Kunden gefunden für "{{ search_query }}". <a href="{{ url_for('list_customers') }}">Alle Kunden anzeigen</a></p>
-        {% else %}
-            <p>Noch keine Kunden vorhanden.</p>
+            <p style="margin-bottom: 1rem; color: #7f8c8d;">
+                <strong>Suchergebnis für "{{ search_query }}":</strong> {{ customers|length }} Kunde(n) gefunden
+            </p>
         {% endif %}
-    {% endif %}
-</div>
+        {% if customers %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name/Firma</th>
+                        <th>E-Mail</th>
+                        <th>Telefon</th>
+                        <th>Rechnungen</th>
+                        <th>Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for customer in customers %}
+                        <tr>
+                            <td>
+                                <strong>
+                                    {% if customer.company_name %}
+                                        {{ customer.company_name }}
+                                    {% else %}
+                                        {{ customer.first_name }} {{ customer.last_name }}
+                                    {% endif %}
+                                </strong>
+                                {% if customer.reseller %}
+                                    <span style="background: #3498db;
+                                                 color: white;
+                                                 padding: 0.2rem 0.5rem;
+                                                 border-radius: 4px;
+                                                 font-size: 0.75rem;
+                                                 margin-left: 0.5rem"
+                                          title="Wiederverkäufer">🏪 Reseller</span>
+                                {% endif %}
+                                {% if customer.is_anonymized %}
+                                    <span style="color: #95a5a6;
+                                                 font-size: 0.85rem;
+                                                 margin-left: 0.5rem"
+                                          title="DSGVO-anonymisiert">🔒 Anonymisiert</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ customer.email or '-' }}</td>
+                            <td>{{ customer.phone or '-' }}</td>
+                            <td>{{ customer.invoices|length }}</td>
+                            <td>
+                                <a href="{{ url_for('view_customer', customer_id=customer.id) }}"
+                                   class="btn btn-primary"
+                                   style="padding: 0.4rem 0.8rem;
+                                          font-size: 0.875rem">Details</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            {% if search_query %}
+                <p>
+                    Keine Kunden gefunden für "{{ search_query }}". <a href="{{ url_for('list_customers') }}">Alle Kunden anzeigen</a>
+                </p>
+            {% else %}
+                <p>Noch keine Kunden vorhanden.</p>
+            {% endif %}
+        {% endif %}
+    </div>
 {% endblock %}

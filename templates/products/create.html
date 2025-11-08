@@ -1,71 +1,98 @@
 {% extends "base.html" %}
-
 {% block title %}Neues Produkt{% endblock %}
-
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-    <h1>Neues Produkt anlegen</h1>
-    <a href="{{ url_for('list_products') }}" class="btn" style="background: #95a5a6; color: white;">Abbrechen</a>
-</div>
-
-<div class="card">
-    <form method="POST">
-        <div class="form-group">
-            <label for="name">Produktname *</label>
-            <input type="text" name="name" id="name" required placeholder="z.B. Honig Lindenhonig">
-        </div>
-
-        <div class="form-row">
+    <div style="display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 2rem">
+        <h1>Neues Produkt anlegen</h1>
+        <a href="{{ url_for('list_products') }}"
+           class="btn"
+           style="background: #95a5a6;
+                  color: white">Abbrechen</a>
+    </div>
+    <div class="card">
+        <form method="POST">
             <div class="form-group">
-                <label for="quantity">Menge/Größe</label>
-                <input type="text" name="quantity" id="quantity" placeholder="z.B. 250g, 500g, 20ml">
-                <small style="color: #7f8c8d;">Einheit oder Gebindegröße</small>
+                <label for="name">Produktname *</label>
+                <input type="text"
+                       name="name"
+                       id="name"
+                       required
+                       placeholder="z.B. Honig Lindenhonig">
             </div>
-
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="quantity">Menge/Größe</label>
+                    <input type="text"
+                           name="quantity"
+                           id="quantity"
+                           placeholder="z.B. 250g, 500g, 20ml">
+                    <small style="color: #7f8c8d;">Einheit oder Gebindegröße</small>
+                </div>
+                <div class="form-group">
+                    <label for="number">Lagerbestand *</label>
+                    <input type="number" name="number" id="number" value="0" required min="0">
+                    <small style="color: #7f8c8d;">Anzahl vorhandener Einheiten</small>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="price">Endkundenpreis (€) *</label>
+                    <input type="number"
+                           name="price"
+                           id="price"
+                           step="0.01"
+                           required
+                           placeholder="0.00">
+                    <small style="color: #7f8c8d;">Regulärer Verkaufspreis</small>
+                </div>
+                <div class="form-group">
+                    <label for="reseller_price">Wiederverkäuferpreis (€)</label>
+                    <input type="number"
+                           name="reseller_price"
+                           id="reseller_price"
+                           step="0.01"
+                           placeholder="0.00">
+                    <small style="color: #7f8c8d;">Preis für Wiederverkäufer (optional)</small>
+                </div>
+            </div>
             <div class="form-group">
-                <label for="number">Lagerbestand *</label>
-                <input type="number" name="number" id="number" value="0" required min="0">
-                <small style="color: #7f8c8d;">Anzahl vorhandener Einheiten</small>
+                <label for="tax_rate">MwSt-Satz (%) *</label>
+                <input type="number"
+                       name="tax_rate"
+                       id="tax_rate"
+                       step="0.01"
+                       value="7.80"
+                       required>
+                <small style="color: #7f8c8d;">Standard: 7,80% für landw. Urproduktion, 19,00% für andere Produkte</small>
             </div>
-        </div>
-
-        <div class="form-row">
             <div class="form-group">
-                <label for="price">Endkundenpreis (€) *</label>
-                <input type="number" name="price" id="price" step="0.01" required placeholder="0.00">
-                <small style="color: #7f8c8d;">Regulärer Verkaufspreis</small>
+                <label for="lot_number">Chargennummer / Los-Nr.</label>
+                <input type="text"
+                       name="lot_number"
+                       id="lot_number"
+                       placeholder="z.B. 2024-001">
             </div>
-
             <div class="form-group">
-                <label for="reseller_price">Wiederverkäuferpreis (€)</label>
-                <input type="number" name="reseller_price" id="reseller_price" step="0.01" placeholder="0.00">
-                <small style="color: #7f8c8d;">Preis für Wiederverkäufer (optional)</small>
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox"
+                           name="active"
+                           checked
+                           style="margin-right: 0.5rem;
+                                  width: auto">
+                    <span>Produkt ist aktiv (im Verkauf)</span>
+                </label>
+                <small style="color: #7f8c8d; margin-left: 1.7rem;">Inaktive Produkte werden nicht in Rechnungen angezeigt</small>
             </div>
-        </div>
-
-        <div class="form-group">
-            <label for="tax_rate">MwSt-Satz (%) *</label>
-            <input type="number" name="tax_rate" id="tax_rate" step="0.01" value="7.80" required>
-            <small style="color: #7f8c8d;">Standard: 7,80% für landw. Urproduktion, 19,00% für andere Produkte</small>
-        </div>
-
-        <div class="form-group">
-            <label for="lot_number">Chargennummer / Los-Nr.</label>
-            <input type="text" name="lot_number" id="lot_number" placeholder="z.B. 2024-001">
-        </div>
-
-        <div class="form-group">
-            <label style="display: flex; align-items: center; cursor: pointer;">
-                <input type="checkbox" name="active" checked style="margin-right: 0.5rem; width: auto;">
-                <span>Produkt ist aktiv (im Verkauf)</span>
-            </label>
-            <small style="color: #7f8c8d; margin-left: 1.7rem;">Inaktive Produkte werden nicht in Rechnungen angezeigt</small>
-        </div>
-
-        <div style="margin-top: 2rem;">
-            <button type="submit" class="btn btn-primary">Produkt anlegen</button>
-            <a href="{{ url_for('list_products') }}" class="btn" style="background: #95a5a6; color: white; margin-left: 0.5rem;">Abbrechen</a>
-        </div>
-    </form>
-</div>
+            <div style="margin-top: 2rem;">
+                <button type="submit" class="btn btn-primary">Produkt anlegen</button>
+                <a href="{{ url_for('list_products') }}"
+                   class="btn"
+                   style="background: #95a5a6;
+                          color: white;
+                          margin-left: 0.5rem">Abbrechen</a>
+            </div>
+        </form>
+    </div>
 {% endblock %}

@@ -1,95 +1,114 @@
 {% extends "base.html" %}
-
 {% block title %}Lieferschein {{ delivery_note.delivery_note_number }}{% endblock %}
-
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-    <h1>Lieferschein {{ delivery_note.delivery_note_number }}</h1>
-    <div>
-        <a href="{{ url_for('download_delivery_note_pdf', delivery_note_id=delivery_note.id) }}" class="btn btn-success">📄 PDF</a>
-        <a href="{{ url_for('consignment_stock_overview', customer_id=delivery_note.customer_id) }}" class="btn" style="background: #9b59b6; color: white;">📦 Kommissionslager</a>
-        <a href="{{ url_for('list_delivery_notes') }}" class="btn" style="background: #95a5a6; color: white;">Zurück</a>
+    <div style="display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 2rem">
+        <h1>Lieferschein {{ delivery_note.delivery_note_number }}</h1>
+        <div>
+            <a href="{{ url_for('download_delivery_note_pdf', delivery_note_id=delivery_note.id) }}"
+               class="btn btn-success">📄 PDF</a>
+            <a href="{{ url_for('consignment_stock_overview', customer_id=delivery_note.customer_id) }}"
+               class="btn"
+               style="background: #9b59b6;
+                      color: white">📦 Kommissionslager</a>
+            <a href="{{ url_for('list_delivery_notes') }}"
+               class="btn"
+               style="background: #95a5a6;
+                      color: white">Zurück</a>
+        </div>
     </div>
-</div>
-
-<div class="card">
-    <h2>Reseller</h2>
-    <p>
-        {% if delivery_note.customer.company_name %}
-            <strong>{{ delivery_note.customer.company_name }}</strong><br>
-        {% endif %}
-        {{ delivery_note.customer.first_name }} {{ delivery_note.customer.last_name }}<br>
-        {% if delivery_note.customer.email %}
-            {{ delivery_note.customer.email }}<br>
-        {% endif %}
-        {% if delivery_note.customer.address %}
-            {{ delivery_note.customer.address | replace('\n', '<br>') | safe }}
-        {% endif %}
-    </p>
-</div>
-
-<div class="card">
-    <h2>Details</h2>
-    <table style="width: auto;">
-        <tr>
-            <td style="padding-right: 2rem;"><strong>Lieferscheinnummer:</strong></td>
-            <td>{{ delivery_note.delivery_note_number }}</td>
-        </tr>
-        <tr>
-            <td><strong>Lieferdatum:</strong></td>
-            <td>{{ delivery_note.delivery_date.strftime('%d.%m.%Y') }}</td>
-        </tr>
-        <tr>
-            <td><strong>Status:</strong></td>
-            <td>
-                {% if delivery_note.status == 'delivered' %}
-                    <span class="badge" style="background: #3498db; color: white;">Ausgeliefert</span>
-                {% elif delivery_note.status == 'partially_billed' %}
-                    <span class="badge" style="background: #f39c12; color: white;">Teilweise abgerechnet</span>
-                {% elif delivery_note.status == 'billed' %}
-                    <span class="badge badge-paid">Komplett abgerechnet</span>
-                {% endif %}
-            </td>
-        </tr>
-    </table>
-</div>
-
-<div class="card">
-    <h2>Positionen</h2>
-    <table>
-        <thead>
+    <div class="card">
+        <h2>Reseller</h2>
+        <p>
+            {% if delivery_note.customer.company_name %}
+                <strong>{{ delivery_note.customer.company_name }}</strong>
+                <br>
+            {% endif %}
+            {{ delivery_note.customer.first_name }} {{ delivery_note.customer.last_name }}
+            <br>
+            {% if delivery_note.customer.email %}
+                {{ delivery_note.customer.email }}
+                <br>
+            {% endif %}
+            {% if delivery_note.customer.address %}{{ delivery_note.customer.address | replace('\n', '<br>') | safe }}{% endif %}
+        </p>
+    </div>
+    <div class="card">
+        <h2>Details</h2>
+        <table style="width: auto;">
             <tr>
-                <th>Pos.</th>
-                <th>Beschreibung</th>
-                <th style="text-align: right;">Menge</th>
-                <th style="text-align: right;">Reseller-Preis</th>
-                <th style="text-align: right;">Gesamtpreis</th>
+                <td style="padding-right: 2rem;">
+                    <strong>Lieferscheinnummer:</strong>
+                </td>
+                <td>{{ delivery_note.delivery_note_number }}</td>
             </tr>
-        </thead>
-        <tbody>
-            {% for item in delivery_note.items | sort(attribute='position') %}
             <tr>
-                <td>{{ loop.index }}</td>
-                <td>{{ item.description }}</td>
-                <td style="text-align: right;">{{ "%.2f"|format(item.quantity) }}</td>
-                <td style="text-align: right;">{{ "%.2f"|format(item.unit_price) }} €</td>
-                <td style="text-align: right;"><strong>{{ "%.2f"|format(item.total) }} €</strong></td>
+                <td>
+                    <strong>Lieferdatum:</strong>
+                </td>
+                <td>{{ delivery_note.delivery_date.strftime("%d.%m.%Y") }}</td>
             </tr>
-            {% endfor %}
-        </tbody>
-        <tfoot>
-            <tr style="border-top: 2px solid #2c3e50;">
-                <td colspan="4" style="text-align: right; padding-top: 1rem;"><strong>Gesamtwert (Reseller):</strong></td>
-                <td style="text-align: right; padding-top: 1rem;"><strong style="font-size: 1.2rem;">{{ "%.2f"|format(delivery_note.calculate_total()) }} €</strong></td>
+            <tr>
+                <td>
+                    <strong>Status:</strong>
+                </td>
+                <td>
+                    {% if delivery_note.status == 'delivered' %}
+                        <span class="badge" style="background: #3498db; color: white;">Ausgeliefert</span>
+                    {% elif delivery_note.status == 'partially_billed' %}
+                        <span class="badge" style="background: #f39c12; color: white;">Teilweise abgerechnet</span>
+                    {% elif delivery_note.status == 'billed' %}
+                        <span class="badge badge-paid">Komplett abgerechnet</span>
+                    {% endif %}
+                </td>
             </tr>
-        </tfoot>
-    </table>
-</div>
-
-{% if delivery_note.notes %}
-<div class="card">
-    <h2>Bemerkungen</h2>
-    <p>{{ delivery_note.notes | replace('\n', '<br>') | safe }}</p>
-</div>
-{% endif %}
+        </table>
+    </div>
+    <div class="card">
+        <h2>Positionen</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Pos.</th>
+                    <th>Beschreibung</th>
+                    <th style="text-align: right;">Menge</th>
+                    <th style="text-align: right;">Reseller-Preis</th>
+                    <th style="text-align: right;">Gesamtpreis</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in delivery_note.items | sort(attribute='position') %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ item.description }}</td>
+                        <td style="text-align: right;">{{ "%.2f"|format(item.quantity) }}</td>
+                        <td style="text-align: right;">{{ "%.2f"|format(item.unit_price) }} €</td>
+                        <td style="text-align: right;">
+                            <strong>{{ "%.2f"|format(item.total) }} €</strong>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr style="border-top: 2px solid #2c3e50;">
+                    <td colspan="4" style="text-align: right; padding-top: 1rem;">
+                        <strong>Gesamtwert (Reseller):</strong>
+                    </td>
+                    <td style="text-align: right; padding-top: 1rem;">
+                        <strong style="font-size: 1.2rem;">{{ "%.2f"|format(delivery_note.calculate_total() ) }} €</strong>
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+    {% if delivery_note.notes %}
+        <div class="card">
+            <h2>Bemerkungen</h2>
+            <p>
+                {{ delivery_note.notes | replace('\n', '<br>') | safe }}
+            </p>
+        </div>
+    {% endif %}
 {% endblock %}

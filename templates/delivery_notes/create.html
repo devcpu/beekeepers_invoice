@@ -1,89 +1,106 @@
 {% extends "base.html" %}
-
 {% block title %}Neuer Lieferschein{% endblock %}
-
 {% block content %}
-<h1>Neuen Lieferschein erstellen</h1>
-
-<div class="card">
-    <form method="POST" id="delivery-note-form">
-        <div class="form-group">
-            <label for="customer_id">Reseller *</label>
-            <select name="customer_id" id="customer_id" required>
-                <option value="">-- Reseller auswählen --</option>
-                {% for customer in customers %}
-                <option value="{{ customer.id }}">
-                    {% if customer.company_name %}
-                        {{ customer.company_name }}
-                    {% else %}
-                        {{ customer.first_name }} {{ customer.last_name }}
-                    {% endif %}
-                </option>
-                {% endfor %}
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label for="delivery_date">Lieferdatum *</label>
-            <input type="date" name="delivery_date" id="delivery_date" value="{{ now.strftime('%Y-%m-%d') }}" required>
-        </div>
-
-        <h3 style="margin-top: 2rem;">Positionen</h3>
-
-        <div id="line-items">
-            <div class="line-item" style="display: grid; grid-template-columns: 2fr 1fr auto; gap: 1rem; margin-bottom: 1rem; align-items: end;">
-                <div class="form-group" style="margin: 0;">
-                    <label>Produkt</label>
-                    <select name="product_id[]" class="product-select" required onchange="updatePrice(this)">
-                        <option value="">-- Produkt wählen --</option>
-                        {% for product in products %}
-                        <option value="{{ product.id }}"
-                                data-price="{{ product.reseller_price or product.price }}"
-                                data-name="{{ product.name }}"
-                                data-stock="{{ product.number }}">
-                            {{ product.name }} ({{ product.quantity or 'keine Größe' }}) - Bestand: {{ product.number }} -
-                            {% if product.reseller_price %}
-                                {{ "%.2f"|format(product.reseller_price) }} €
+    <h1>Neuen Lieferschein erstellen</h1>
+    <div class="card">
+        <form method="POST" id="delivery-note-form">
+            <div class="form-group">
+                <label for="customer_id">Reseller *</label>
+                <select name="customer_id" id="customer_id" required>
+                    <option value="">-- Reseller auswählen --</option>
+                    {% for customer in customers %}
+                        <option value="{{ customer.id }}">
+                            {% if customer.company_name %}
+                                {{ customer.company_name }}
                             {% else %}
-                                {{ "%.2f"|format(product.price) }} € (kein Reseller-Preis!)
+                                {{ customer.first_name }} {{ customer.last_name }}
                             {% endif %}
                         </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="form-group" style="margin: 0;">
-                    <label>Menge</label>
-                    <input type="number" name="quantity[]" min="1" value="1" required>
-                </div>
-                <button type="button" class="btn btn-danger" onclick="removeLineItem(this)" style="padding: 0.6rem 1rem;">✕</button>
+                    {% endfor %}
+                </select>
             </div>
-        </div>
-
-        <button type="button" class="btn" style="background: #3498db; color: white; margin-top: 1rem;" onclick="addLineItem()">
-            + Position hinzufügen
-        </button>
-
-        <div class="form-group" style="margin-top: 2rem;">
-            <label for="notes">Bemerkungen</label>
-            <textarea name="notes" id="notes" rows="3" placeholder="Optionale Hinweise zum Lieferschein"></textarea>
-        </div>
-
-        <div class="form-group">
-            <label style="display: flex; align-items: center; cursor: pointer;">
-                <input type="checkbox" name="show_tax" style="margin-right: 0.5rem; width: auto;">
-                <span>MwSt. auf Lieferschein ausweisen</span>
-            </label>
-            <small style="color: #7f8c8d; margin-left: 1.7rem;">Für steuerbefreite Reseller (Freie Berufe) nicht ankreuzen</small>
-        </div>
-
-        <div style="margin-top: 2rem;">
-            <button type="submit" class="btn btn-primary">Lieferschein erstellen</button>
-            <a href="{{ url_for('list_delivery_notes') }}" class="btn" style="background: #95a5a6; color: white; margin-left: 0.5rem;">Abbrechen</a>
-        </div>
-    </form>
-</div>
-
-<script>
+            <div class="form-group">
+                <label for="delivery_date">Lieferdatum *</label>
+                <input type="date"
+                       name="delivery_date"
+                       id="delivery_date"
+                       value="{{ now.strftime('%Y-%m-%d') }}"
+                       required>
+            </div>
+            <h3 style="margin-top: 2rem;">Positionen</h3>
+            <div id="line-items">
+                <div class="line-item"
+                     style="display: grid;
+                            grid-template-columns: 2fr 1fr auto;
+                            gap: 1rem;
+                            margin-bottom: 1rem;
+                            align-items: end">
+                    <div class="form-group" style="margin: 0;">
+                        <label>Produkt</label>
+                        <select name="product_id[]"
+                                class="product-select"
+                                required
+                                onchange="updatePrice(this)">
+                            <option value="">-- Produkt wählen --</option>
+                            {% for product in products %}
+                                <option value="{{ product.id }}"
+                                        data-price="{{ product.reseller_price or product.price }}"
+                                        data-name="{{ product.name }}"
+                                        data-stock="{{ product.number }}">
+                                    {{ product.name }} ({{ product.quantity or 'keine Größe' }}) - Bestand: {{ product.number }} -
+                                    {% if product.reseller_price %}
+                                        {{ "%.2f"|format(product.reseller_price) }} €
+                                    {% else %}
+                                        {{ "%.2f"|format(product.price) }} € (kein Reseller-Preis!)
+                                    {% endif %}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin: 0;">
+                        <label>Menge</label>
+                        <input type="number" name="quantity[]" min="1" value="1" required>
+                    </div>
+                    <button type="button"
+                            class="btn btn-danger"
+                            onclick="removeLineItem(this)"
+                            style="padding: 0.6rem 1rem">✕</button>
+                </div>
+            </div>
+            <button type="button"
+                    class="btn"
+                    style="background: #3498db;
+                           color: white;
+                           margin-top: 1rem"
+                    onclick="addLineItem()">+ Position hinzufügen</button>
+            <div class="form-group" style="margin-top: 2rem;">
+                <label for="notes">Bemerkungen</label>
+                <textarea name="notes"
+                          id="notes"
+                          rows="3"
+                          placeholder="Optionale Hinweise zum Lieferschein"></textarea>
+            </div>
+            <div class="form-group">
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="checkbox"
+                           name="show_tax"
+                           style="margin-right: 0.5rem;
+                                  width: auto">
+                    <span>MwSt. auf Lieferschein ausweisen</span>
+                </label>
+                <small style="color: #7f8c8d; margin-left: 1.7rem;">Für steuerbefreite Reseller (Freie Berufe) nicht ankreuzen</small>
+            </div>
+            <div style="margin-top: 2rem;">
+                <button type="submit" class="btn btn-primary">Lieferschein erstellen</button>
+                <a href="{{ url_for('list_delivery_notes') }}"
+                   class="btn"
+                   style="background: #95a5a6;
+                          color: white;
+                          margin-left: 0.5rem">Abbrechen</a>
+            </div>
+        </form>
+    </div>
+    <script>
 function addLineItem() {
     const container = document.getElementById('line-items');
     const firstItem = container.querySelector('.line-item');
@@ -113,5 +130,5 @@ function updatePrice(select) {
         alert('Warnung: Dieses Produkt ist nicht mehr auf Lager!');
     }
 }
-</script>
+    </script>
 {% endblock %}

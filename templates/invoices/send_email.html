@@ -1,81 +1,110 @@
 {% extends "base.html" %}
-
 {% block title %}Rechnung per E-Mail versenden{% endblock %}
-
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-    <h1>Rechnung {{ invoice.invoice_number }} per E-Mail versenden</h1>
-    <a href="{{ url_for('view_invoice', invoice_id=invoice.id) }}" class="btn" style="background: #95a5a6; color: white;">Abbrechen</a>
-</div>
-
-<div class="card">
-    <h3 style="margin-bottom: 1rem;">E-Mail-Details</h3>
-
-    <form method="POST">
-        <div class="form-group">
-            <label for="recipient_email">Empfänger E-Mail *</label>
-            <input type="email" name="recipient_email" id="recipient_email"
-                   value="{{ invoice.customer.email }}"
-                   pattern="[^@\s]+@[^@\s]+\.[^@\s]+"
-                   title="Gültige E-Mail-Adresse eingeben"
-                   required>
-            <small style="color: #7f8c8d;">Standard: E-Mail des Kunden ({{ invoice.customer.email }})</small>
-        </div>
-
-        <div class="form-group">
-            <label for="cc_emails">CC (Kopie an) - Optional</label>
-            <input type="text" name="cc_emails" id="cc_emails"
-                   placeholder="email1@example.com, email2@example.com">
-            <small style="color: #7f8c8d;">Mehrere E-Mail-Adressen durch Komma trennen</small>
-        </div>
-
-        <div style="padding: 1rem; background: #f8f9fa; border-radius: 4px; margin: 1.5rem 0;">
-            <h4 style="margin-bottom: 0.5rem;">E-Mail-Vorschau:</h4>
-            <p style="margin: 0.3rem 0;"><strong>Betreff:</strong> Rechnung {{ invoice.invoice_number }} von {{ config.COMPANY_NAME }}</p>
-            <p style="margin: 0.3rem 0;"><strong>Anhang:</strong> Rechnung_{{ invoice.invoice_number }}.pdf</p>
-            <p style="margin: 0.3rem 0;"><strong>Rechnungsbetrag:</strong> {{ "%.2f"|format(invoice.total) }} €</p>
-            {% if invoice.due_date %}
-            <p style="margin: 0.3rem 0;"><strong>Fällig am:</strong> {{ invoice.due_date.strftime('%d.%m.%Y') }}</p>
-            {% endif %}
-        </div>
-
-        <div class="card" style="background: #e3f2fd; border-left: 4px solid #3498db;">
-            <h4 style="margin-bottom: 0.5rem;">📧 E-Mail-Konfiguration</h4>
-            <p style="margin: 0.3rem 0; font-size: 0.9rem;"><strong>Server:</strong> {{ config.MAIL_SERVER }}:{{ config.MAIL_PORT }}</p>
-            <p style="margin: 0.3rem 0; font-size: 0.9rem;"><strong>Absender:</strong> {{ config.MAIL_DEFAULT_SENDER }}</p>
-            <p style="margin: 0.3rem 0; font-size: 0.9rem;"><strong>Verschlüsselung:</strong>
-                {% if config.MAIL_USE_SSL %}SSL{% elif config.MAIL_USE_TLS %}TLS{% else %}Keine{% endif %}
-            </p>
-            {% if not config.MAIL_USERNAME or not config.MAIL_PASSWORD %}
-            <div style="margin-top: 0.5rem; padding: 0.5rem; background: #fff3cd; border-radius: 4px;">
-                <strong>⚠️ Achtung:</strong> E-Mail-Zugangsdaten sind nicht vollständig in der .env konfiguriert!
+    <div style="display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 2rem">
+        <h1>Rechnung {{ invoice.invoice_number }} per E-Mail versenden</h1>
+        <a href="{{ url_for('view_invoice', invoice_id=invoice.id) }}"
+           class="btn"
+           style="background: #95a5a6;
+                  color: white">Abbrechen</a>
+    </div>
+    <div class="card">
+        <h3 style="margin-bottom: 1rem;">E-Mail-Details</h3>
+        <form method="POST">
+            <div class="form-group">
+                <label for="recipient_email">Empfänger E-Mail *</label>
+                <input type="email"
+                       name="recipient_email"
+                       id="recipient_email"
+                       value="{{ invoice.customer.email }}"
+                       pattern="[^@\s]+@[^@\s]+\.[^@\s]+"
+                       title="Gültige E-Mail-Adresse eingeben"
+                       required>
+                <small style="color: #7f8c8d;">Standard: E-Mail des Kunden ({{ invoice.customer.email }})</small>
             </div>
+            <div class="form-group">
+                <label for="cc_emails">CC (Kopie an) - Optional</label>
+                <input type="text"
+                       name="cc_emails"
+                       id="cc_emails"
+                       placeholder="email1@example.com, email2@example.com">
+                <small style="color: #7f8c8d;">Mehrere E-Mail-Adressen durch Komma trennen</small>
+            </div>
+            <div style="padding: 1rem;
+                        background: #f8f9fa;
+                        border-radius: 4px;
+                        margin: 1.5rem 0">
+                <h4 style="margin-bottom: 0.5rem;">E-Mail-Vorschau:</h4>
+                <p style="margin: 0.3rem 0;">
+                    <strong>Betreff:</strong> Rechnung {{ invoice.invoice_number }} von {{ config.COMPANY_NAME }}
+                </p>
+                <p style="margin: 0.3rem 0;">
+                    <strong>Anhang:</strong> Rechnung_{{ invoice.invoice_number }}.pdf
+                </p>
+                <p style="margin: 0.3rem 0;">
+                    <strong>Rechnungsbetrag:</strong> {{ "%.2f"|format(invoice.total) }} €
+                </p>
+                {% if invoice.due_date %}
+                    <p style="margin: 0.3rem 0;">
+                        <strong>Fällig am:</strong> {{ invoice.due_date.strftime("%d.%m.%Y") }}
+                    </p>
+                {% endif %}
+            </div>
+            <div class="card"
+                 style="background: #e3f2fd;
+                        border-left: 4px solid #3498db">
+                <h4 style="margin-bottom: 0.5rem;">📧 E-Mail-Konfiguration</h4>
+                <p style="margin: 0.3rem 0; font-size: 0.9rem;">
+                    <strong>Server:</strong> {{ config.MAIL_SERVER }}:{{ config.MAIL_PORT }}
+                </p>
+                <p style="margin: 0.3rem 0; font-size: 0.9rem;">
+                    <strong>Absender:</strong> {{ config.MAIL_DEFAULT_SENDER }}
+                </p>
+                <p style="margin: 0.3rem 0; font-size: 0.9rem;">
+                    <strong>Verschlüsselung:</strong>
+                    {% if config.MAIL_USE_SSL %}
+                        SSL
+                    {% elif config.MAIL_USE_TLS %}
+                        TLS
+                    {% else %}
+                        Keine
+                    {% endif %}
+                </p>
+                {% if not config.MAIL_USERNAME or not config.MAIL_PASSWORD %}
+                    <div style="margin-top: 0.5rem;
+                                padding: 0.5rem;
+                                background: #fff3cd;
+                                border-radius: 4px">
+                        <strong>⚠️ Achtung:</strong> E-Mail-Zugangsdaten sind nicht vollständig in der .env konfiguriert!
+                    </div>
+                {% endif %}
+            </div>
+            <div style="margin-top: 2rem;">
+                <button type="submit" class="btn btn-primary" style="font-size: 1.1rem;">📧 E-Mail jetzt versenden</button>
+                <a href="{{ url_for('view_invoice', invoice_id=invoice.id) }}"
+                   class="btn"
+                   style="background: #95a5a6;
+                          color: white;
+                          margin-left: 0.5rem">Abbrechen</a>
+            </div>
+            {% if invoice.status == 'draft' %}
+                <p style="margin-top: 1rem; color: #7f8c8d; font-size: 0.9rem;">
+                    ℹ️ Nach erfolgreichem Versand wird der Status automatisch auf "Versendet" gesetzt.
+                </p>
             {% endif %}
-        </div>
-
-        <div style="margin-top: 2rem;">
-            <button type="submit" class="btn btn-primary" style="font-size: 1.1rem;">
-                📧 E-Mail jetzt versenden
-            </button>
-            <a href="{{ url_for('view_invoice', invoice_id=invoice.id) }}" class="btn" style="background: #95a5a6; color: white; margin-left: 0.5rem;">Abbrechen</a>
-        </div>
-
-        {% if invoice.status == 'draft' %}
-        <p style="margin-top: 1rem; color: #7f8c8d; font-size: 0.9rem;">
-            ℹ️ Nach erfolgreichem Versand wird der Status automatisch auf "Versendet" gesetzt.
-        </p>
-        {% endif %}
-    </form>
-</div>
-
-<div class="card">
-    <h3 style="margin-bottom: 0.5rem;">💡 Hinweise zum E-Mail-Versand</h3>
-    <ul style="color: #7f8c8d; font-size: 0.9rem; line-height: 1.6;">
-        <li>Die Rechnung wird als PDF-Anhang mitgesendet</li>
-        <li>Die E-Mail enthält alle Zahlungsinformationen (IBAN, BIC, Verwendungszweck)</li>
-        <li>Falls PayPal konfiguriert ist, wird auch diese Zahlungsoption erwähnt</li>
-        <li>Stellen Sie sicher, dass Ihre E-Mail-Zugangsdaten korrekt in der .env-Datei hinterlegt sind</li>
-        <li>Bei Strato: Verwenden Sie Port 465 mit SSL</li>
-    </ul>
-</div>
+        </form>
+    </div>
+    <div class="card">
+        <h3 style="margin-bottom: 0.5rem;">💡 Hinweise zum E-Mail-Versand</h3>
+        <ul style="color: #7f8c8d; font-size: 0.9rem; line-height: 1.6;">
+            <li>Die Rechnung wird als PDF-Anhang mitgesendet</li>
+            <li>Die E-Mail enthält alle Zahlungsinformationen (IBAN, BIC, Verwendungszweck)</li>
+            <li>Falls PayPal konfiguriert ist, wird auch diese Zahlungsoption erwähnt</li>
+            <li>Stellen Sie sicher, dass Ihre E-Mail-Zugangsdaten korrekt in der .env-Datei hinterlegt sind</li>
+            <li>Bei Strato: Verwenden Sie Port 465 mit SSL</li>
+        </ul>
+    </div>
 {% endblock %}

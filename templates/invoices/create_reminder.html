@@ -1,167 +1,189 @@
 {% extends "base.html" %}
-
 {% block title %}Mahnung erstellen{% endblock %}
-
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-    <h1>Mahnung erstellen</h1>
-    <a href="{{ url_for('view_invoice', invoice_id=invoice.id) }}" class="btn" style="background: #95a5a6; color: white;">Zurück zur Rechnung</a>
-</div>
-
-<div class="card">
-    <h2>Rechnungsinformation</h2>
-
-    <div style="margin-bottom: 2rem;">
-        <table style="width: auto;">
-            <tr>
-                <td style="padding-right: 2rem;"><strong>Rechnungsnummer:</strong></td>
-                <td>{{ invoice.invoice_number }}</td>
-            </tr>
-            <tr>
-                <td><strong>Kunde:</strong></td>
-                <td>
-                    {% if invoice.customer.company_name %}
-                        {{ invoice.customer.company_name }}<br>
-                    {% endif %}
-                    {{ invoice.customer.first_name }} {{ invoice.customer.last_name }}
-                    {% if invoice.customer.email %}
-                        <br>{{ invoice.customer.email }}
-                    {% endif %}
-                </td>
-            </tr>
-            <tr>
-                <td><strong>Rechnungsdatum:</strong></td>
-                <td>{{ invoice.invoice_date.strftime('%d.%m.%Y') }}</td>
-            </tr>
-            <tr>
-                <td><strong>Fälligkeitsdatum:</strong></td>
-                <td>
-                    {{ invoice.due_date.strftime('%d.%m.%Y') if invoice.due_date else '-' }}
-                    {% if invoice.due_date %}
-                        {% set days_overdue = (now.date() - invoice.due_date).days %}
-                        <span style="color: #e74c3c; font-weight: bold;">({{ days_overdue }} Tage überfällig)</span>
-                    {% endif %}
-                </td>
-            </tr>
-            <tr>
-                <td><strong>Rechnungsbetrag:</strong></td>
-                <td style="font-size: 1.2rem; font-weight: bold;">{{ "%.2f"|format(invoice.total) }} €</td>
-            </tr>
-        </table>
+    <div style="display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 2rem">
+        <h1>Mahnung erstellen</h1>
+        <a href="{{ url_for('view_invoice', invoice_id=invoice.id) }}"
+           class="btn"
+           style="background: #95a5a6;
+                  color: white">Zurück zur Rechnung</a>
     </div>
-
-    {% if existing_reminders %}
-    <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 1rem; border-radius: 4px; margin-bottom: 2rem;">
-        <strong>⚠️ Bisherige Mahnungen:</strong>
-        <ul style="margin: 0.5rem 0 0 1.5rem;">
-            {% for reminder in existing_reminders %}
-            <li>
-                {{ reminder.reminder_level }}. Mahnung vom {{ reminder.reminder_date.strftime('%d.%m.%Y') }}
-                {% if reminder.sent_via == 'email' %}
-                    (per E-Mail versendet)
-                {% elif reminder.sent_via == 'pdf' %}
-                    (als PDF heruntergeladen)
-                {% endif %}
-                - Mahngebühr: {{ "%.2f"|format(reminder.reminder_fee) }} €
-            </li>
-            {% endfor %}
-        </ul>
-    </div>
-    {% endif %}
-
-    <h2>{{ next_level }}. Mahnung erstellen</h2>
-
-    <p style="margin-bottom: 2rem;">
-        {% if next_level == 1 %}
-            Dies ist die erste Mahnung für diese Rechnung. Es wird eine Mahngebühr von <strong>5,00 €</strong> berechnet.
-        {% elif next_level == 2 %}
-            Dies ist die zweite Mahnung. Die Mahngebühr beträgt <strong>10,00 €</strong>.
-        {% elif next_level == 3 %}
-            Dies ist die letzte Mahnung vor Inkasso. Die Mahngebühr beträgt <strong>10,00 €</strong>.
-        {% else %}
-            Dies ist die {{ next_level }}. Mahnung. Die Mahngebühr beträgt <strong>10,00 €</strong>.
-        {% endif %}
-    </p>
-
-    <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 4px; margin-bottom: 2rem;">
-        <h3 style="margin-top: 0;">Gesamtforderung:</h3>
-        <table style="width: auto; font-size: 1.1rem;">
-            <tr>
-                <td style="padding-right: 2rem;">Rechnungsbetrag:</td>
-                <td style="text-align: right;">{{ "%.2f"|format(invoice.total) }} €</td>
-            </tr>
-            <tr>
-                <td>Mahngebühr:</td>
-                <td style="text-align: right;">
-                    {% if next_level == 1 %}
-                        5,00 €
-                    {% else %}
-                        10,00 €
-                    {% endif %}
-                </td>
-            </tr>
-            <tr style="border-top: 2px solid #2c3e50; font-weight: bold; font-size: 1.3rem;">
-                <td style="padding-top: 0.5rem;">Gesamt:</td>
-                <td style="text-align: right; padding-top: 0.5rem; color: #e74c3c;">
-                    {% if next_level == 1 %}
-                        {{ "%.2f"|format(invoice.total + 5) }} €
-                    {% else %}
-                        {{ "%.2f"|format(invoice.total + 10) }} €
-                    {% endif %}
-                </td>
-            </tr>
-        </table>
-    </div>
-
-    <h3>Mahnung versenden</h3>
-
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
-        <!-- Als PDF herunterladen -->
-        <div style="border: 2px solid #3498db; border-radius: 8px; padding: 1.5rem; background: #f0f8ff;">
-            <h4 style="color: #3498db; margin-top: 0;">📄 Als PDF herunterladen</h4>
-            <p style="color: #7f8c8d; font-size: 0.9rem; margin-bottom: 1rem;">
-                Mahnung als PDF-Datei herunterladen für manuelle Versendung oder Ausdruck.
-            </p>
-            <form method="POST" style="margin: 0;">
-                <input type="hidden" name="action" value="download">
-                <button type="submit" class="btn btn-primary" style="width: 100%;">
-                    📥 PDF herunterladen
-                </button>
-            </form>
+    <div class="card">
+        <h2>Rechnungsinformation</h2>
+        <div style="margin-bottom: 2rem;">
+            <table style="width: auto;">
+                <tr>
+                    <td style="padding-right: 2rem;">
+                        <strong>Rechnungsnummer:</strong>
+                    </td>
+                    <td>{{ invoice.invoice_number }}</td>
+                </tr>
+                <tr>
+                    <td>
+                        <strong>Kunde:</strong>
+                    </td>
+                    <td>
+                        {% if invoice.customer.company_name %}
+                            {{ invoice.customer.company_name }}
+                            <br>
+                        {% endif %}
+                        {{ invoice.customer.first_name }} {{ invoice.customer.last_name }}
+                        {% if invoice.customer.email %}
+                            <br>
+                            {{ invoice.customer.email }}
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <strong>Rechnungsdatum:</strong>
+                    </td>
+                    <td>{{ invoice.invoice_date.strftime("%d.%m.%Y") }}</td>
+                </tr>
+                <tr>
+                    <td>
+                        <strong>Fälligkeitsdatum:</strong>
+                    </td>
+                    <td>
+                        {{ invoice.due_date.strftime("%d.%m.%Y") if invoice.due_date else '-' }}
+                        {% if invoice.due_date %}
+                            {% set days_overdue = (now.date() - invoice.due_date).days %}
+                            <span style="color: #e74c3c; font-weight: bold;">({{ days_overdue }} Tage überfällig)</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <strong>Rechnungsbetrag:</strong>
+                    </td>
+                    <td style="font-size: 1.2rem; font-weight: bold;">{{ "%.2f"|format(invoice.total) }} €</td>
+                </tr>
+            </table>
         </div>
-
-        <!-- Per E-Mail versenden -->
-        <div style="border: 2px solid #27ae60; border-radius: 8px; padding: 1.5rem; background: #f0fff4;">
-            <h4 style="color: #27ae60; margin-top: 0;">📧 Per E-Mail versenden</h4>
-            {% if invoice.customer.email %}
+        {% if existing_reminders %}
+            <div style="background: #fff3cd;
+                        border: 1px solid #ffeaa7;
+                        padding: 1rem;
+                        border-radius: 4px;
+                        margin-bottom: 2rem">
+                <strong>⚠️ Bisherige Mahnungen:</strong>
+                <ul style="margin: 0.5rem 0 0 1.5rem;">
+                    {% for reminder in existing_reminders %}
+                        <li>
+                            {{ reminder.reminder_level }}. Mahnung vom {{ reminder.reminder_date.strftime("%d.%m.%Y") }}
+                            {% if reminder.sent_via == 'email' %}
+                                (per E-Mail versendet)
+                            {% elif reminder.sent_via == 'pdf' %}
+                                (als PDF heruntergeladen)
+                            {% endif %}
+                            - Mahngebühr: {{ "%.2f"|format(reminder.reminder_fee) }} €
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+        <h2>{{ next_level }}. Mahnung erstellen</h2>
+        <p style="margin-bottom: 2rem;">
+            {% if next_level == 1 %}
+                Dies ist die erste Mahnung für diese Rechnung. Es wird eine Mahngebühr von <strong>5,00 €</strong> berechnet.
+            {% elif next_level == 2 %}
+                Dies ist die zweite Mahnung. Die Mahngebühr beträgt <strong>10,00 €</strong>.
+            {% elif next_level == 3 %}
+                Dies ist die letzte Mahnung vor Inkasso. Die Mahngebühr beträgt <strong>10,00 €</strong>.
+            {% else %}
+                Dies ist die {{ next_level }}. Mahnung. Die Mahngebühr beträgt <strong>10,00 €</strong>.
+            {% endif %}
+        </p>
+        <div style="background: #f8f9fa;
+                    padding: 1.5rem;
+                    border-radius: 4px;
+                    margin-bottom: 2rem">
+            <h3 style="margin-top: 0;">Gesamtforderung:</h3>
+            <table style="width: auto; font-size: 1.1rem;">
+                <tr>
+                    <td style="padding-right: 2rem;">Rechnungsbetrag:</td>
+                    <td style="text-align: right;">{{ "%.2f"|format(invoice.total) }} €</td>
+                </tr>
+                <tr>
+                    <td>Mahngebühr:</td>
+                    <td style="text-align: right;">
+                        {% if next_level == 1 %}
+                            5,00 €
+                        {% else %}
+                            10,00 €
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr style="border-top: 2px solid #2c3e50;
+                           font-weight: bold;
+                           font-size: 1.3rem">
+                    <td style="padding-top: 0.5rem;">Gesamt:</td>
+                    <td style="text-align: right; padding-top: 0.5rem; color: #e74c3c;">
+                        {% if next_level == 1 %}
+                            {{ "%.2f"|format(invoice.total + 5) }} €
+                        {% else %}
+                            {{ "%.2f"|format(invoice.total + 10) }} €
+                        {% endif %}
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <h3>Mahnung versenden</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+            <!-- Als PDF herunterladen -->
+            <div style="border: 2px solid #3498db;
+                        border-radius: 8px;
+                        padding: 1.5rem;
+                        background: #f0f8ff">
+                <h4 style="color: #3498db; margin-top: 0;">📄 Als PDF herunterladen</h4>
                 <p style="color: #7f8c8d; font-size: 0.9rem; margin-bottom: 1rem;">
-                    Mahnung direkt an <strong>{{ invoice.customer.email }}</strong> senden.
+                    Mahnung als PDF-Datei herunterladen für manuelle Versendung oder Ausdruck.
                 </p>
                 <form method="POST" style="margin: 0;">
-                    <input type="hidden" name="action" value="send_email">
-                    <button type="submit" class="btn btn-success" style="width: 100%;">
-                        📨 E-Mail senden
-                    </button>
+                    <input type="hidden" name="action" value="download">
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">📥 PDF herunterladen</button>
                 </form>
-            {% else %}
-                <p style="color: #e74c3c; font-size: 0.9rem; margin-bottom: 1rem;">
-                    ⚠️ Kunde hat keine E-Mail-Adresse hinterlegt.
-                </p>
-                <button type="button" class="btn" disabled style="width: 100%; background: #ddd; cursor: not-allowed;">
-                    E-Mail nicht möglich
-                </button>
-            {% endif %}
+            </div>
+            <!-- Per E-Mail versenden -->
+            <div style="border: 2px solid #27ae60;
+                        border-radius: 8px;
+                        padding: 1.5rem;
+                        background: #f0fff4">
+                <h4 style="color: #27ae60; margin-top: 0;">📧 Per E-Mail versenden</h4>
+                {% if invoice.customer.email %}
+                    <p style="color: #7f8c8d; font-size: 0.9rem; margin-bottom: 1rem;">
+                        Mahnung direkt an <strong>{{ invoice.customer.email }}</strong> senden.
+                    </p>
+                    <form method="POST" style="margin: 0;">
+                        <input type="hidden" name="action" value="send_email">
+                        <button type="submit" class="btn btn-success" style="width: 100%;">📨 E-Mail senden</button>
+                    </form>
+                {% else %}
+                    <p style="color: #e74c3c; font-size: 0.9rem; margin-bottom: 1rem;">⚠️ Kunde hat keine E-Mail-Adresse hinterlegt.</p>
+                    <button type="button"
+                            class="btn"
+                            disabled
+                            style="width: 100%;
+                                   background: #ddd;
+                                   cursor: not-allowed">E-Mail nicht möglich</button>
+                {% endif %}
+            </div>
         </div>
+        {% if next_level >= 3 %}
+            <div style="background: #f8d7da;
+                        border: 2px solid #e74c3c;
+                        padding: 1rem;
+                        border-radius: 4px;
+                        margin-top: 2rem">
+                <strong style="color: #721c24;">⚠️ Hinweis:</strong>
+                <p style="color: #721c24; margin: 0.5rem 0 0 0;">
+                    Dies ist eine späte Mahnstufe. Erwägen Sie rechtliche Schritte oder die Beauftragung eines Inkassobüros,
+                    falls keine Zahlung erfolgt.
+                </p>
+            </div>
+        {% endif %}
     </div>
-
-    {% if next_level >= 3 %}
-    <div style="background: #f8d7da; border: 2px solid #e74c3c; padding: 1rem; border-radius: 4px; margin-top: 2rem;">
-        <strong style="color: #721c24;">⚠️ Hinweis:</strong>
-        <p style="color: #721c24; margin: 0.5rem 0 0 0;">
-            Dies ist eine späte Mahnstufe. Erwägen Sie rechtliche Schritte oder die Beauftragung eines Inkassobüros,
-            falls keine Zahlung erfolgt.
-        </p>
-    </div>
-    {% endif %}
-</div>
 {% endblock %}

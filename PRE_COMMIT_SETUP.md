@@ -32,12 +32,14 @@ pre-commit run jinjalint --all-files
 ## Was wird geprüft?
 
 ### Python Code
+
 - **black**: Code-Formatierung (120 Zeichen/Zeile)
 - **flake8**: Linting & Style-Guide (PEP8)
 - **isort**: Import-Sortierung
 - **bandit**: Security-Checks
 
 ### HTML & Jinja2 Templates
+
 - **jinjalint**: Jinja2-Syntax-Validierung
 - **curlylint**: HTML + Jinja2 Best Practices
   - Alt-Texte für Bilder
@@ -46,9 +48,11 @@ pre-commit run jinjalint --all-files
   - Einrückung
 
 ### SQL
+
 - **sqlfluff**: PostgreSQL SQL-Linting
 
 ### Allgemein
+
 - Trailing Whitespace entfernen
 - End-of-File Newline
 - YAML/JSON Syntax
@@ -59,19 +63,23 @@ pre-commit run jinjalint --all-files
 ## Häufige Probleme
 
 ### Jinjalint: Syntax-Fehler
+
 ```bash
 # Nur Syntax-Check, findet Fehler wie doppelte {% endblock %}
 pre-commit run jinjalint --all-files
 ```
 
 ### Curlylint: Template-Warnings
+
 ```bash
 # Kann automatisch fixen
 curlylint --fix templates/
 ```
 
 ### Black: Code neu formatiert
+
 Black formatiert automatisch - einfach committen:
+
 ```bash
 git add -u
 git commit -m "style: black auto-format"
@@ -90,6 +98,7 @@ SKIP=flake8,black git commit -m "..."
 ## CI Integration
 
 Die Config ist bereits für pre-commit.ci vorbereitet:
+
 - Wöchentliche automatische Updates
 - Auto-fix für Pull Requests
 - Security-Checks können langsam sein → Skip in CI
@@ -97,6 +106,7 @@ Die Config ist bereits für pre-commit.ci vorbereitet:
 ## Anpassungen
 
 Alle Konfigurationsdateien:
+
 - `.pre-commit-config.yaml` - Hauptkonfiguration
 - `.curlylintrc.yaml` - HTML/Jinja2 Rules
 - `.jinjalintrc` - Jinja2 Syntax

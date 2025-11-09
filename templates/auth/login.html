@@ -1,85 +1,54 @@
 {% extends "base.html" %}
 {% block title %}Login - Rechnungssystem{% endblock %}
 {% block content %}
-    <div class="container mt-5">
-        <div class="row justify-content-center">
-            <div class="col-md-6 col-lg-4">
-                <div class="card shadow">
-                    <div class="card-body p-5">
-                        <h2 class="text-center mb-4">
-                            <i class="bi bi-shield-lock"></i> Login
-                        </h2>
-                        <form method="POST" action="{{ url_for('login') }}">
-                            <div class="mb-3">
-                                <label for="username" class="form-label">Benutzername</label>
-                                <input type="text"
-                                       class="form-control form-control-lg"
-                                       id="username"
-                                       name="username"
-                                       required
-                                       autofocus
-                                       autocomplete="username">
-                            </div>
-                            <div class="mb-3">
-                                <label for="password" class="form-label">Passwort</label>
-                                <input type="password"
-                                       class="form-control form-control-lg"
-                                       id="password"
-                                       name="password"
-                                       required
-                                       autocomplete="current-password">
-                            </div>
-                            <div class="mb-3 form-check">
-                                <input type="checkbox"
-                                       class="form-check-input"
-                                       id="remember"
-                                       name="remember">
-                                <label class="form-check-label" for="remember">Angemeldet bleiben (30 Tage)</label>
-                            </div>
-                            <div class="d-grid">
-                                <button type="submit" class="btn btn-primary btn-lg">
-                                    <i class="bi bi-box-arrow-in-right"></i> Anmelden
-                                </button>
-                            </div>
-                        </form>
-                        <div class="text-center mt-3">
-                            <a href="{{ url_for('forgot_password') }}" class="text-decoration-none">
-                                <i class="bi bi-question-circle"></i> Passwort vergessen?
-                            </a>
-                        </div>
-                        <hr class="my-4">
-                        <div class="text-center text-muted small">
-                            <p class="mb-0">Rechnungssystem v1.0</p>
-                            <p class="mb-0">GoBD-konform</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <div class="card" style="max-width: 500px; margin: 4rem auto;">
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <div style="font-size: 4rem; margin-bottom: 1rem;">🐝</div>
+            <h2 style="margin-bottom: 0.5rem;">Imker Rechnungssystem</h2>
+            <p style="color: #7f8c8d; font-size: 0.95rem;">Bitte melden Sie sich an</p>
         </div>
+        <form method="POST" action="{{ url_for('login') }}">
+            <div class="form-group">
+                <label for="username">Benutzername</label>
+                <input type="text"
+                       id="username"
+                       name="username"
+                       required
+                       autofocus
+                       autocomplete="username">
+            </div>
+            <div class="form-group">
+                <label for="password">Passwort</label>
+                <input type="password"
+                       id="password"
+                       name="password"
+                       required
+                       autocomplete="current-password">
+            </div>
+            <div class="form-group">
+                <label style="display: flex;
+                              align-items: center;
+                              font-weight: normal;
+                              cursor: pointer">
+                    <input type="checkbox"
+                           id="remember"
+                           name="remember"
+                           style="width: auto;
+                                  margin-right: 0.5rem">
+                    <span>Angemeldet bleiben (30 Tage)</span>
+                </label>
+            </div>
+            <button type="submit"
+                    class="btn btn-primary"
+                    style="width: 100%;
+                           margin-bottom: 1rem">🔓 Anmelden</button>
+            <div style="text-align: center;">
+                <a href="{{ url_for('forgot_password') }}"
+                   style="color: #3498db;
+                          text-decoration: none">❓ Passwort vergessen?</a>
+            </div>
+        </form>
+        <hr style="margin: 2rem 0; border: none; border-top: 1px solid #ddd;">
+        <div style="text-align: center; color: #95a5a6; font-size: 0.85rem;">Version {{ app_version }}</div>
     </div>
-    <style>
-    body {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        min-height: 100vh;
-    }
-
-    .card {
-        border: none;
-        border-radius: 1rem;
-    }
-
-    .form-control:focus {
-        border-color: #667eea;
-        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-    }
-
-    .btn-primary {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border: none;
-    }
-
-    .btn-primary:hover {
-        background: linear-gradient(135deg, #5568d3 0%, #63408b 100%);
-    }
-    </style>
 {% endblock %}

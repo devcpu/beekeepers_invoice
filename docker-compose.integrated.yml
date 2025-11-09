@@ -4,8 +4,6 @@
 # - crowdsec: Externes CrowdSec-Netzwerk
 # - intern-service: Zugang zu shared Redis/PostgreSQL/MySQL
 
-version: '3.8'
-
 services:
   # Flask App
   app:
@@ -13,8 +11,9 @@ services:
     container_name: rechnungen-app
     restart: unless-stopped
     environment:
-      # Database - Shared PostgreSQL im intern-service Netzwerk
-      # Format: postgresql://user:password@hostname:5432/dbname
+      # Database - Shared MySQL/MariaDB oder PostgreSQL im intern-service Netzwerk
+      # MySQL Format: mysql+pymysql://user:password@hostname:3306/dbname?charset=utf8mb4
+      # PostgreSQL Format: postgresql://user:password@hostname:5432/dbname
       DATABASE_URL: ${DATABASE_URL}
 
       # Session Storage

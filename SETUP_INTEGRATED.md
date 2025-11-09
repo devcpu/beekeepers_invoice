@@ -1,15 +1,18 @@
 # Setup Guide: Integrierte Variante mit gemeinsamer Infrastruktur
 
-Für Umgebungen mit bereits vorhandenen Diensten (Traefik, CrowdSec, PostgreSQL, Redis).
+Für Umgebungen mit bereits vorhandenen Diensten (Traefik, CrowdSec, PostgreSQL,
+Redis).
 
 ## Voraussetzungen
 
 Folgende Netzwerke müssen bereits existieren:
+
 ```bash
 docker network ls | grep -E "traefik-proxy|crowdsec|intern-service"
 ```
 
 Falls nicht vorhanden, erstelle sie:
+
 ```bash
 docker network create traefik-proxy
 docker network create crowdsec
@@ -21,6 +24,7 @@ docker network create intern-service
 ### Option A: Gemeinsamer PostgreSQL-Container (Empfohlen ✅)
 
 **Vorteile:**
+
 - RAM-effizient (~50MB pro DB statt 200MB pro Container)
 - Zentrales Backup
 - Einfachere Wartung
@@ -47,6 +51,7 @@ GRANT ALL ON SCHEMA public TO rechnungen_user;
 ```
 
 **In .env eintragen:**
+
 ```env
 # Hostname ist der Container-Name im intern-service Netzwerk
 DATABASE_URL=postgresql://rechnungen_user:sehr_sicheres_passwort@postgres:5432/rechnungen
@@ -55,6 +60,7 @@ DATABASE_URL=postgresql://rechnungen_user:sehr_sicheres_passwort@postgres:5432/r
 ### Option B: Separater DB-Container (nur wenn nötig)
 
 Nutze die `docker-compose.yml` (Standalone-Variante) wenn:
+
 - Verschiedene PostgreSQL-Versionen benötigt werden
 - Compliance-Anforderungen separate Instanzen fordern
 - Hohe Last isoliert werden muss (>10.000 Requests/min)
@@ -64,11 +70,13 @@ Nutze die `docker-compose.yml` (Standalone-Variante) wenn:
 ### Wann Redis nutzen?
 
 **File-based Sessions (Standard):**
-- ✅ <1000 gleichzeitige User
+
+- ✅ \<1000 gleichzeitige User
 - ✅ Single-Server Setup
 - ✅ Begrenzter RAM (Sessions ~1KB/User)
 
 **Redis Sessions:**
+
 - ✅ >1000 gleichzeitige User
 - ✅ Horizontales Scaling (mehrere App-Container)
 - ✅ Session-Sharing zwischen Servern
@@ -86,12 +94,14 @@ INFO keyspace
 ```
 
 **In .env:**
+
 ```env
 SESSION_TYPE=redis
 REDIS_URL=redis://redis:6379/5
 ```
 
 **In docker-compose.integrated.yml auskommentieren:**
+
 ```yaml
 # SESSION_TYPE: redis
 # SESSION_REDIS: ${REDIS_URL:-redis://redis:6379/0}
@@ -102,6 +112,7 @@ REDIS_URL=redis://redis:6379/5
 Stelle sicher, dass dein Traefik folgendes konfiguriert hat:
 
 **traefik.yml:**
+
 ```yaml
 providers:
   docker:
@@ -136,6 +147,7 @@ http:
 **In deinem CrowdSec-Container:**
 
 1. **acquis.yaml erweitern:**
+
 ```bash
 docker exec -it crowdsec vi /etc/crowdsec/acquis.d/rechnungen.yaml
 ```
@@ -155,6 +167,7 @@ labels:
 2. **Log-Verzeichnis mounten:**
 
 In deinem CrowdSec docker-compose.yml:
+
 ```yaml
 crowdsec:
   volumes:
@@ -163,6 +176,7 @@ crowdsec:
 ```
 
 3. **Flask-Parser installieren:**
+
 ```bash
 docker exec crowdsec cscli parsers install crowdsecurity/flask-logs
 docker restart crowdsec
@@ -180,6 +194,7 @@ nano .env
 ```
 
 **Wichtige Variablen:**
+
 ```env
 # Datenbank (Shared PostgreSQL)
 DATABASE_URL=postgresql://rechnungen_user:passwort@postgres:5432/rechnungen
@@ -244,15 +259,31 @@ with app.app_context():
 ### Datenbank (Shared PostgreSQL)
 
 **Tägliches Backup:**
+
 ```bash
-# In deinem PostgreSQL-Backup-Script ergänzen:
-docker exec postgres pg_dump -U rechnungen_user rechnungen | gzip > /backups/rechnungen_$(date +\%Y\%m\%d).sql.gz
+# MySQL/MariaDB Backup (in deinem Backup-Script ergänzen):
+docker exec mysql mariadb-dump -u rechnungen_user -p${DB_PASSWORD} rechnungen | gzip > /backups/rechnungen_$(date +\%Y\%m\%d).sql.gz
+
+# Alternativ: PostgreSQL Backup
+# docker exec postgres pg_dump -U rechnungen_user rechnungen | gzip > /backups/rechnungen_$(date +\%Y\%m\%d).sql.gz
 
 # 10 Jahre aufbewahren (GoBD-konform)
 find /backups/rechnungen_*.sql.gz -mtime +3650 -delete
 ```
 
-**Point-in-Time Recovery:**
+**Point-in-Time Recovery (MySQL/MariaDB):**
+
+```bash
+# Binary Logging aktivieren (in deinem MySQL/MariaDB-Container)
+# /etc/mysql/my.cnf:
+[mysqld]
+log_bin = /var/log/mysql/mysql-bin.log
+binlog_expire_logs_seconds = 864000  # 10 Tage
+server_id = 1
+```
+
+**Point-in-Time Recovery (PostgreSQL):**
+
 ```bash
 # WAL-Archivierung aktivieren (in deinem PostgreSQL-Container)
 # postgresql.conf:
@@ -414,18 +445,21 @@ app = create_app()
 ## Ressourcen-Verbrauch
 
 **Shared-Setup (Empfohlen):**
+
 - App: ~200MB RAM
 - Anteil an shared PostgreSQL: ~50MB
 - Anteil an shared Redis: ~20MB (optional)
 - **Gesamt: ~250MB pro App**
 
 **Standalone-Setup:**
+
 - App: ~200MB
 - PostgreSQL: ~200MB
 - Redis: ~50MB (optional)
 - **Gesamt: ~450MB pro App**
 
 **Bei 5 Apps:**
+
 - Shared: ~1.25GB + 200MB (PostgreSQL) + 100MB (Redis) = **~1.5GB**
 - Standalone: ~2.25GB = **~2.25GB**
 

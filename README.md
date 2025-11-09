@@ -1,47 +1,56 @@
 # Rechnungsverwaltung mit Flask
 
-Eine webbasierte Rechnungsverwaltung mit manipulationssicherer Datenspeicherung, PDF-Export und E-Mail-Integration.
+Eine webbasierte Rechnungsverwaltung mit manipulationssicherer Datenspeicherung,
+PDF-Export und E-Mail-Integration.
 
 ## Features
 
 ✅ **Manipulationssichere Datenspeicherung**
+
 - Alle Rechnungen werden mit SHA-256 Hash gesichert
 - Integritätsprüfung bei jedem Abruf
 - Warnung bei manipulierten Daten
 
 ✅ **Vollständige Rechnungsverwaltung**
+
 - Kunden- und Rechnungsdatenbank
 - Übersichtliches Dashboard
 - Statusverwaltung (Entwurf, Versendet, Bezahlt, Storniert)
 
 ✅ **PDF-Export**
+
 - Professionelle PDF-Rechnungen
 - Automatische Berechnung von MwSt.
 - Integritätshash im PDF enthalten
 
 ✅ **E-Mail-Schnittstelle**
+
 - Import von Bestellungen aus E-Mails
 - Erweiterbar für verschiedene Shop-Systeme
 - Automatische Kundenerkennung
 
 ✅ **JWT-API für PWA/Mobile Apps**
+
 - Token-basierte Authentifizierung
 - 30 Tage Gültigkeit
 - 2FA-Support
 - REST API für Rechnungen, Kunden, POS
 
 ✅ **Passwort-Reset per E-Mail**
+
 - Sichere Token-Generierung
 - 1 Stunde Gültigkeit
 - HTML/Text E-Mails
 
 ✅ **CrowdSec Integration**
+
 - Automatische Sicherheitslogging
 - Bruteforce-Schutz
 - SQL-Injection/XSS-Erkennung
 - Rate-Limiting
 
 ✅ **Alembic Migrationen**
+
 - Datenbank-agnostisch (PostgreSQL, MySQL, SQLite)
 - Automatische Schema-Generierung aus Models
 - Versionierung und Rollback
@@ -82,6 +91,7 @@ docker-compose exec app flask seed-db
 ```
 
 **Enthaltene Services:**
+
 - **app**: Flask-Anwendung mit Gunicorn + Gevent
 - **db**: PostgreSQL 15
 - **traefik**: Reverse Proxy mit automatischem TLS (Let's Encrypt)
@@ -89,18 +99,21 @@ docker-compose exec app flask seed-db
 - **redis** (optional): Session-Store für horizontales Scaling (>1000 Nutzer)
 
 **Standard-Konfiguration:**
-- File-based Sessions (ausreichend für <1000 Nutzer)
+
+- File-based Sessions (ausreichend für \<1000 Nutzer)
 - Redis auskommentiert (kann aktiviert werden bei Bedarf)
 - Traefik lauscht auf Port 80/443
 - CrowdSec-Log-Parsing für automatische IP-Sperren
 
 **Erste Schritte:**
+
 1. Domain in `.env` setzen: `DOMAIN=ihr-server.de`
-2. E-Mail für Let's Encrypt: `ACME_EMAIL=admin@ihr-server.de`
-3. `docker-compose up -d`
-4. App läuft unter: `https://ihr-server.de`
+1. E-Mail für Let's Encrypt: `ACME_EMAIL=admin@ihr-server.de`
+1. `docker-compose up -d`
+1. App läuft unter: `https://ihr-server.de`
 
 **Redis aktivieren (bei Bedarf):**
+
 ```yaml
 # In docker-compose.yml auskommentieren:
 redis:
@@ -112,11 +125,12 @@ SESSION_TYPE: redis
 REDIS_URL: redis://redis:6379
 ```
 
----
+______________________________________________________________________
 
 ### Variante 2: Integrierte Variante (Shared Infrastructure)
 
-Für Umgebungen mit **bereits vorhandenen Diensten** (Traefik, CrowdSec, PostgreSQL, Redis):
+Für Umgebungen mit **bereits vorhandenen Diensten** (Traefik, CrowdSec,
+PostgreSQL, Redis):
 
 ```bash
 # Repository klonen
@@ -141,13 +155,16 @@ docker-compose -f docker-compose.integrated.yml exec app flask init-db
 ```
 
 **Voraussetzungen:**
+
 - Externe Netzwerke: `traefik-proxy`, `crowdsec`, `intern-service`
 - Shared PostgreSQL im `intern-service` Netzwerk
 - Traefik mit Let's Encrypt läuft bereits
 - CrowdSec konfiguriert (optional)
 
 **Vorteile:**
-- ✅ **RAM-effizient**: ~750MB Ersparnis bei 5 Apps (shared DB statt 5x separate DBs)
+
+- ✅ **RAM-effizient**: ~750MB Ersparnis bei 5 Apps (shared DB statt 5x separate
+  DBs)
 - ✅ **Zentrales Backup**: Ein PostgreSQL-Dump für alle DBs
 - ✅ **Einfachere Wartung**: Updates nur 1x durchführen
 - ✅ **Sicherheit**: DB-Isolation via separate Datenbanken + User
@@ -155,16 +172,15 @@ docker-compose -f docker-compose.integrated.yml exec app flask init-db
 **Shared vs. Dedicated DB:**
 
 | Aspekt | Shared PostgreSQL ✅ | Dedicated DB |
-|--------|---------------------|--------------|
-| RAM-Verbrauch | ~50MB/App | ~200MB/App |
-| Sicherheit | DB-Level Isolation | Container-Level |
-| Backup | Zentral, einfach | Pro App separat |
-| Skalierung | Bis ~10k Req/min | Unbegrenzt |
-| Empfohlen für | <5 Apps, begrenzter RAM | High-Traffic, Compliance |
+|--------|---------------------|--------------| | RAM-Verbrauch | ~50MB/App |
+~200MB/App | | Sicherheit | DB-Level Isolation | Container-Level | | Backup |
+Zentral, einfach | Pro App separat | | Skalierung | Bis ~10k Req/min |
+Unbegrenzt | | Empfohlen für | \<5 Apps, begrenzter RAM | High-Traffic,
+Compliance |
 
 **Detaillierte Anleitung:** Siehe [SETUP_INTEGRATED.md](SETUP_INTEGRATED.md)
 
----
+______________________________________________________________________
 
 ### Variante 3: Manuelle Installation
 
@@ -239,7 +255,8 @@ FLUSH PRIVILEGES;
 EXIT;
 ```
 
-**Hinweis:** MySQL/MariaDB verwenden `utf8mb4` für vollständige Unicode-Unterstützung (inkl. Emojis).
+**Hinweis:** MySQL/MariaDB verwenden `utf8mb4` für vollständige
+Unicode-Unterstützung (inkl. Emojis).
 
 ### 4. Umgebungsvariablen konfigurieren
 
@@ -290,7 +307,8 @@ SMTP_USE_TLS=True
 JWT_SECRET_KEY=ein-anderer-sehr-sicherer-schluessel
 ```
 
-**Tipp:** Ihre aktuellen Einstellungen können Sie jederzeit in der Web-UI unter "⚙️ Einstellungen" einsehen.
+**Tipp:** Ihre aktuellen Einstellungen können Sie jederzeit in der Web-UI unter
+"⚙️ Einstellungen" einsehen.
 
 ### 5. Datenbank initialisieren
 
@@ -310,7 +328,8 @@ flask seed-db
 
 **Datenbankwechsel:**
 
-Um die Datenbank zu wechseln (z.B. von PostgreSQL zu MySQL), ändern Sie einfach die `DATABASE_URL` in `.env`:
+Um die Datenbank zu wechseln (z.B. von PostgreSQL zu MySQL), ändern Sie einfach
+die `DATABASE_URL` in `.env`:
 
 ```bash
 # PostgreSQL (Standard)
@@ -324,6 +343,7 @@ DATABASE_URL=sqlite:///rechnungen.db
 ```
 
 Dann Migration anwenden:
+
 ```bash
 alembic upgrade head
 ```
@@ -367,21 +387,23 @@ flask run --port 5001
 python app.py --port 5001
 ```
 
-Die Anwendung ist standardmäßig unter http://localhost:5000 erreichbar (oder dem von Ihnen gewählten Port).
+Die Anwendung ist standardmäßig unter http://localhost:5000 erreichbar (oder dem
+von Ihnen gewählten Port).
 
 ## Verwendung
 
 ### Manuelle Rechnungserstellung
 
 1. Navigieren Sie zu "Neue Rechnung"
-2. Geben Sie Kundendaten ein (oder wählen Sie einen bestehenden Kunden)
-3. Fügen Sie Rechnungspositionen hinzu
-4. Speichern Sie die Rechnung
-5. Laden Sie das PDF herunter
+1. Geben Sie Kundendaten ein (oder wählen Sie einen bestehenden Kunden)
+1. Fügen Sie Rechnungspositionen hinzu
+1. Speichern Sie die Rechnung
+1. Laden Sie das PDF herunter
 
 ### E-Mail-Import (Optional)
 
-Die E-Mail-Integration kann genutzt werden, um Bestellungen aus einem Online-Shop automatisch zu importieren:
+Die E-Mail-Integration kann genutzt werden, um Bestellungen aus einem
+Online-Shop automatisch zu importieren:
 
 ```python
 # In der Python-Shell oder als Skript
@@ -395,7 +417,8 @@ with app.app_context():
     print(f"Verarbeitet: {result['processed']} E-Mails")
 ```
 
-**Hinweis:** Der E-Mail-Parser muss für Ihr spezifisches Shop-System angepasst werden. Siehe `email_parser.py` für Beispiele.
+**Hinweis:** Der E-Mail-Parser muss für Ihr spezifisches Shop-System angepasst
+werden. Siehe `email_parser.py` für Beispiele.
 
 ## Projektstruktur
 
@@ -428,6 +451,7 @@ rechnungen/
 ### Manipulationssicherheit
 
 Jede Rechnung wird beim Speichern mit einem SHA-256 Hash versehen:
+
 - Der Hash umfasst alle relevanten Rechnungsdaten
 - Bei jedem Abruf wird die Integrität geprüft
 - Manipulierte Rechnungen werden markiert
@@ -437,32 +461,36 @@ Jede Rechnung wird beim Speichern mit einem SHA-256 Hash versehen:
 Für den Produktivbetrieb beachten Sie:
 
 1. **Sicheren SECRET_KEY verwenden:**
+
    ```bash
    python -c "import secrets; print(secrets.token_hex(32))"
    ```
 
-2. **HTTPS verwenden** (z.B. mit nginx und Let's Encrypt)
+1. **HTTPS verwenden** (z.B. mit nginx und Let's Encrypt)
 
-3. **Umgebung auf 'production' setzen:**
+1. **Umgebung auf 'production' setzen:**
+
    ```env
    FLASK_ENV=production
    ```
 
-4. **Gunicorn oder uWSGI verwenden:**
+1. **Gunicorn oder uWSGI verwenden:**
+
    ```bash
    pip install gunicorn
    gunicorn -w 4 -b 0.0.0.0:8000 'app:create_app()'
    ```
 
-5. **Regelmäßige Backups der PostgreSQL-Datenbank**
+1. **Regelmäßige Backups der PostgreSQL-Datenbank**
 
-6. **Firewall-Regeln konfigurieren**
+1. **Firewall-Regeln konfigurieren**
 
----
+______________________________________________________________________
 
 ## JWT-API für PWA/Mobile Apps
 
-Die Anwendung bietet eine vollständige REST API mit JWT-Authentifizierung für Progressive Web Apps und Mobile Anwendungen.
+Die Anwendung bietet eine vollständige REST API mit JWT-Authentifizierung für
+Progressive Web Apps und Mobile Anwendungen.
 
 ### Authentifizierung
 
@@ -480,6 +508,7 @@ Content-Type: application/json
 ```
 
 **Antwort (Erfolg):**
+
 ```json
 {
   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
@@ -494,6 +523,7 @@ Content-Type: application/json
 ```
 
 **Antwort (2FA erforderlich):**
+
 ```json
 {
   "error": "2FA token required",
@@ -503,7 +533,7 @@ Content-Type: application/json
 
 **Token-Gültigkeit:** 30 Tage
 
----
+______________________________________________________________________
 
 #### Token validieren
 
@@ -513,6 +543,7 @@ Authorization: Bearer <token>
 ```
 
 **Antwort:**
+
 ```json
 {
   "valid": true,
@@ -525,7 +556,7 @@ Authorization: Bearer <token>
 }
 ```
 
----
+______________________________________________________________________
 
 #### Token erneuern
 
@@ -535,6 +566,7 @@ Authorization: Bearer <token>
 ```
 
 **Antwort:**
+
 ```json
 {
   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
@@ -542,11 +574,12 @@ Authorization: Bearer <token>
 }
 ```
 
----
+______________________________________________________________________
 
 ### API-Endpunkte (JWT-geschützt)
 
-Alle folgenden Endpoints erfordern einen gültigen JWT-Token im Authorization-Header:
+Alle folgenden Endpoints erfordern einen gültigen JWT-Token im
+Authorization-Header:
 
 ```
 Authorization: Bearer <token>
@@ -560,11 +593,13 @@ Authorization: Bearer <token>
 ```
 
 **Query-Parameter:**
+
 - `page` - Seitennummer (Standard: 1)
 - `per_page` - Einträge pro Seite (Standard: 20, max: 100)
 - `status` - Filter nach Status: draft, sent, paid, cancelled
 
 **Antwort:**
+
 ```json
 {
   "invoices": [
@@ -586,7 +621,7 @@ Authorization: Bearer <token>
 }
 ```
 
----
+______________________________________________________________________
 
 #### Rechnungsdetails abrufen
 
@@ -596,6 +631,7 @@ Authorization: Bearer <token>
 ```
 
 **Antwort:**
+
 ```json
 {
   "id": 1,
@@ -626,7 +662,7 @@ Authorization: Bearer <token>
 }
 ```
 
----
+______________________________________________________________________
 
 #### Kunden durchsuchen
 
@@ -636,11 +672,13 @@ Authorization: Bearer <token>
 ```
 
 **Query-Parameter:**
+
 - `search` - Suchbegriff (durchsucht Firma, Name, E-Mail)
 - `page` - Seitennummer
 - `per_page` - Einträge pro Seite
 
 **Antwort:**
+
 ```json
 {
   "customers": [
@@ -661,7 +699,7 @@ Authorization: Bearer <token>
 }
 ```
 
----
+______________________________________________________________________
 
 #### POS-Verkauf abschließen
 
@@ -685,6 +723,7 @@ Content-Type: application/json
 ```
 
 **Antwort:**
+
 ```json
 {
   "success": true,
@@ -695,7 +734,7 @@ Content-Type: application/json
 }
 ```
 
----
+______________________________________________________________________
 
 ### Beispiel: JavaScript Fetch API
 
@@ -727,7 +766,7 @@ const invoicesResponse = await fetch('https://ihr-server.de/api/invoices', {
 const invoices = await invoicesResponse.json();
 ```
 
----
+______________________________________________________________________
 
 ### Beispiel: Python Requests
 
@@ -750,7 +789,7 @@ for invoice in invoices['invoices']:
     print(f"{invoice['invoice_number']}: {invoice['total']} €")
 ```
 
----
+______________________________________________________________________
 
 ### Rollenbasierte Zugriffskontrolle
 
@@ -762,6 +801,7 @@ Die JWT-API respektiert die Benutzerrollen:
 - **viewer**: Nur Lesezugriff
 
 Beispiel für fehlende Berechtigung:
+
 ```json
 {
   "error": "Insufficient permissions",
@@ -770,7 +810,7 @@ Beispiel für fehlende Berechtigung:
 }
 ```
 
----
+______________________________________________________________________
 
 ## Passwort-Reset per E-Mail
 
@@ -779,10 +819,10 @@ Benutzer können ihr Passwort über einen E-Mail-Link zurücksetzen.
 ### Funktionsweise
 
 1. **Passwort vergessen?** Link auf Login-Seite
-2. Benutzer gibt E-Mail-Adresse ein
-3. System sendet E-Mail mit Reset-Link (1 Stunde gültig)
-4. Benutzer klickt Link und setzt neues Passwort
-5. Alter Token wird ungültig
+1. Benutzer gibt E-Mail-Adresse ein
+1. System sendet E-Mail mit Reset-Link (1 Stunde gültig)
+1. Benutzer klickt Link und setzt neues Passwort
+1. Alter Token wird ungültig
 
 ### E-Mail-Konfiguration
 
@@ -797,9 +837,10 @@ SMTP_USE_TLS=True
 ```
 
 **Für Gmail:**
+
 1. 2-Faktor-Authentifizierung aktivieren
-2. App-Passwort erstellen: https://myaccount.google.com/apppasswords
-3. App-Passwort in `.env` eintragen
+1. App-Passwort erstellen: https://myaccount.google.com/apppasswords
+1. App-Passwort in `.env` eintragen
 
 ### Routes
 
@@ -817,17 +858,20 @@ POST /reset-password/<token>   → Passwort speichern
 - Einmalverwendung (wird nach Verwendung gelöscht)
 - Rate-Limiting: Max. 3 Versuche/15 Min (via CrowdSec)
 
----
+______________________________________________________________________
 
 ## CrowdSec Integration
 
-CrowdSec ist eine moderne Security-Engine, die automatisch Angriffe erkennt und IP-Adressen sperrt.
+CrowdSec ist eine moderne Security-Engine, die automatisch Angriffe erkennt und
+IP-Adressen sperrt.
 
 ### Was wird geloggt?
 
-Die Flask-App schreibt strukturierte Logs nach `logs/security.log`, die CrowdSec auswertet:
+Die Flask-App schreibt strukturierte Logs nach `logs/security.log`, die CrowdSec
+auswertet:
 
 **1. Failed Logins (Bruteforce-Schutz)**
+
 ```json
 {
   "timestamp": "2024-11-07T15:30:00",
@@ -840,6 +884,7 @@ Die Flask-App schreibt strukturierte Logs nach `logs/security.log`, die CrowdSec
 ```
 
 **2. Suspicious Activity (SQL-Injection, XSS)**
+
 ```json
 {
   "timestamp": "2024-11-07T15:31:00",
@@ -852,6 +897,7 @@ Die Flask-App schreibt strukturierte Logs nach `logs/security.log`, die CrowdSec
 ```
 
 **3. Rate Limit Exceeded**
+
 ```json
 {
   "timestamp": "2024-11-07T15:32:00",
@@ -863,6 +909,7 @@ Die Flask-App schreibt strukturierte Logs nach `logs/security.log`, die CrowdSec
 ```
 
 **4. Unauthorized Access**
+
 ```json
 {
   "timestamp": "2024-11-07T15:33:00",
@@ -896,6 +943,7 @@ sudo nano /etc/crowdsec/acquis.yaml
 ```
 
 **acquis.yaml:**
+
 ```yaml
 filenames:
   - /home/janusz/git/privat/rechnungen/logs/security.log
@@ -915,6 +963,7 @@ sudo cscli decisions list
 ### Automatische IP-Sperren
 
 CrowdSec sperrt IPs automatisch bei:
+
 - **5 fehlgeschlagene Logins** in 5 Minuten → 4 Stunden Sperre
 - **10 XSS/SQLi-Versuche** in 5 Minuten → 24 Stunden Sperre
 - **50 Requests/Minute** an API → 1 Stunde Sperre
@@ -932,11 +981,12 @@ sudo cscli dashboard show-password
 
 Zugriff: `http://localhost:3000` (Standard-Credentials siehe Terminal)
 
----
+______________________________________________________________________
 
 ## API-Endpunkte
 
-Die Anwendung stellt verschiedene API-Endpunkte für interne und externe Nutzung bereit:
+Die Anwendung stellt verschiedene API-Endpunkte für interne und externe Nutzung
+bereit:
 
 ### Kundensuche (Autocomplete)
 
@@ -945,16 +995,19 @@ GET /api/customers/search?q=<query>
 ```
 
 **Parameter:**
+
 - `q` - Suchbegriff (min. 3 Zeichen)
 
 **Suchfelder:** Firma, Vorname, Nachname, E-Mail
 
 **Beispiel:**
+
 ```bash
 curl "http://localhost:5000/api/customers/search?q=Mül"
 ```
 
 **Antwort:**
+
 ```json
 [
   {
@@ -971,7 +1024,7 @@ curl "http://localhost:5000/api/customers/search?q=Mül"
 ]
 ```
 
----
+______________________________________________________________________
 
 ### Produktsuche (Autocomplete)
 
@@ -980,6 +1033,7 @@ GET /api/products/search?q=<query>
 ```
 
 **Parameter:**
+
 - `q` - Suchbegriff (min. 2 Zeichen)
 
 **Suchfelder:** Name, Chargennummer, Menge
@@ -987,11 +1041,13 @@ GET /api/products/search?q=<query>
 **Hinweis:** Liefert nur aktive Produkte
 
 **Beispiel:**
+
 ```bash
 curl "http://localhost:5000/api/products/search?q=Honig"
 ```
 
 **Antwort:**
+
 ```json
 [
   {
@@ -1007,13 +1063,17 @@ curl "http://localhost:5000/api/products/search?q=Honig"
 ]
 ```
 
----
+______________________________________________________________________
 
 ### Bestandsverwaltung (per Chargennummer)
 
-**Wichtig:** Diese API-Endpunkte sind für **normale Produktionsprozesse** (Abfüllen, Verpacken) gedacht und erstellen **keine GoBD-Dokumentation**. Für steuerrelevante Abgänge (Eigenentnahme, Verderb, Geschenke) verwenden Sie stattdessen die Web-UI unter "📝 Anpassungen".
+**Wichtig:** Diese API-Endpunkte sind für **normale Produktionsprozesse**
+(Abfüllen, Verpacken) gedacht und erstellen **keine GoBD-Dokumentation**. Für
+steuerrelevante Abgänge (Eigenentnahme, Verderb, Geschenke) verwenden Sie
+stattdessen die Web-UI unter "📝 Anpassungen".
 
 **Unterscheidung:**
+
 - ✅ **Normale Bestandsbewegungen** (keine GoBD-Dokumentation erforderlich):
   - Produktion/Abfüllen → API `/stock/add`
   - Verkauf über Kasse/Rechnung → automatischer Abzug mit Beleg
@@ -1036,16 +1096,21 @@ Content-Type: application/json
 ```
 
 **Parameter:**
+
 - `lot_number` - Chargennummer (z.B. L0101)
 - `amount` - Anzahl hinzuzufügen (im Body)
 
 **Verhalten:**
-- Existiert die Charge bereits → Bestand wird erhöht
-- Neue Charge → Produkt wird automatisch angelegt (inaktiv, Name als Platzhalter)
 
-**Anwendungsfall:** Automatische Bestandsbuchung beim Abfüllen/Verpacken (keine Steuerrelevanz, daher keine GoBD-Dokumentation)
+- Existiert die Charge bereits → Bestand wird erhöht
+- Neue Charge → Produkt wird automatisch angelegt (inaktiv, Name als
+  Platzhalter)
+
+**Anwendungsfall:** Automatische Bestandsbuchung beim Abfüllen/Verpacken (keine
+Steuerrelevanz, daher keine GoBD-Dokumentation)
 
 **Beispiel:**
+
 ```bash
 curl -X POST http://localhost:5000/api/products/lot/L0101/stock/add \
   -H "Content-Type: application/json" \
@@ -1053,6 +1118,7 @@ curl -X POST http://localhost:5000/api/products/lot/L0101/stock/add \
 ```
 
 **Antwort (existierende Charge):**
+
 ```json
 {
   "success": true,
@@ -1065,6 +1131,7 @@ curl -X POST http://localhost:5000/api/products/lot/L0101/stock/add \
 ```
 
 **Antwort (neue Charge):**
+
 ```json
 {
   "success": true,
@@ -1089,14 +1156,17 @@ Content-Type: application/json
 ```
 
 **Parameter:**
+
 - `lot_number` - Chargennummer (z.B. L0101)
 - `amount` - Anzahl abzuziehen (im Body)
 
 **Validierung:**
+
 - Prüft ob Charge existiert
 - Prüft ob genug Bestand vorhanden ist
 
 **Beispiel:**
+
 ```bash
 curl -X POST http://localhost:5000/api/products/lot/L0101/stock/reduce \
   -H "Content-Type: application/json" \
@@ -1104,6 +1174,7 @@ curl -X POST http://localhost:5000/api/products/lot/L0101/stock/reduce \
 ```
 
 **Antwort (Erfolg):**
+
 ```json
 {
   "success": true,
@@ -1116,6 +1187,7 @@ curl -X POST http://localhost:5000/api/products/lot/L0101/stock/reduce \
 ```
 
 **Antwort (Fehler - nicht genug Bestand):**
+
 ```json
 {
   "success": false,
@@ -1123,11 +1195,12 @@ curl -X POST http://localhost:5000/api/products/lot/L0101/stock/reduce \
 }
 ```
 
----
+______________________________________________________________________
 
 ### Automatischer Zahlungsabgleich
 
-Dieser Endpoint ermöglicht die automatische Verarbeitung von Zahlungseingängen durch externe Systeme (z.B. Banking-Software).
+Dieser Endpoint ermöglicht die automatische Verarbeitung von Zahlungseingängen
+durch externe Systeme (z.B. Banking-Software).
 
 #### Zahlung prüfen und verbuchen
 
@@ -1142,16 +1215,21 @@ Content-Type: application/json
 ```
 
 **Parameter:**
+
 - `invoice_number` - Rechnungsnummer (erforderlich)
 - `amount` - Erhaltener Betrag in Euro (erforderlich)
 
 **Verhalten:**
-1. **Betrag stimmt (±0,01€ Toleranz)** → Rechnung wird automatisch als "paid" markiert
-2. **Betragsdifferenz** → Status "mismatch", manuelle Prüfung erforderlich
-3. **Rechnungsnummer nicht gefunden** → Status "not_found", manuelle Prüfung erforderlich
-4. **Bereits bezahlt** → Status "duplicate", mögliche Doppelzahlung
+
+1. **Betrag stimmt (±0,01€ Toleranz)** → Rechnung wird automatisch als "paid"
+   markiert
+1. **Betragsdifferenz** → Status "mismatch", manuelle Prüfung erforderlich
+1. **Rechnungsnummer nicht gefunden** → Status "not_found", manuelle Prüfung
+   erforderlich
+1. **Bereits bezahlt** → Status "duplicate", mögliche Doppelzahlung
 
 **Beispiel:**
+
 ```bash
 curl -X POST http://localhost:5000/api/payments/check \
   -H "Content-Type: application/json" \
@@ -1159,6 +1237,7 @@ curl -X POST http://localhost:5000/api/payments/check \
 ```
 
 **Antwort (Erfolg - Betrag stimmt):**
+
 ```json
 {
   "success": true,
@@ -1174,6 +1253,7 @@ curl -X POST http://localhost:5000/api/payments/check \
 ```
 
 **Antwort (Betragsdifferenz):**
+
 ```json
 {
   "success": false,
@@ -1189,6 +1269,7 @@ curl -X POST http://localhost:5000/api/payments/check \
 ```
 
 **Antwort (Rechnung nicht gefunden):**
+
 ```json
 {
   "success": false,
@@ -1200,6 +1281,7 @@ curl -X POST http://localhost:5000/api/payments/check \
 ```
 
 **Antwort (Doppelzahlung):**
+
 ```json
 {
   "success": false,
@@ -1215,23 +1297,28 @@ curl -X POST http://localhost:5000/api/payments/check \
 
 **Manuelle Prüfung:**
 
-Alle Zahlungen mit `requires_review: true` können unter `/payments/review` manuell geprüft werden:
+Alle Zahlungen mit `requires_review: true` können unter `/payments/review`
+manuell geprüft werden:
 
 - **UI-Zugriff:** http://localhost:5000/payments/review
-- Zeigt alle offenen Prüfungen (Differenzen, nicht gefundene Rechnungen, Doppelzahlungen)
+- Zeigt alle offenen Prüfungen (Differenzen, nicht gefundene Rechnungen,
+  Doppelzahlungen)
 - Anzeige der Differenz mit Farbcodierung
 - Aktionen: "Bezahlt markieren" oder "Ignorieren"
 - Link zur zugehörigen Rechnung (falls vorhanden)
 
 **Stati:**
-- `matched` - Zahlung erfolgreich zugeordnet, Rechnung automatisch als bezahlt markiert
+
+- `matched` - Zahlung erfolgreich zugeordnet, Rechnung automatisch als bezahlt
+  markiert
 - `mismatch` - Betragsdifferenz festgestellt (Über- oder Unterzahlung)
 - `not_found` - Rechnungsnummer existiert nicht in der Datenbank
 - `duplicate` - Rechnung bereits als bezahlt markiert (mögliche Doppelzahlung)
 
-**Toleranz:** Abweichungen ≤ 0,01 € werden automatisch akzeptiert (Rundungsdifferenzen)
+**Toleranz:** Abweichungen ≤ 0,01 € werden automatisch akzeptiert
+(Rundungsdifferenzen)
 
----
+______________________________________________________________________
 
 ## Mahnwesen
 
@@ -1239,13 +1326,16 @@ Das System bietet ein vollautomatisches Mahnwesen für überfällige Rechnungen.
 
 ### Automatische Erkennung überfälliger Rechnungen
 
-In der Rechnungsliste (`/invoices?filter=overdue`) werden automatisch alle Rechnungen angezeigt, deren Fälligkeitsdatum mehr als 10 Tage überschritten ist. Für diese Rechnungen wird automatisch ein **Mahnung**-Button angezeigt.
+In der Rechnungsliste (`/invoices?filter=overdue`) werden automatisch alle
+Rechnungen angezeigt, deren Fälligkeitsdatum mehr als 10 Tage überschritten ist.
+Für diese Rechnungen wird automatisch ein **Mahnung**-Button angezeigt.
 
 ### Mahnungserstellung
 
 **URL:** `/invoices/<invoice_id>/reminder`
 
 **Funktionen:**
+
 - Automatische Ermittlung der Mahnstufe (1., 2., 3. Mahnung, etc.)
 - Berechnung von Mahngebühren:
   - 1. Mahnung: 5,00 €
@@ -1253,9 +1343,10 @@ In der Rechnungsliste (`/invoices?filter=overdue`) werden automatisch alle Rechn
 - Anzeige aller bisherigen Mahnungen
 - Zwei Versandoptionen:
   1. **PDF-Download**: Mahnung als PDF herunterladen
-  2. **E-Mail-Versand**: Direkt an Kunden-E-Mail senden
+  1. **E-Mail-Versand**: Direkt an Kunden-E-Mail senden
 
 **Mahnungsstufen:**
+
 - **1. Mahnung**: Höfliche Zahlungserinnerung, 7 Tage Zahlungsfrist
 - **2. Mahnung**: Dringende Aufforderung, 5 Tage Zahlungsfrist
 - **3. Mahnung**: Letzte Mahnung vor Inkasso, 3 Tage Zahlungsfrist
@@ -1263,6 +1354,7 @@ In der Rechnungsliste (`/invoices?filter=overdue`) werden automatisch alle Rechn
 ### PDF-Inhalt
 
 Die Mahnungs-PDFs enthalten:
+
 - Empfängeradresse (Fensterbriefumschlag-kompatibel)
 - Mahnstufe prominent hervorgehoben (rot)
 - Ursprüngliche Rechnungsinformationen
@@ -1276,6 +1368,7 @@ Die Mahnungs-PDFs enthalten:
 ### E-Mail-Versand
 
 Bei E-Mail-Versand wird automatisch:
+
 - PDF als Anhang mitgesendet
 - Mahntext an Mahnstufe angepasst
 - Gesamtforderung berechnet und angezeigt
@@ -1284,6 +1377,7 @@ Bei E-Mail-Versand wird automatisch:
 ### Mahnhistorie
 
 Alle versendeten Mahnungen werden in der Datenbank protokolliert:
+
 - Mahnstufe
 - Mahndatum
 - Versanddatum und -art (PDF/E-Mail)
@@ -1300,9 +1394,10 @@ Um die Mahnungsfunktion zu aktivieren, führen Sie die Migration aus:
 python migrate_add_reminders.py
 ```
 
-Dies erstellt die Tabelle `reminders` mit allen erforderlichen Feldern und Indizes.
+Dies erstellt die Tabelle `reminders` mit allen erforderlichen Feldern und
+Indizes.
 
----
+______________________________________________________________________
 
 ### Rechnungsinformationen
 
@@ -1313,6 +1408,7 @@ GET /api/invoices/<invoice_id>
 ```
 
 **Beispiel:**
+
 ```bash
 curl http://localhost:5000/api/invoices/1
 ```
@@ -1324,11 +1420,13 @@ GET /api/invoices/<invoice_id>/verify
 ```
 
 **Beispiel:**
+
 ```bash
 curl http://localhost:5000/api/invoices/1/verify
 ```
 
 **Antwort:**
+
 ```json
 {
   "invoice_id": 1,
@@ -1338,15 +1436,17 @@ curl http://localhost:5000/api/invoices/1/verify
 }
 ```
 
----
+______________________________________________________________________
 
 ### Microcontroller-Integration
 
-Die Bestandsverwaltungs-Endpoints sind speziell für die Integration mit Microcontrollern konzipiert:
+Die Bestandsverwaltungs-Endpoints sind speziell für die Integration mit
+Microcontrollern konzipiert:
 
 **Anwendungsfall:** Automatische Bestandsbuchung beim Abfüllen/Verpacken
 
 **Arduino/ESP32 Beispiel:**
+
 ```cpp
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
@@ -1376,6 +1476,7 @@ addStock("L0101", 50);  // 50 Stück zur Charge L0101 hinzufügen
 ```
 
 **Vorteile:**
+
 - ✅ Keine Datenbank-ID erforderlich
 - ✅ Chargennummer kann direkt von QR-Code/Barcode gelesen werden
 - ✅ Automatische Produktanlage bei neuen Chargen
@@ -1385,13 +1486,20 @@ addStock("L0101", 50);  // 50 Stück zur Charge L0101 hinzufügen
 **Hinweis zur GoBD-Compliance:**
 
 Diese Endpoints sind **bewusst ohne GoBD-Dokumentation** implementiert, da:
-1. **Produktion ist nicht steuerrelevant** - Erst der Verkauf löst Steuerpflicht aus
-2. **Verkäufe haben bereits Belege** - Rechnungen/Kassenbons erfüllen GoBD-Anforderungen
-3. **Performance** - Kein Overhead für jeden Produktionsschritt (z.B. jedes einzelne Glas)
 
-Für **steuerrelevante Abgänge ohne Beleg** (Eigenentnahme, Verderb, Geschenke) nutzen Sie die Web-UI unter "📝 Anpassungen", die vollständige GoBD-Dokumentation mit Belegnummern erstellt.
+1. **Produktion ist nicht steuerrelevant** - Erst der Verkauf löst Steuerpflicht
+   aus
+1. **Verkäufe haben bereits Belege** - Rechnungen/Kassenbons erfüllen
+   GoBD-Anforderungen
+1. **Performance** - Kein Overhead für jeden Produktionsschritt (z.B. jedes
+   einzelne Glas)
 
-**Siehe auch:** [GOBD_COMPLIANCE.md - Kapitel 8: Bestandsanpassungen](GOBD_COMPLIANCE.md#8-bestandsanpassungen)
+Für **steuerrelevante Abgänge ohne Beleg** (Eigenentnahme, Verderb, Geschenke)
+nutzen Sie die Web-UI unter "📝 Anpassungen", die vollständige GoBD-Dokumentation
+mit Belegnummern erstellt.
+
+**Siehe auch:**
+[GOBD_COMPLIANCE.md - Kapitel 8: Bestandsanpassungen](GOBD_COMPLIANCE.md#8-bestandsanpassungen)
 
 ## API-Endpunkte
 
@@ -1456,6 +1564,7 @@ sudo systemctl start postgresql
 ### PDF-Generierung schlägt fehl
 
 Stellen Sie sicher, dass der `pdfs/` Ordner beschreibbar ist:
+
 ```bash
 mkdir -p pdfs
 chmod 755 pdfs
@@ -1464,6 +1573,7 @@ chmod 755 pdfs
 ### E-Mail-Import funktioniert nicht
 
 Prüfen Sie die E-Mail-Konfiguration in `.env` und testen Sie die Verbindung:
+
 ```python
 from email_parser import EmailInvoiceParser
 parser = EmailInvoiceParser('imap.example.com', 993, 'user', 'pass')
@@ -1476,33 +1586,39 @@ Dieses Projekt steht unter der MIT-Lizenz.
 
 ## Support
 
-Bei Fragen oder Problemen erstellen Sie bitte ein Issue im Repository oder kontaktieren Sie den Entwickler.
+Bei Fragen oder Problemen erstellen Sie bitte ein Issue im Repository oder
+kontaktieren Sie den Entwickler.
 
----
+______________________________________________________________________
 
 ## Progressive Web App (PWA)
 
-Die Rechnungsverwaltung ist eine **installierbare Progressive Web App** mit Offline-Unterstützung.
+Die Rechnungsverwaltung ist eine **installierbare Progressive Web App** mit
+Offline-Unterstützung.
 
 ### Features
 
 ✅ **Installierbar auf allen Geräten**
+
 - Desktop (Windows, macOS, Linux)
 - Mobile (iOS, Android)
 - "Add to Home Screen" für schnellen Zugriff
 
 ✅ **Offline-Funktionalität**
+
 - Rechnungen ansehen ohne Internet
 - Automatische Synchronisation bei Verbindung
 - Background-Sync für POST-Requests
 
 ✅ **App-ähnliches Erlebnis**
+
 - Vollbild-Modus (ohne Browser-UI)
 - Custom App-Icon
 - Splash-Screen
 - Native Shortcuts (Neue Rechnung, Liste, Kunden)
 
 ✅ **Performance**
+
 - Cache-First Strategy für Static Assets
 - Network-First für API-Calls
 - Schnelle Ladezeiten
@@ -1512,31 +1628,33 @@ Die Rechnungsverwaltung ist eine **installierbare Progressive Web App** mit Offl
 #### Desktop (Chrome/Edge/Brave)
 
 1. Öffne die App im Browser: `https://ihr-server.de`
-2. Klicke auf das **⊕ Install**-Icon in der Adressleiste
-3. Oder: **Menü → App installieren**
-4. Die App erscheint im Anwendungsmenü
+1. Klicke auf das **⊕ Install**-Icon in der Adressleiste
+1. Oder: **Menü → App installieren**
+1. Die App erscheint im Anwendungsmenü
 
 **Shortcut:** App ist jetzt wie ein natives Programm nutzbar!
 
 #### Android
 
 1. Öffne die App im Chrome-Browser
-2. Tippe auf **Menü (⋮) → Zum Startbildschirm hinzufügen**
-3. Bestätige mit "Hinzufügen"
-4. Icon erscheint auf dem Startbildschirm
+1. Tippe auf **Menü (⋮) → Zum Startbildschirm hinzufügen**
+1. Bestätige mit "Hinzufügen"
+1. Icon erscheint auf dem Startbildschirm
 
 #### iOS/iPadOS
 
 1. Öffne die App in Safari
-2. Tippe auf das **Teilen-Icon** (Viereck mit Pfeil)
-3. Scrolle und wähle **"Zum Home-Bildschirm"**
-4. Bestätige mit "Hinzufügen"
+1. Tippe auf das **Teilen-Icon** (Viereck mit Pfeil)
+1. Scrolle und wähle **"Zum Home-Bildschirm"**
+1. Bestätige mit "Hinzufügen"
 
-**Hinweis:** iOS unterstützt Service Worker teilweise - Background-Sync funktioniert nur auf Android/Desktop.
+**Hinweis:** iOS unterstützt Service Worker teilweise - Background-Sync
+funktioniert nur auf Android/Desktop.
 
 ### Offline-Nutzung
 
 **Was funktioniert offline:**
+
 - ✅ Rechnungsliste ansehen (gecacht)
 - ✅ Rechnungsdetails öffnen (gecacht)
 - ✅ Kundenliste durchsuchen (gecacht)
@@ -1544,23 +1662,28 @@ Die Rechnungsverwaltung ist eine **installierbare Progressive Web App** mit Offl
 - ✅ PDF-Downloads (wenn vorher geladen)
 
 **Was erfordert Online-Verbindung:**
+
 - ❌ Rechnungen versenden (Status ändern)
 - ❌ Neue Kunden anlegen (POST)
 - ❌ Zahlungen verbuchen
 
 **Automatische Synchronisation:**
-- Sobald Verbindung verfügbar, werden offline-erstellte Rechnungen automatisch hochgeladen
+
+- Sobald Verbindung verfügbar, werden offline-erstellte Rechnungen automatisch
+  hochgeladen
 - Benachrichtigung über erfolgreiche Sync
 
 ### Service Worker
 
 Der Service Worker cached automatisch:
+
 - Static Assets (CSS, JS, Icons)
 - HTML-Seiten (Network-First)
 - API-Responses (für Offline-Zugriff)
 - CDN-Ressourcen (Bootstrap)
 
 **Cache-Strategie:**
+
 - **Network-First**: HTML, API → Aktuelle Daten bevorzugt, Cache als Fallback
 - **Cache-First**: CSS, JS, Bilder → Schnelle Auslieferung, Background-Update
 
@@ -1571,11 +1694,12 @@ Der Service Worker cached automatisch:
 PWA-Updates erfolgen automatisch:
 
 1. Neue Version wird im Hintergrund heruntergeladen
-2. **Update-Benachrichtigung** erscheint oben rechts
-3. Klick auf "Aktualisieren" lädt neue Version
-4. Seite wird neu geladen mit neuem Service Worker
+1. **Update-Benachrichtigung** erscheint oben rechts
+1. Klick auf "Aktualisieren" lädt neue Version
+1. Seite wird neu geladen mit neuem Service Worker
 
 **Manuelles Update:**
+
 - Browser-DevTools → Application → Service Workers → "Update"
 
 ### Manifest
@@ -1583,6 +1707,7 @@ PWA-Updates erfolgen automatisch:
 **Datei:** `static/manifest.json`
 
 Wichtige Einstellungen:
+
 ```json
 {
   "name": "Rechnungsverwaltung",
@@ -1595,6 +1720,7 @@ Wichtige Einstellungen:
 ```
 
 **Custom Shortcuts:**
+
 - 📝 Neue Rechnung → `/invoices/create`
 - 📋 Rechnungsliste → `/invoices`
 - 👥 Kunden → `/customers`
@@ -1606,12 +1732,14 @@ Wichtige Einstellungen:
 **Generiert mit:** `python generate_icons.py`
 
 **Verfügbare Größen:**
+
 - PWA: 72x72, 96x96, 128x128, 144x144, 152x152, 192x192, 384x384, 512x512
 - iOS: 120x120, 152x152, 167x167, 180x180
 - Favicon: 16x16, 32x32, 48x48, favicon.ico
 - Maskable: 192x192, 512x512 (für Android Adaptive Icons)
 
 **Custom Icons:**
+
 ```bash
 # Eigenes Logo verwenden (mind. 512x512 PNG)
 python generate_icons.py /pfad/zu/logo.png
@@ -1620,6 +1748,7 @@ python generate_icons.py /pfad/zu/logo.png
 ### Push Notifications (Optional)
 
 Service Worker unterstützt Push-Notifications für:
+
 - Neue Rechnungen
 - Zahlungseingänge
 - Mahnungen
@@ -1631,13 +1760,16 @@ Service Worker unterstützt Push-Notifications für:
 ### Deinstallation
 
 **Desktop:**
+
 - Chrome: `chrome://apps` → Rechtsklick → Deinstallieren
 - Edge: Einstellungen → Apps → Installierte Apps
 
 **Android:**
+
 - Wie jede andere App: Lange drücken → Deinstallieren
 
 **iOS:**
+
 - Icon gedrückt halten → "App entfernen"
 
 ### Entwicklung & Debugging
@@ -1653,6 +1785,7 @@ Service Worker unterstützt Push-Notifications für:
 ```
 
 **PWA-Audit:**
+
 ```bash
 # Lighthouse
 1. Chrome DevTools → Lighthouse Tab
@@ -1661,6 +1794,7 @@ Service Worker unterstützt Push-Notifications für:
 ```
 
 **Cache löschen:**
+
 ```bash
 # Chrome
 chrome://settings/clearBrowserData
@@ -1672,31 +1806,36 @@ chrome://settings/clearBrowserData
 ### Troubleshooting
 
 **PWA lässt sich nicht installieren:**
+
 - ✅ HTTPS aktiv? (oder localhost)
 - ✅ `manifest.json` korrekt verlinkt?
 - ✅ Icons vorhanden? (min. 192x192 + 512x512)
 - ✅ Service Worker registriert?
 
 **Offline-Modus funktioniert nicht:**
+
 - Prüfe DevTools → Application → Service Workers → Status
 - Prüfe Cache Storage → Sind Dateien gecacht?
 - Console-Logs für Fehler
 
 **Alte Version wird angezeigt:**
+
 - Hard-Refresh: `Ctrl+Shift+R` (Windows/Linux) / `Cmd+Shift+R` (macOS)
 - Service Worker Update erzwingen (DevTools)
 - Cache leeren
 
 **iOS Safari-Probleme:**
+
 - Service Worker-Unterstützung eingeschränkt
 - Background-Sync nicht verfügbar
 - IndexedDB-Limits beachten (50MB)
 
----
+______________________________________________________________________
 
 ## Roadmap
 
 Geplante Features:
+
 - [ ] Rechnungsvorlagen anpassen
 - [x] E-Mail-Versand direkt aus der App
 - [ ] Wiederkehrende Rechnungen

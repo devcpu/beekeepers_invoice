@@ -1,27 +1,30 @@
 # Datenbank-Migrationen mit Alembic
 
-Dieses Projekt verwendet **Alembic** für datenbank-agnostische Schema-Migrationen.
+Dieses Projekt verwendet **Alembic** für datenbank-agnostische
+Schema-Migrationen.
 
 ## Warum Alembic?
 
 ✅ **Datenbank-agnostisch**: Unterstützt PostgreSQL, MySQL, SQLite, MariaDB, etc.
-✅ **Versionierung**: Jede Schema-Änderung wird versioniert und kann zurückgerollt werden
-✅ **Automatische Generierung**: Migrationen werden aus Models automatisch erstellt
-✅ **Team-fähig**: Migrations-Historie im Git für alle Entwickler
-✅ **Production-safe**: Migrationen können sicher auf Produktion angewendet werden
+✅ **Versionierung**: Jede Schema-Änderung wird versioniert und kann
+zurückgerollt werden ✅ **Automatische Generierung**: Migrationen werden aus
+Models automatisch erstellt ✅ **Team-fähig**: Migrations-Historie im Git für
+alle Entwickler ✅ **Production-safe**: Migrationen können sicher auf Produktion
+angewendet werden
 
 ## Unterstützte Datenbanken
 
 | Datenbank | Connection String Beispiel |
-|-----------|----------------------------|
-| **PostgreSQL** | `postgresql://user:pass@localhost:5432/dbname` |
-| **MySQL** | `mysql+pymysql://user:pass@localhost:3306/dbname` |
-| **MariaDB** | `mysql+pymysql://user:pass@localhost:3306/dbname` |
-| **SQLite** | `sqlite:///path/to/database.db` |
+|-----------|----------------------------| | **PostgreSQL** |
+`postgresql://user:pass@localhost:5432/dbname` | | **MySQL** |
+`mysql+pymysql://user:pass@localhost:3306/dbname` | | **MariaDB** |
+`mysql+pymysql://user:pass@localhost:3306/dbname` | | **SQLite** |
+`sqlite:///path/to/database.db` |
 
-**Hinweis:** Für MySQL/MariaDB muss `pymysql` installiert sein (bereits in `requirements.txt`).
+**Hinweis:** Für MySQL/MariaDB muss `pymysql` installiert sein (bereits in
+`requirements.txt`).
 
----
+______________________________________________________________________
 
 ## Erste Einrichtung
 
@@ -59,7 +62,7 @@ flask init-db  # Oder Backup einspielen
 alembic stamp head
 ```
 
----
+______________________________________________________________________
 
 ## Tägliche Verwendung
 
@@ -80,7 +83,8 @@ alembic revision --autogenerate -m "Add index on invoice_number"
 alembic upgrade head
 ```
 
-**Wichtig:** Prüfe die generierte Migration in `alembic/versions/` - Alembic ist sehr gut, aber nicht perfekt!
+**Wichtig:** Prüfe die generierte Migration in `alembic/versions/` - Alembic ist
+sehr gut, aber nicht perfekt!
 
 ### Migration rückgängig machen
 
@@ -108,7 +112,7 @@ alembic history
 alembic history --verbose
 ```
 
----
+______________________________________________________________________
 
 ## Beispiele
 
@@ -158,7 +162,7 @@ alembic revision --autogenerate -m "Create notifications table"
 alembic upgrade head
 ```
 
----
+______________________________________________________________________
 
 ## Datenbank wechseln (PostgreSQL → MySQL)
 
@@ -205,11 +209,12 @@ mysql -u rechnungen_user -p rechnungen < data.sql
 ```
 
 **Tipp:** Für große Datenmengen Tools wie `pgloader` verwenden:
+
 ```bash
 pgloader postgresql://user:pass@localhost/rechnungen mysql://user:pass@localhost/rechnungen
 ```
 
----
+______________________________________________________________________
 
 ## Troubleshooting
 
@@ -232,7 +237,8 @@ alembic stamp head
 
 ### "ENUM type not found" (MySQL)
 
-ENUMs wurden mit `native_enum=False` konfiguriert und verwenden VARCHAR statt native ENUMs. Das funktioniert auf allen Datenbanken.
+ENUMs wurden mit `native_enum=False` konfiguriert und verwenden VARCHAR statt
+native ENUMs. Das funktioniert auf allen Datenbanken.
 
 ### Migration schlägt fehl
 
@@ -245,11 +251,12 @@ alembic upgrade head
 alembic stamp head
 ```
 
----
+______________________________________________________________________
 
-## Migration von alten migrate_*.py Scripts
+## Migration von alten migrate\_\*.py Scripts
 
-Die alten Migrations-Scripts in `migrations_archive/` sind **archiviert** aber nicht gelöscht:
+Die alten Migrations-Scripts in `migrations_archive/` sind **archiviert** aber
+nicht gelöscht:
 
 ```bash
 # Alte Migrationen (manuell, nicht mehr verwendet):
@@ -268,25 +275,26 @@ alembic/
 ```
 
 **Warum archiviert?**
+
 - Git-Historie bleibt erhalten
 - Referenz für manuelle Anpassungen
 - Dokumentation der Schema-Evolution
 
 **Neue Änderungen:** Nur noch mit Alembic (`alembic revision --autogenerate`)
 
----
+______________________________________________________________________
 
 ## Best Practices
 
 1. **Immer prüfen**: Generierte Migrationen vor dem Anwenden prüfen
-2. **Sinnvolle Namen**: `alembic revision -m "Was ändert sich"`
-3. **Kleine Schritte**: Lieber mehrere kleine Migrationen als eine große
-4. **Testen**: Migration erst auf Dev/Staging testen, dann Produktion
-5. **Backup**: Vor Produktion-Migrationen immer Backup erstellen
-6. **Nie manuell ändern**: Schema-Änderungen nur über Alembic, nie direkt in DB
-7. **Git commit**: Migrations-Dateien immer committen
+1. **Sinnvolle Namen**: `alembic revision -m "Was ändert sich"`
+1. **Kleine Schritte**: Lieber mehrere kleine Migrationen als eine große
+1. **Testen**: Migration erst auf Dev/Staging testen, dann Produktion
+1. **Backup**: Vor Produktion-Migrationen immer Backup erstellen
+1. **Nie manuell ändern**: Schema-Änderungen nur über Alembic, nie direkt in DB
+1. **Git commit**: Migrations-Dateien immer committen
 
----
+______________________________________________________________________
 
 ## Produktions-Deployment
 
@@ -309,12 +317,13 @@ systemctl restart rechnungen
 ```
 
 **Mit Docker:**
+
 ```bash
 docker-compose exec app alembic upgrade head
 docker-compose restart app
 ```
 
----
+______________________________________________________________________
 
 ## Referenzen
 

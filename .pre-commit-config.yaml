@@ -24,6 +24,10 @@ repos:
       - id: isort
         args: ['--profile=black', '--line-length=160']
 
+# ============================================================================
+# WEB ASSETS
+# ============================================================================
+
   # Jinja2 Template Syntax Checking (via djlint - bessere Alternative)
   - repo: https://github.com/Riverside-Healthcare/djLint
     rev: v1.36.4
@@ -46,6 +50,25 @@ repos:
         files: \.(html|jinja|jinja2)$
         exclude: 'templates/index\.html'  # Parse error - später fixen
         # Curlylint prüft HTML + Jinja2 Templates auf Best Practices
+
+  - repo: https://github.com/pre-commit/mirrors-eslint
+    rev: v9.39.1
+    hooks:
+    - id: eslint
+      files: ^static/.*\.js$
+      additional_dependencies: ["eslint@9.11.1"]
+
+  # CSS Minification Check
+  - repo: local
+    hooks:
+    - id: css-size-check
+      name: CSS Size Check
+      description: Warn if CSS files are too large
+      entry: bash
+      args: [-c, 'find . -name "*.css" -size +10k -exec echo "WARNING: Large CSS file: {}" \;']
+      pass_filenames: false
+      language: system
+      exclude: '^(attic/|node_modules/|projectdoc/|logs/|libdoc/|test/|\\.pio/|build/)'
 
   # Allgemeine Checks
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -320,6 +343,19 @@ repos:
       language: system
       files: setup.cfg
       pass_filenames: false
+
+
+  # ============================================================================
+  # DOCUMENTATION
+  # ============================================================================
+  - repo: https://github.com/executablebooks/mdformat
+    rev: 1.0.0
+    hooks:
+    - id: mdformat
+      args: [--wrap=80]
+      files: \.(md|markdown)$
+      exclude: '^(attic/|node_modules/|projectdoc/|logs/|libdoc/|test/|\\.pio/|build/)'
+
 
 
 

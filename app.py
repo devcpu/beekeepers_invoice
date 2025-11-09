@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 import json
 import os
 from datetime import datetime, timedelta
@@ -78,7 +79,14 @@ def create_app(config_name="default"):
     # Context Processor für Templates
     @app.context_processor
     def utility_processor():
-        return dict(now=datetime.now())
+        # Version aus .version-Datei laden
+        version = "0.0.0"
+        try:
+            with open(".version", "r", encoding="utf-8") as f:
+                version = f.read().strip()
+        except FileNotFoundError:
+            pass
+        return dict(now=datetime.now(), app_version=version)
 
     # ========== AUTHENTIFIZIERUNGS-ROUTEN ==========
 
@@ -244,7 +252,7 @@ def create_app(config_name="default"):
                     send_password_reset_email(user, token, mail)
                     flash("Eine E-Mail mit Anweisungen zum Zurücksetzen des Passworts wurde gesendet.", "success")
                 except Exception as e:
-                    app.logger.error(f"Fehler beim Senden der Reset-E-Mail: {str(e)}")
+                    app.logger.error("Fehler beim Senden der Reset-E-Mail: %s", str(e))
                     flash("Fehler beim Senden der E-Mail. Bitte kontaktieren Sie den Administrator.", "danger")
             else:
                 # Security: Immer gleiche Meldung, auch wenn E-Mail nicht existiert
@@ -482,7 +490,7 @@ def create_app(config_name="default"):
 
     @app.route("/api/invoices", methods=["GET"])
     @token_required
-    def api_list_invoices(current_user):
+    def api_list_invoices(current_user):  # pylint: disable=unused-argument
         """API: Liste aller Rechnungen"""
         status = request.args.get("status")
         limit = request.args.get("limit", 50, type=int)
@@ -520,7 +528,7 @@ def create_app(config_name="default"):
 
     @app.route("/api/invoices/<int:invoice_id>", methods=["GET"])
     @token_required
-    def api_get_invoice(current_user, invoice_id):
+    def api_get_invoice(current_user, invoice_id):  # pylint: disable=unused-argument
         """API: Einzelne Rechnung abrufen"""
         invoice = Invoice.query.get_or_404(invoice_id)
 
@@ -563,7 +571,7 @@ def create_app(config_name="default"):
 
     @app.route("/api/customers", methods=["GET"])
     @token_required
-    def api_list_customers(current_user):
+    def api_list_customers(current_user):  # pylint: disable=unused-argument
         """API: Liste aller Kunden"""
         limit = request.args.get("limit", 100, type=int)
         search = request.args.get("q")
@@ -1180,7 +1188,7 @@ def create_app(config_name="default"):
                 except Exception as e:
                     db.session.rollback()
                     # Fehler beim Archivieren nicht kritisch - PDF trotzdem ausliefern
-                    app.logger.error(f"PDF-Archivierung fehlgeschlagen: {str(e)}")
+                    app.logger.error("PDF-Archivierung fehlgeschlagen: %s", str(e))
 
         return send_file(pdf_path, as_attachment=True, download_name=f"Rechnung_{invoice.invoice_number}.pdf")
 
@@ -1410,11 +1418,16 @@ Mit freundlichen Grüßen
 
             # Audit-Protokollierung
             app.logger.info(
-                f"DSGVO-Anonymisierung durchgeführt | "
-                f"Kunde ID: {customer_id} | "
-                f"Original: {original_name} ({original_email}) | "
-                f"Benutzer: {current_user.username} | "
-                f"Verknüpfte Rechnungen: {invoice_count} (bleiben unverändert gemäß §147 AO)"
+                "DSGVO-Anonymisierung durchgeführt | "
+                "Kunde ID: %s | "
+                "Original: %s (%s) | "
+                "Benutzer: %s | "
+                "Verknüpfte Rechnungen: %s (bleiben unverändert gemäß §147 AO)",
+                customer_id,
+                original_name,
+                original_email,
+                current_user.username,
+                invoice_count,
             )
 
             if invoice_count > 0:
@@ -1432,7 +1445,7 @@ Mit freundlichen Grüßen
 
         except Exception as e:
             db.session.rollback()
-            app.logger.error(f"Fehler bei DSGVO-Anonymisierung Kunde #{customer_id}: {str(e)}")
+            app.logger.error("Fehler bei DSGVO-Anonymisierung Kunde #%s: %s", customer_id, str(e))
             flash(f"Fehler bei der Anonymisierung: {str(e)}", "error")
             return redirect(url_for("view_customer", customer_id=customer_id))
 
@@ -2197,7 +2210,7 @@ Mit freundlichen Grüßen
         elements.append(Spacer(1, 0.3 * cm))
 
         type_data = [["Kundentyp", "Umsatz", "Anzahl", "Anteil"]]
-        for type_key, type_info in stats["by_type"].items():
+        for type_key, type_info in stats["by_type"].items():  # pylint: disable=unused-variable
             if type_info["count"] > 0:
                 percentage = (type_info["revenue"] / stats["total_revenue"] * 100) if stats["total_revenue"] > 0 else 0
                 type_data.append(
@@ -2880,7 +2893,7 @@ Mit freundlichen Grüßen
                 mail.login(imap_username, imap_password)
 
                 # Mailboxen auflisten
-                status, folders = mail.list()
+                status, folders = mail.list()  # pylint: disable=unused-variable
                 folder_count = len(folders) if folders else 0
 
                 mail.logout()

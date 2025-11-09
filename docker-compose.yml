@@ -1,25 +1,49 @@
-version: '3.8'
-
 services:
-  # PostgreSQL Datenbank
+  # MySQL/MariaDB Datenbank (Standard)
   db:
-    image: postgres:15-alpine
+    image: mariadb:11
     container_name: rechnungen-db
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${DB_NAME:-rechnungen}
-      POSTGRES_USER: ${DB_USER:-rechnungen_user}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME:-rechnungen}
+      MYSQL_USER: ${DB_USER:-rechnungen_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - mysql_data:/var/lib/mysql
       - ./backups:/backups
     networks:
       - backend
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-rechnungen_user}"]
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 10s
       timeout: 5s
       retries: 5
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+
+  # PostgreSQL Datenbank (Alternative - auskommentiert)
+  # Wenn du PostgreSQL nutzen möchtest:
+  # 1. MariaDB-Service auskommentieren (oben)
+  # 2. PostgreSQL-Service einkommentieren (unten)
+  # 3. DATABASE_URL in app-Service anpassen
+  # db:
+  #   image: postgres:15-alpine
+  #   container_name: rechnungen-db
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_DB: ${DB_NAME:-rechnungen}
+  #     POSTGRES_USER: ${DB_USER:-rechnungen_user}
+  #     POSTGRES_PASSWORD: ${DB_PASSWORD}
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #     - ./backups:/backups
+  #   networks:
+  #     - backend
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-rechnungen_user}"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
 
   # Redis für Sessions (optional - nur für High-Traffic/Multi-Server)
   # Für kleinere Setups reichen File-based Sessions völlig aus!
@@ -50,8 +74,11 @@ services:
       # redis:  # Nur wenn Redis aktiviert ist
       #   condition: service_healthy
     environment:
-      # Database
-      DATABASE_URL: postgresql://${DB_USER:-rechnungen_user}:${DB_PASSWORD}@db:5432/${DB_NAME:-rechnungen}
+      # Database (MySQL/MariaDB)
+      DATABASE_URL: mysql+pymysql://${DB_USER:-rechnungen_user}:${DB_PASSWORD}@db:3306/${DB_NAME:-rechnungen}?charset=utf8mb4
+
+      # Database (PostgreSQL - wenn PostgreSQL-Service aktiv)
+      # DATABASE_URL: postgresql://${DB_USER:-rechnungen_user}:${DB_PASSWORD}@db:5432/${DB_NAME:-rechnungen}
 
       # Session Storage (File-based - ausreichend für die meisten Setups)
       # Für Redis: Kommentiere die nächsten zwei Zeilen aus und aktiviere Redis-Service
@@ -188,8 +215,10 @@ networks:
     driver: bridge
 
 volumes:
-  postgres_data:
-    name: rechnungen-postgres
+  mysql_data:
+    name: rechnungen-mysql
+  # postgres_data:  # Nur wenn PostgreSQL aktiviert
+  #   name: rechnungen-postgres
   # redis_data:  # Nur wenn Redis aktiviert
   #   name: rechnungen-redis
   crowdsec_config:

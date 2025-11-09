@@ -10,12 +10,14 @@
 ## 🚀 Schnellstart
 
 ### 1. Repository klonen
+
 ```bash
 git clone <repository-url>
 cd rechnungen
 ```
 
 ### 2. Environment konfigurieren
+
 ```bash
 # .env.docker kopieren und anpassen
 cp .env.docker .env
@@ -25,13 +27,16 @@ nano .env
 ```
 
 **Pflichtfelder:**
+
 - `DOMAIN` - Deine Domain (z.B. rechnungen.example.com)
-- `SECRET_KEY` - Generiere mit: `python -c "import secrets; print(secrets.token_hex(32))"`
+- `SECRET_KEY` - Generiere mit:
+  `python -c "import secrets; print(secrets.token_hex(32))"`
 - `DB_PASSWORD` - Sicheres Datenbank-Passwort
 - `CF_API_EMAIL` - Cloudflare E-Mail
 - `CF_API_KEY` - Cloudflare Global API Key
 
 ### 3. Traefik konfigurieren
+
 ```bash
 # traefik.yml anpassen
 nano traefik/traefik.yml
@@ -42,6 +47,7 @@ nano traefik/traefik.yml
 ```
 
 ### 4. Admin-Passwort für Traefik Dashboard generieren
+
 ```bash
 # htpasswd installieren (falls nicht vorhanden)
 sudo apt-get install apache2-utils
@@ -53,6 +59,7 @@ echo $(htpasswd -nB admin) | sed -e s/\\$/\\$\\$/g
 ```
 
 ### 5. Container starten
+
 ```bash
 # Build & Start
 docker-compose up -d
@@ -65,6 +72,7 @@ docker-compose ps
 ```
 
 ### 6. Datenbank initialisieren
+
 ```bash
 # Migrations ausführen
 docker-compose exec app flask db upgrade
@@ -85,6 +93,7 @@ with app.app_context():
 ```
 
 ### 7. Zugriff testen
+
 ```bash
 # App
 https://your-domain.com
@@ -95,19 +104,17 @@ https://traefik.your-domain.com
 
 ## 📦 Services
 
-| Service | Port | Beschreibung |
-|---------|------|--------------|
-| app | 8000 | Flask Anwendung |
-| db | 5432 | PostgreSQL Datenbank |
-| redis | 6379 | Session Store |
-| traefik | 80/443 | Reverse Proxy + TLS |
-| crowdsec | 8080 | Security Engine |
+| Service | Port | Beschreibung | |---------|------|--------------| | app | 8000
+| Flask Anwendung | | db | 5432 | PostgreSQL Datenbank | | redis | 6379 |
+Session Store | | traefik | 80/443 | Reverse Proxy + TLS | | crowdsec | 8080 |
+Security Engine |
 
 ## 🔒 Security
 
 ### CrowdSec Setup
 
 1. **API Key generieren:**
+
 ```bash
 docker-compose exec crowdsec cscli bouncers add traefik-bouncer
 
@@ -115,6 +122,7 @@ docker-compose exec crowdsec cscli bouncers add traefik-bouncer
 ```
 
 2. **Collections installieren:**
+
 ```bash
 docker-compose exec crowdsec cscli collections install crowdsecurity/traefik
 docker-compose exec crowdsec cscli collections install crowdsecurity/http-cve
@@ -122,11 +130,13 @@ docker-compose exec crowdsec cscli collections install crowdsecurity/linux
 ```
 
 3. **Traefik neu starten:**
+
 ```bash
 docker-compose restart traefik
 ```
 
 ### Firewall (UFW)
+
 ```bash
 # Nur SSH, HTTP und HTTPS erlauben
 sudo ufw allow 22/tcp
@@ -138,6 +148,7 @@ sudo ufw enable
 ## 🔄 Updates
 
 ### App Update
+
 ```bash
 # Code aktualisieren
 git pull
@@ -153,6 +164,7 @@ docker-compose exec app flask db upgrade
 ```
 
 ### System Updates
+
 ```bash
 # Alle Container stoppen
 docker-compose down
@@ -167,6 +179,7 @@ docker-compose up -d
 ## 💾 Backups
 
 ### Automatisches Backup-Script
+
 ```bash
 #!/bin/bash
 # backup.sh
@@ -174,8 +187,11 @@ docker-compose up -d
 BACKUP_DIR="/backups"
 DATE=$(date +%Y%m%d_%H%M%S)
 
-# Datenbank Backup
-docker-compose exec -T db pg_dump -U rechnungen_user rechnungen | gzip > "$BACKUP_DIR/db_$DATE.sql.gz"
+# Datenbank Backup (MySQL/MariaDB)
+docker-compose exec -T db mariadb-dump -u rechnungen_user -p${DB_PASSWORD} rechnungen | gzip > "$BACKUP_DIR/db_$DATE.sql.gz"
+
+# Alternativ: PostgreSQL Backup (wenn PostgreSQL-Service aktiv)
+# docker-compose exec -T db pg_dump -U rechnungen_user rechnungen | gzip > "$BACKUP_DIR/db_$DATE.sql.gz"
 
 # Files Backup
 tar -czf "$BACKUP_DIR/files_$DATE.tar.gz" invoices/ uploads/
@@ -187,6 +203,7 @@ echo "✓ Backup erstellt: $DATE"
 ```
 
 ### Cronjob einrichten
+
 ```bash
 # Crontab bearbeiten
 crontab -e
@@ -196,9 +213,13 @@ crontab -e
 ```
 
 ### Restore
+
 ```bash
-# Datenbank wiederherstellen
-gunzip -c backup_file.sql.gz | docker-compose exec -T db psql -U rechnungen_user rechnungen
+# Datenbank wiederherstellen (MySQL/MariaDB)
+gunzip -c backup_file.sql.gz | docker-compose exec -T db mariadb -u rechnungen_user -p${DB_PASSWORD} rechnungen
+
+# Alternativ: PostgreSQL Restore
+# gunzip -c backup_file.sql.gz | docker-compose exec -T db psql -U rechnungen_user rechnungen
 
 # Files wiederherstellen
 tar -xzf files_backup.tar.gz
@@ -207,6 +228,7 @@ tar -xzf files_backup.tar.gz
 ## 🔍 Monitoring
 
 ### Container Logs
+
 ```bash
 # Alle Logs
 docker-compose logs -f
@@ -219,6 +241,7 @@ docker-compose logs --tail=100 app | grep ERROR
 ```
 
 ### Resource Usage
+
 ```bash
 # Container Stats
 docker stats
@@ -228,6 +251,7 @@ docker system df
 ```
 
 ### Health Checks
+
 ```bash
 # Alle Services prüfen
 docker-compose ps
@@ -239,6 +263,7 @@ curl -f https://your-domain.com/health || echo "Health Check failed"
 ## 🐛 Troubleshooting
 
 ### Container startet nicht
+
 ```bash
 # Logs prüfen
 docker-compose logs app
@@ -248,6 +273,7 @@ docker-compose exec app env | grep DATABASE_URL
 ```
 
 ### Datenbank-Verbindung fehlgeschlagen
+
 ```bash
 # DB Status prüfen
 docker-compose exec db pg_isready -U rechnungen_user
@@ -263,6 +289,7 @@ with engine.connect() as conn:
 ```
 
 ### TLS Zertifikat-Fehler
+
 ```bash
 # Traefik Logs prüfen
 docker-compose logs traefik | grep acme
@@ -273,6 +300,7 @@ docker-compose restart traefik
 ```
 
 ### CrowdSec Fehler
+
 ```bash
 # CrowdSec Status
 docker-compose exec crowdsec cscli metrics
@@ -287,6 +315,7 @@ docker-compose exec crowdsec cscli decisions delete -i 1.2.3.4
 ## 📊 Performance Tuning
 
 ### Gunicorn Workers
+
 ```dockerfile
 # In Dockerfile anpassen:
 CMD ["gunicorn", "--workers", "4", ...]
@@ -296,6 +325,7 @@ CMD ["gunicorn", "--workers", "4", ...]
 ```
 
 ### PostgreSQL Tuning
+
 ```yaml
 # In docker-compose.yml:
 services:
@@ -311,6 +341,7 @@ services:
 ```
 
 ### Redis Memory Limit
+
 ```yaml
 services:
   redis:
@@ -339,6 +370,7 @@ services:
 ## 🆘 Support
 
 Bei Problemen:
+
 1. Logs prüfen: `docker-compose logs`
-2. GitHub Issues erstellen
-3. [Your Support Contact]
+1. GitHub Issues erstellen
+1. [Your Support Contact]

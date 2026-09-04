@@ -3,6 +3,10 @@
 Eine webbasierte Rechnungsverwaltung mit manipulationssicherer Datenspeicherung,
 PDF-Export und E-Mail-Integration.
 
+> Weiterführende Dokumentation: [PROJECT.md](PROJECT.md) (Hintergrund,
+> Geschäftsmodell, aktueller Stand) und [AGENTS.md](AGENTS.md) (technische
+> Referenz für Entwickler/KI-Agenten: Modulkarte, bekannte Fallen, Dead Ends).
+
 ## Features
 
 ✅ **Manipulationssichere Datenspeicherung**
@@ -389,6 +393,26 @@ python app.py --port 5001
 
 Die Anwendung ist standardmäßig unter http://localhost:5000 erreichbar (oder dem
 von Ihnen gewählten Port).
+
+### Variante 4: Lokaler Probelauf / LAN-Test (ohne Traefik)
+
+Für einen schnellen Testbetrieb im lokalen Netz (z.B. auf einem Homelab-Host),
+ohne Traefik, TLS oder CrowdSec:
+
+```bash
+cp .env.docker .env
+# .env anpassen (SECRET_KEY, DB_PASSWORD, DB_ROOT_PASSWORD, Firmendaten)
+
+docker compose -f docker-compose.test.yml --env-file .env up -d --build
+
+# Initialen Admin-User anlegen (Login: admin / admin)
+docker compose -f docker-compose.test.yml exec app flask init-db
+```
+
+Die App ist danach direkt unter Port 8010 erreichbar (`http://<host>:8010`,
+im Compose-File als `8010:8000` gemappt). TLS und eine öffentliche Domain
+übernimmt in diesem Modus bei Bedarf ein separater Reverse-Proxy vor dem
+Host. Nach dem ersten Login mit `admin`/`admin` sofort das Passwort ändern.
 
 ## Verwendung
 

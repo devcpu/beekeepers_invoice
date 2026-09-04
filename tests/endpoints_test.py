@@ -1,5 +1,6 @@
 """Sicherheitsnetz fuer den Blueprint-Split: jeder statische url_for()-Aufruf in
-app.py und templates/ muss auf einen tatsaechlich registrierten Endpoint zeigen.
+app.py, blueprints/ und templates/ muss auf einen tatsaechlich registrierten
+Endpoint zeigen.
 
 Deckt genau die Fehlerklasse ab, die ein Blueprint-Split produziert (falscher
 oder vergessener Praefix), inkl. Templates ohne eigenen Route-Test
@@ -39,6 +40,15 @@ def test_all_app_py_endpoints_resolve(app):
         if endpoint not in app.view_functions:
             missing.append(endpoint)
     assert not missing, "Unbekannte Endpoints in app.py:\n" + "\n".join(missing)
+
+
+def test_all_blueprint_endpoints_resolve(app):
+    missing = []
+    for py_file in sorted((_PROJECT_ROOT / "blueprints").glob("*.py")):
+        for endpoint in _find_static_endpoint_refs(py_file):
+            if endpoint not in app.view_functions:
+                missing.append(f"{py_file.relative_to(_PROJECT_ROOT)}: {endpoint}")
+    assert not missing, "Unbekannte Endpoints in blueprints/:\n" + "\n".join(missing)
 
 
 def test_login_manager_login_view_resolves(app):

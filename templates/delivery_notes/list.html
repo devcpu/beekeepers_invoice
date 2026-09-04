@@ -6,7 +6,7 @@
                 align-items: center;
                 margin-bottom: 2rem">
         <h1>📦 Alle Lieferscheine</h1>
-        <a href="{{ url_for('create_delivery_note') }}" class="btn btn-primary">+ Neuer Lieferschein</a>
+        <a href="{{ url_for('delivery_notes.create_delivery_note') }}" class="btn btn-primary">+ Neuer Lieferschein</a>
     </div>
     <div class="card">
         {% if delivery_notes %}
@@ -48,15 +48,15 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <a href="{{ url_for('view_delivery_note', delivery_note_id=dn.id) }}"
+                                <a href="{{ url_for('delivery_notes.view_delivery_note', delivery_note_id=dn.id) }}"
                                    class="btn btn-primary"
                                    style="padding: 0.4rem 0.8rem;
                                           font-size: 0.875rem">Ansehen</a>
-                                <a href="{{ url_for('download_delivery_note_pdf', delivery_note_id=dn.id) }}"
+                                <a href="{{ url_for('delivery_notes.download_delivery_note_pdf', delivery_note_id=dn.id) }}"
                                    class="btn btn-success"
                                    style="padding: 0.4rem 0.8rem;
                                           font-size: 0.875rem">PDF</a>
-                                <a href="{{ url_for('consignment_stock_overview', customer_id=dn.customer_id) }}"
+                                <a href="{{ url_for('delivery_notes.consignment_stock_overview', customer_id=dn.customer_id) }}"
                                    class="btn"
                                    style="padding: 0.4rem 0.8rem;
                                           font-size: 0.875rem;

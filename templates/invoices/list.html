@@ -6,28 +6,28 @@
                 align-items: center;
                 margin-bottom: 2rem">
         <h1>Alle Rechnungen</h1>
-        <a href="{{ url_for('create_invoice') }}" class="btn btn-primary">+ Neue Rechnung</a>
+        <a href="{{ url_for('invoices.create_invoice') }}" class="btn btn-primary">+ Neue Rechnung</a>
     </div>
     <div class="card">
         <div style="margin-bottom: 1rem;">
             <strong>Filter:</strong>
-            <a href="{{ url_for('list_invoices') }}" style="margin-left: 1rem;">Alle</a>
-            <a href="{{ url_for('list_invoices', status='draft') }}"
+            <a href="{{ url_for('invoices.list_invoices') }}" style="margin-left: 1rem;">Alle</a>
+            <a href="{{ url_for('invoices.list_invoices', status='draft') }}"
                style="margin-left: 1rem">Entwürfe</a>
-            <a href="{{ url_for('list_invoices', status='sent') }}"
+            <a href="{{ url_for('invoices.list_invoices', status='sent') }}"
                style="margin-left: 1rem">Versendet</a>
-            <a href="{{ url_for('list_invoices', status='paid') }}"
+            <a href="{{ url_for('invoices.list_invoices', status='paid') }}"
                style="margin-left: 1rem">Bezahlt</a>
-            <a href="{{ url_for('list_invoices', status='cancelled') }}"
+            <a href="{{ url_for('invoices.list_invoices', status='cancelled') }}"
                style="margin-left: 1rem">Storniert</a>
             <span style="margin: 0 0.5rem; color: #ddd;">|</span>
-            <a href="{{ url_for('list_invoices', filter='storno') }}"
+            <a href="{{ url_for('invoices.list_invoices', filter='storno') }}"
                style="margin-left: 0.5rem;
                       color: #e74c3c">🗑️ Stornorechnungen</a>
-            <a href="{{ url_for('list_invoices', filter='open') }}"
+            <a href="{{ url_for('invoices.list_invoices', filter='open') }}"
                style="margin-left: 0.5rem;
                       color: #f39c12">Offen</a>
-            <a href="{{ url_for('list_invoices', filter='overdue') }}"
+            <a href="{{ url_for('invoices.list_invoices', filter='overdue') }}"
                style="margin-left: 1rem;
                       color: #e74c3c">Überfällig</a>
         </div>
@@ -85,16 +85,16 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <a href="{{ url_for('view_invoice', invoice_id=invoice.id) }}"
+                                <a href="{{ url_for('invoices.view_invoice', invoice_id=invoice.id) }}"
                                    class="btn btn-primary"
                                    style="padding: 0.4rem 0.8rem;
                                           font-size: 0.875rem">Ansehen</a>
-                                <a href="{{ url_for('download_invoice_pdf', invoice_id=invoice.id) }}"
+                                <a href="{{ url_for('invoices.download_invoice_pdf', invoice_id=invoice.id) }}"
                                    class="btn btn-success"
                                    style="padding: 0.4rem 0.8rem;
                                           font-size: 0.875rem">PDF</a>
                                 {% if is_overdue %}
-                                    <a href="{{ url_for('create_reminder', invoice_id=invoice.id) }}"
+                                    <a href="{{ url_for('invoices.create_reminder', invoice_id=invoice.id) }}"
                                        class="btn"
                                        style="padding: 0.4rem 0.8rem;
                                               font-size: 0.875rem;

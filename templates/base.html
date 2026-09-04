@@ -295,21 +295,21 @@
                     <nav>
                         {% if current_user.is_authenticated %}
                             <a href="{{ url_for('main.index') }}">Dashboard</a>
-                            <a href="{{ url_for('list_invoices') }}">Rechnungen</a>
-                            <a href="{{ url_for('create_invoice') }}">Neue Rechnung</a>
+                            <a href="{{ url_for('invoices.list_invoices') }}">Rechnungen</a>
+                            <a href="{{ url_for('invoices.create_invoice') }}">Neue Rechnung</a>
                             <a href="{{ url_for('pos.pos') }}"
                                style="background: #27ae60;
                                       padding: 0.3rem 0.8rem;
                                       border-radius: 4px">🏪 Kasse</a>
-                            <a href="{{ url_for('list_delivery_notes') }}">📦 Lieferscheine</a>
+                            <a href="{{ url_for('delivery_notes.list_delivery_notes') }}">📦 Lieferscheine</a>
                             <a href="{{ url_for('customers.list_customers') }}">Kunden</a>
                             <a href="{{ url_for('products.list_products') }}">Produkte</a>
                             <a href="{{ url_for('products.stock_management') }}">📦 Bestand</a>
-                            <a href="{{ url_for('list_stock_adjustments') }}"
+                            <a href="{{ url_for('invoices.list_stock_adjustments') }}"
                                style="background: #e74c3c;
                                       padding: 0.3rem 0.8rem;
                                       border-radius: 4px">📝 Anpassungen</a>
-                            <a href="{{ url_for('payment_review') }}">💰 Zahlungen</a>
+                            <a href="{{ url_for('delivery_notes.payment_review') }}">💰 Zahlungen</a>
                             <a href="{{ url_for('reports.annual_revenue_report') }}"
                                style="background: #9b59b6;
                                       padding: 0.3rem 0.8rem;

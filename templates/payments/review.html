@@ -42,7 +42,7 @@
                             <td style="padding: 1rem;">{{ check.check_date.strftime("%d.%m.%Y %H:%M") }}</td>
                             <td style="padding: 1rem;">
                                 {% if check.invoice_id %}
-                                    <a href="{{ url_for('view_invoice', invoice_id=check.invoice_id) }}"
+                                    <a href="{{ url_for('invoices.view_invoice', invoice_id=check.invoice_id) }}"
                                        style="color: #3498db;
                                               text-decoration: none;
                                               font-weight: bold">{{ check.invoice_number }}</a>
@@ -96,7 +96,7 @@
                                 <div style="display: flex; gap: 0.5rem; justify-content: center;">
                                     {% if check.invoice_id %}
                                         <form method="POST"
-                                              action="{{ url_for('resolve_payment_check', check_id=check.id) }}"
+                                              action="{{ url_for('delivery_notes.resolve_payment_check', check_id=check.id) }}"
                                               style="margin: 0">
                                             <input type="hidden" name="action" value="mark_paid">
                                             <button type="submit"
@@ -109,7 +109,7 @@
                                         </form>
                                     {% endif %}
                                     <form method="POST"
-                                          action="{{ url_for('resolve_payment_check', check_id=check.id) }}"
+                                          action="{{ url_for('delivery_notes.resolve_payment_check', check_id=check.id) }}"
                                           style="margin: 0">
                                         <input type="hidden" name="action" value="ignore">
                                         <button type="submit"

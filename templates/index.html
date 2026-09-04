@@ -75,7 +75,7 @@
                                 {% set days_overdue = (now().date() - invoice.due_date).days %}
                                 <tr>
                                     <td>
-                                        <a href="{{ url_for('view_invoice', invoice_id=invoice.id) }}"
+                                        <a href="{{ url_for('invoices.view_invoice', invoice_id=invoice.id) }}"
                                            style="font-weight: bold;
                                                   color: #e74c3c">{{ invoice.invoice_number }}</a>
                                     </td>
@@ -100,7 +100,7 @@
                     {% if overdue_invoices|length > 5 %}
                         <p style="margin-top: 1rem; font-size: 0.9rem; color: #7f8c8d;">
                             ... und {{ overdue_invoices|length - 5 }} weitere überfällige Rechnungen.
-                            <a href="{{ url_for('list_invoices', filter='overdue') }}">Alle anzeigen</a>
+                            <a href="{{ url_for('invoices.list_invoices', filter='overdue') }}">Alle anzeigen</a>
                         </p>
                     {% endif %}
                 </div>
@@ -176,7 +176,7 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <a href="{{ url_for('view_invoice', invoice_id=invoice.id) }}"
+                                <a href="{{ url_for('invoices.view_invoice', invoice_id=invoice.id) }}"
                                    class="btn btn-primary"
                                    style="padding: 0.4rem 0.8rem;
                                           font-size: 0.875rem">Ansehen</a>
@@ -187,7 +187,7 @@
             </table>
         {% else %}
             <p>
-                Noch keine Rechnungen vorhanden. <a href="{{ url_for('create_invoice') }}">Erste Rechnung erstellen</a>
+                Noch keine Rechnungen vorhanden. <a href="{{ url_for('invoices.create_invoice') }}">Erste Rechnung erstellen</a>
             </p>
         {% endif %}
     </div>

@@ -7,13 +7,13 @@
                 margin-bottom: 2rem">
         <h1>Lieferschein {{ delivery_note.delivery_note_number }}</h1>
         <div>
-            <a href="{{ url_for('download_delivery_note_pdf', delivery_note_id=delivery_note.id) }}"
+            <a href="{{ url_for('delivery_notes.download_delivery_note_pdf', delivery_note_id=delivery_note.id) }}"
                class="btn btn-success">📄 PDF</a>
-            <a href="{{ url_for('consignment_stock_overview', customer_id=delivery_note.customer_id) }}"
+            <a href="{{ url_for('delivery_notes.consignment_stock_overview', customer_id=delivery_note.customer_id) }}"
                class="btn"
                style="background: #9b59b6;
                       color: white">📦 Kommissionslager</a>
-            <a href="{{ url_for('list_delivery_notes') }}"
+            <a href="{{ url_for('delivery_notes.list_delivery_notes') }}"
                class="btn"
                style="background: #95a5a6;
                       color: white">Zurück</a>

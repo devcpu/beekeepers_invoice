@@ -7,17 +7,17 @@
                 margin-bottom: 2rem">
         <h1>Rechnung {{ invoice.invoice_number }}</h1>
         <div>
-            <a href="{{ url_for('download_invoice_pdf', invoice_id=invoice.id) }}"
+            <a href="{{ url_for('invoices.download_invoice_pdf', invoice_id=invoice.id) }}"
                class="btn btn-success">📄 PDF Download</a>
             {% if invoice.status != 'cancelled' %}
-                <a href="{{ url_for('send_invoice_email', invoice_id=invoice.id) }}"
+                <a href="{{ url_for('invoices.send_invoice_email', invoice_id=invoice.id) }}"
                    class="btn"
                    style="background: #9b59b6;
                           color: white;
                           margin-left: 0.5rem">📧 Per E-Mail versenden</a>
             {% endif %}
             {% if invoice.status == 'draft' %}
-                <a href="{{ url_for('update_invoice_status', invoice_id=invoice.id, status='sent') }}"
+                <a href="{{ url_for('invoices.update_invoice_status', invoice_id=invoice.id, status='sent') }}"
                    class="btn"
                    style="background: #3498db;
                           color: white;
@@ -25,7 +25,7 @@
                    onclick="return confirm('Rechnung als versendet markieren?');">✉️ Als versendet markieren</a>
             {% endif %}
             {% if invoice.status in ['sent', 'draft'] %}
-                <a href="{{ url_for('update_invoice_status', invoice_id=invoice.id, status='paid') }}"
+                <a href="{{ url_for('invoices.update_invoice_status', invoice_id=invoice.id, status='paid') }}"
                    class="btn"
                    style="background: #27ae60;
                           color: white;
@@ -33,7 +33,7 @@
                    onclick="return confirm('Rechnung als bezahlt markieren?');">✓ Als bezahlt markieren</a>
             {% endif %}
             {% if invoice.status in ['sent', 'paid'] %}
-                <a href="{{ url_for('create_cancellation_invoice', invoice_id=invoice.id) }}"
+                <a href="{{ url_for('invoices.create_cancellation_invoice', invoice_id=invoice.id) }}"
                    class="btn"
                    style="background: #e74c3c;
                           color: white;
@@ -41,7 +41,7 @@
             {% endif %}
             {% if invoice.status == 'draft' %}
                 <form method="POST"
-                      action="{{ url_for('delete_invoice', invoice_id=invoice.id) }}"
+                      action="{{ url_for('invoices.delete_invoice', invoice_id=invoice.id) }}"
                       style="display: inline"
                       onsubmit="return confirm('Entwurf wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.');">
                     <button type="submit"
@@ -51,7 +51,7 @@
                                    margin-left: 0.5rem">🗑️ Entwurf löschen</button>
                 </form>
             {% endif %}
-            <a href="{{ url_for('list_invoices') }}"
+            <a href="{{ url_for('invoices.list_invoices') }}"
                class="btn"
                style="background: #95a5a6;
                       color: white;

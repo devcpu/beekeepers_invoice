@@ -17,14 +17,14 @@
                 {% endif %}
             </h2>
         </div>
-        <a href="{{ url_for('list_delivery_notes') }}"
+        <a href="{{ url_for('delivery_notes.list_delivery_notes') }}"
            class="btn"
            style="background: #95a5a6;
                   color: white">Zurück</a>
     </div>
     {% if stock_items %}
         <form method="POST"
-              action="{{ url_for('create_invoice_from_consignment', customer_id=customer.id) }}"
+              action="{{ url_for('delivery_notes.create_invoice_from_consignment', customer_id=customer.id) }}"
               id="billing-form">
             <div class="card">
                 <div style="display: flex;
@@ -200,7 +200,7 @@
                 <h2 style="margin-top: 0;">Bestand korrigieren</h2>
                 <p id="modal-product-name" style="color: #7f8c8d;"></p>
                 <form method="POST"
-                      action="{{ url_for('update_consignment_stock', customer_id=customer.id) }}">
+                      action="{{ url_for('delivery_notes.update_consignment_stock', customer_id=customer.id) }}">
                     <input type="hidden" name="stock_id" id="modal-stock-id">
                     <div class="form-group">
                         <label for="modal-quantity">Neuer Bestand:</label>
@@ -229,7 +229,7 @@
             <p style="text-align: center; color: #7f8c8d; padding: 2rem;">
                 Noch keine Artikel im Kommissionslager.
                 <br>
-                Erstellen Sie einen <a href="{{ url_for('create_delivery_note') }}">Lieferschein</a>, um Ware auszuliefern.
+                Erstellen Sie einen <a href="{{ url_for('delivery_notes.create_delivery_note') }}">Lieferschein</a>, um Ware auszuliefern.
             </p>
         </div>
     {% endif %}

@@ -1,0 +1,92 @@
+# Docker Compose - Test-/Probelauf-Variante
+# Fuer lokalen Betrieb im LAN (z.B. Proxmox-Container "services") ohne
+# Traefik/TLS/CrowdSec: App direkt per Port-Mapping erreichbar.
+
+services:
+  db:
+    image: mariadb:11
+    container_name: rechnungen-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-rechnungen}
+      MYSQL_USER: ${DB_USER:-rechnungen_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backups:/backups
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+
+  app:
+    build: .
+    container_name: rechnungen-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8010:8000"
+    environment:
+      DATABASE_URL: mysql+pymysql://${DB_USER:-rechnungen_user}:${DB_PASSWORD}@db:3306/${DB_NAME:-rechnungen}?charset=utf8mb4
+
+      SESSION_TYPE: filesystem
+      SESSION_FILE_DIR: /app/flask_session
+
+      FLASK_ENV: production
+      SECRET_KEY: ${SECRET_KEY}
+
+      COMPANY_NAME: ${COMPANY_NAME}
+      COMPANY_HOLDER: ${COMPANY_HOLDER}
+      COMPANY_STREET: ${COMPANY_STREET}
+      COMPANY_ZIP: ${COMPANY_ZIP}
+      COMPANY_CITY: ${COMPANY_CITY}
+      COMPANY_COUNTRY: ${COMPANY_COUNTRY}
+      COMPANY_EMAIL: ${COMPANY_EMAIL}
+      COMPANY_PHONE: ${COMPANY_PHONE}
+      COMPANY_TAX_ID: ${COMPANY_TAX_ID}
+      COMPANY_WEBSITE: ${COMPANY_WEBSITE}
+
+      BANK_NAME: ${BANK_NAME}
+      BANK_IBAN: ${BANK_IBAN}
+      BANK_BIC: ${BANK_BIC}
+
+      MAIL_SERVER: ${MAIL_SERVER}
+      MAIL_PORT: ${MAIL_PORT}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MAIL_USE_TLS: ${MAIL_USE_TLS:-true}
+      MAIL_USE_SSL: ${MAIL_USE_SSL:-false}
+
+      IMAP_SERVER: ${IMAP_SERVER}
+      IMAP_PORT: ${IMAP_PORT}
+      IMAP_USERNAME: ${IMAP_USERNAME}
+      IMAP_PASSWORD: ${IMAP_PASSWORD}
+      IMAP_USE_SSL: ${IMAP_USE_SSL:-true}
+
+      DEFAULT_TAX_RATE: ${DEFAULT_TAX_RATE:-19.00}
+
+      TOTP_ISSUER_NAME: ${TOTP_ISSUER_NAME:-Rechnungsverwaltung}
+
+    volumes:
+      - ./invoices:/app/invoices
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+      - ./flask_session:/app/flask_session
+    networks:
+      - backend
+
+networks:
+  backend:
+    name: rechnungen-backend-test
+    driver: bridge
+
+volumes:
+  mysql_data:
+    name: rechnungen-mysql-test

@@ -8,23 +8,27 @@ entfernen (nicht abhaken stehen lassen).
 Alle bekannten Aufraeumpunkte sind erledigt (siehe "Erledigt" unten).
 Neue Punkte hier ergaenzen, sobald sie auffallen.
 
-## Phase 2: Refaktorisieren (noch nicht beschlossen -- Optionen, keine Auftraege)
+## Phase 2: Refaktorisieren
 
-Diese Punkte sind bewusst noch keine Aufgaben, sondern Vorschlaege fuer
-nach Phase 1. Vor Umsetzung jeweils einzeln besprechen.
+**Tests einfuehren: erledigt** (2026-09-05, siehe Plan-Datei
+`joyful-swinging-forest.md`). 76 Tests in `tests/` (Modell-Logik,
+Route-Tests, GoBD-kritische End-to-End-Pfade), `pytest`-Hook in
+`.pre-commit-config.yaml` aktiviert. Beim Schreiben 4 Bugs gefunden und
+behoben (siehe "Erledigt" unten und AGENTS.md). E-Mail-Parser-Tests
+(`email_parser.py` mit IMAP-Mocking) sind noch NICHT geschrieben --
+optionale Ergaenzung, kein Blocker fuer Phase-2-Rest.
 
-- **Tests einfuehren**: Aktuell existiert kein einziger Test, obwohl
-  `setup.cfg` bereits eine `[tool:pytest]`-Sektion hat. `pytest` fehlt in
-  requirements.txt, der pytest-Hook in `.pre-commit-config.yaml` ist
-  auskommentiert. Aufwand: mittel (Grundgeruest) bis hoch (Abdeckung der
-  GoBD-kritischen Pfade: Steuerberechnung, Storno-Flow, Hash-Generierung,
-  Reseller-Kommissionslogik).
+Folgende Punkte sind weiterhin bewusst noch keine Aufgaben, sondern
+Vorschlaege. Vor Umsetzung jeweils einzeln besprechen:
+
 - **app.py aufteilen**: 3335 Zeilen, praktisch alle ~65 Routen als
   verschachtelte Funktionen in `create_app()`. Ein Split in
   Flask-Blueprints (z.B. nach Domaene: invoices, customers, products,
   delivery_notes, auth, pos, api) wuerde Navigierbarkeit und Testbarkeit
-  verbessern. Aufwand: hoch, hohes Regressionsrisiko ohne Tests --
-  deshalb sinnvollerweise NACH Einfuehrung von Tests angehen.
+  verbessern. Mit der jetzt vorhandenen Testsuite als Sicherheitsnetz
+  risikoaermer als zuvor -- aber `url_for()`/Template-Referenzen muessen
+  bei einem Blueprint-Praefix konsequent mitgeaendert werden (siehe
+  Plan-Datei, Abschnitt "Bekannte Unbekannte & Risiken").
 - **Rechnungsnummern-Generierung, Steuerberechnung, PDF-Erzeugung**:
   ggf. aus app.py in eigene Service-Module extrahieren (aehnlich
   `delivery_note_service.py`), sobald ein Blueprint-Split ansteht.
@@ -73,3 +77,14 @@ nach Phase 1. Vor Umsetzung jeweils einzeln besprechen.
       -> `stock.quantity` in `delete_invoice()` -- verhinderte die
       Kommissionsbestand-Rueckbuchung beim Loeschen von
       Reseller-Entwuerfen mit einem `AttributeError`.
+- [x] Testsuite aufgebaut (76 Tests: Modell-Logik, Routen, GoBD-Workflows),
+      `pytest` in requirements.txt und `.pre-commit-config.yaml` aktiviert,
+      `tests/conftest.py` funktioniert ohne manuelle ENV-Variablen.
+- [x] Bug behoben: Dashboard (`/`) stuerzte mit `TypeError: 'datetime.datetime'
+      object is not callable` ab, sobald eine `sent`-Rechnung >10 Tage
+      ueberfaellig war (`now` im Template-Context war ein bereits
+      ausgewertetes `datetime`-Objekt statt einer Funktionsreferenz).
+- [x] Bug behoben: Storno einer `paid`-Rechnung protokollierte im
+      `InvoiceStatusLog` faelschlich `old_status="sent"` statt `"paid"`
+      (Status wurde vor der `old_status`-Berechnung bereits mutiert).
+      GoBD-relevant: Audit-Trail war dadurch falsch. Details: AGENTS.md.

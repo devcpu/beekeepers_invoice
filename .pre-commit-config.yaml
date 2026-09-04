@@ -323,12 +323,12 @@ repos:
       types: [python]
       exclude: '(attic|tests|docs|files)/.*'
 
-    # - id: pytest
-    #   name: run_pytest
-    #   entry: python3 test_runner.py
-    #   language: system
-    #   types: [python]
-    #   pass_filenames: false
+    - id: pytest
+      name: run_pytest
+      entry: pytest
+      language: system
+      types: [python]
+      pass_filenames: false
 
     # - id: make_html_doc
     #   name: make_html_doc

@@ -86,7 +86,7 @@ def create_app(config_name="default"):
                 version = f.read().strip()
         except FileNotFoundError:
             pass
-        return dict(now=datetime.now(), app_version=version)
+        return dict(now=datetime.now, app_version=version)
 
     # ========== AUTHENTIFIZIERUNGS-ROUTEN ==========
 
@@ -1111,6 +1111,9 @@ def create_app(config_name="default"):
                 # JETZT flush - mit korrektem Hash
                 db.session.flush()
 
+                # Ist-Status VOR der Mutation festhalten (fuer korrekten Audit-Trail)
+                original_status = original_invoice.status
+
                 # Original-Rechnung auf storniert setzen
                 original_invoice.status = "cancelled"
                 original_invoice.notes = (original_invoice.notes or "") + f"\n\nStorniert durch {cancellation_number} am {today.strftime('%d.%m.%Y')}"
@@ -1119,7 +1122,7 @@ def create_app(config_name="default"):
                 db.session.add(
                     InvoiceStatusLog(
                         invoice_id=original_invoice.id,
-                        old_status="sent" if original_invoice.status != "paid" else "paid",
+                        old_status=original_status,
                         new_status="cancelled",
                         changed_by=current_user.username,
                         reason=f"Storniert durch {cancellation_number}: {reason}",

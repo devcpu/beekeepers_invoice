@@ -1,12 +1,21 @@
 """Gemeinsame pytest-Fixtures fuer die Testsuite."""
 
+import os
+import sys
 from datetime import date, timedelta
 from decimal import Decimal
+from pathlib import Path
 
-import pytest
+os.environ.setdefault("SECRET_KEY", "test-secret-key-not-for-production")
 
-from app import create_app
-from models import Customer, Invoice, LineItem, Product, User, db
+_PROJECT_ROOT = str(Path(__file__).resolve().parent.parent)
+if _PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, _PROJECT_ROOT)
+
+import pytest  # noqa: E402
+
+from app import create_app  # noqa: E402
+from models import Customer, Invoice, LineItem, Product, User, db  # noqa: E402
 
 
 @pytest.fixture

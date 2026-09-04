@@ -138,6 +138,38 @@ in einer eigenen Berechnung weiterverwendet (wie hier
 explizit `Decimal` sein -- sich auf die implizite Typkonvertierung durch
 SQLAlchemy zu verlassen funktioniert nur nach einem Flush.
 
+## Behobene Bugs aus der Testsuite-Einfuehrung (2026-09-05)
+
+Beim Schreiben von `tests/invoice_workflow_test.py` (GoBD-kritische
+End-to-End-Pfade) zwei weitere Bugs gefunden und behoben:
+
+- **Dashboard-Absturz bei ueberfaelligen Rechnungen**: `utility_processor()`
+  (app.py) lieferte `now=datetime.now()` (bereits ausgewertetes Objekt)
+  in den Jinja2-Kontext, aber `templates/index.html:75` ruft `now()` als
+  **Funktion** auf (`now().date()`). Sobald mindestens eine `sent`-Rechnung
+  mehr als 10 Tage ueberfaellig war, crashte die Startseite `/` mit
+  `TypeError: 'datetime.datetime' object is not callable`. Fix: `now=datetime.now`
+  (Funktionsreferenz statt Aufruf) in den Context-Processor.
+- **Falscher Audit-Trail-Eintrag bei Storno einer `paid`-Rechnung**:
+  `create_cancellation_invoice()` (app.py) setzte `original_invoice.status = "cancelled"`
+  **vor** der Berechnung von `old_status` fuer den `InvoiceStatusLog`-Eintrag
+  -- `original_invoice.status != "paid"` war zu diesem Zeitpunkt immer
+  `True` (Status ist ja bereits `"cancelled"`), wodurch `old_status`
+  faelschlich immer `"sent"` protokolliert wurde, selbst wenn die
+  Original-Rechnung tatsaechlich `"paid"` war. GoBD-relevant, da der
+  Audit-Trail dadurch falsch wurde. Fix: Ist-Status VOR der Mutation in
+  einer lokalen Variable festhalten (analog zum bereits korrekten Pattern
+  in `update_invoice_status()`, app.py:909).
+
+**Bekannter, aber harmloser Code-Smell (nicht gefixt):** In
+`create_cancellation_invoice()` fuehrt der erste Guard
+(`status not in ["sent", "paid"]`) dazu, dass eine bereits stornierte
+Rechnung (`status == "cancelled"`) schon dort abgefangen wird -- der
+zweite, spezifischere Guard ("Diese Rechnung wurde bereits storniert.")
+ist dadurch unerreichbarer Code. Beide Zweige lehnen korrekt ab, nur die
+Fehlermeldung ist ungenau. Kein funktionaler Schaden, daher nicht als
+Bug behoben, nur vermerkt.
+
 ## Reseller-/Kommissionslager-Fluss
 
 1. Lieferschein anlegen (`DeliveryNote`, Status `delivered`) --

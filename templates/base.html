@@ -294,7 +294,7 @@
                     <h1>📄 Rechnungsverwaltung</h1>
                     <nav>
                         {% if current_user.is_authenticated %}
-                            <a href="{{ url_for('index') }}">Dashboard</a>
+                            <a href="{{ url_for('main.index') }}">Dashboard</a>
                             <a href="{{ url_for('list_invoices') }}">Rechnungen</a>
                             <a href="{{ url_for('create_invoice') }}">Neue Rechnung</a>
                             <a href="{{ url_for('pos') }}"
@@ -331,7 +331,7 @@
                             </span>
                         </div>
                         <div>
-                            <a href="{{ url_for('logout') }}"
+                            <a href="{{ url_for('auth.logout') }}"
                                style="background: rgba(231, 76, 60, 0.8);
                                       padding: 0.3rem 0.8rem;
                                       border-radius: 4px;

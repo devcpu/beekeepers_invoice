@@ -7,7 +7,7 @@
             <h2 style="margin-bottom: 0.5rem;">Imker Rechnungssystem</h2>
             <p style="color: #7f8c8d; font-size: 0.95rem;">Bitte melden Sie sich an</p>
         </div>
-        <form method="POST" action="{{ url_for('login') }}">
+        <form method="POST" action="{{ url_for('auth.login') }}">
             <div class="form-group">
                 <label for="username">Benutzername</label>
                 <input type="text"
@@ -43,7 +43,7 @@
                     style="width: 100%;
                            margin-bottom: 1rem">🔓 Anmelden</button>
             <div style="text-align: center;">
-                <a href="{{ url_for('forgot_password') }}"
+                <a href="{{ url_for('auth.forgot_password') }}"
                    style="color: #3498db;
                           text-decoration: none">❓ Passwort vergessen?</a>
             </div>

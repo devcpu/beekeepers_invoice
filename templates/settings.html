@@ -46,7 +46,7 @@
             </div>
             <div style="display: flex; gap: 1rem; margin-top: 1rem;">
                 <form method="POST"
-                      action="{{ url_for('regenerate_backup_codes') }}"
+                      action="{{ url_for('auth.regenerate_backup_codes') }}"
                       style="display: inline">
                     <input type="password"
                            name="password"
@@ -60,7 +60,7 @@
                 </form>
                 {% if not current_user.totp_required %}
                     <form method="POST"
-                          action="{{ url_for('disable_2fa') }}"
+                          action="{{ url_for('auth.disable_2fa') }}"
                           style="display: inline"
                           onsubmit="return confirm('Sind Sie sicher, dass Sie 2FA deaktivieren möchten?');">
                         <input type="password"
@@ -97,7 +97,7 @@
                     {% endif %}
                 </span>
             </div>
-            <a href="{{ url_for('setup_2fa') }}"
+            <a href="{{ url_for('auth.setup_2fa') }}"
                class="btn"
                style="background: #28a745;
                       color: white">

@@ -5,11 +5,8 @@ entfernen (nicht abhaken stehen lassen).
 
 ## Phase 1: Aufraeumen
 
-### Doppelten Code zusammenfuehren
-
-- [ ] `add_fold_and_punch_marks()` (DIN-5008-Faltmarken) ist identisch in
-      `delivery_note_service.py` und `reminder_service.py` dupliziert.
-      In ein gemeinsames Modul auslagern (z.B. `pdf_utils.py`).
+Alle bekannten Aufraeumpunkte sind erledigt (siehe "Erledigt" unten).
+Neue Punkte hier ergaenzen, sobald sie auffallen.
 
 ## Phase 2: Refaktorisieren (noch nicht beschlossen -- Optionen, keine Auftraege)
 
@@ -58,3 +55,9 @@ nach Phase 1. Vor Umsetzung jeweils einzeln besprechen.
       docker-compose.test.yml, docker-compose.integrated.yml,
       .env.docker, README.md und SETUP_INTEGRATED.md. App nutzt weiterhin
       Standard-Client-Cookie-Sessions, JWT nutzt weiterhin `SECRET_KEY`.
+- [x] `add_fold_and_punch_marks()` (DIN-5008-Faltmarken) war dreifach
+      dupliziert (`pdf_service.py`, `delivery_note_service.py`,
+      `reminder_service.py`) -- in `pdf_utils.py` zusammengefuehrt, alle
+      drei Module importieren jetzt von dort.
+- [x] Dockerfile: `postgresql-client`/`libpq-dev` entfernt (Ueberrest
+      von `psycopg2-binary`, das bereits vorher entfernt wurde).

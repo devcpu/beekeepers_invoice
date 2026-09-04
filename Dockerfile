@@ -7,8 +7,6 @@ WORKDIR /app
 # System-Dependencies
 RUN apt-get update && apt-get install -y \
     gcc \
-    postgresql-client \
-    libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Python-Dependencies

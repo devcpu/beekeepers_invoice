@@ -6,25 +6,7 @@ from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
-
-def add_fold_and_punch_marks(canvas, doc):
-    """
-    Fügt Faltmarken und Lochmarke nach DIN 5008 hinzu.
-    """
-    canvas.saveState()
-    canvas.setStrokeColorRGB(0.5, 0.5, 0.5)
-    canvas.setLineWidth(0.5)
-
-    # Obere Faltmarke (105mm von oben)
-    canvas.line(0, A4[1] - 105 * mm, 5 * mm, A4[1] - 105 * mm)
-
-    # Lochmarke (148.5mm von oben - Mitte der Seite)
-    canvas.line(0, A4[1] - 148.5 * mm, 5 * mm, A4[1] - 148.5 * mm)
-
-    # Untere Faltmarke (210mm von oben)
-    canvas.line(0, A4[1] - 210 * mm, 5 * mm, A4[1] - 210 * mm)
-
-    canvas.restoreState()
+from pdf_utils import add_fold_and_punch_marks
 
 
 def generate_reminder_pdf(invoice, reminder, pdf_folder, config=None):

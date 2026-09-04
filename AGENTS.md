@@ -143,9 +143,10 @@ am Dateikopf).
 | `app.py` | App-Factory, alle Routen, CLI-Commands |
 | `models.py` | 13 SQLAlchemy-Modelle, mit GoBD-Hinweisen im Docstring |
 | `config.py` | Config-Klassen (Development/Production/Testing), liest alle ENV-Variablen |
-| `delivery_note_service.py` | PDF-Erzeugung Lieferscheine (ReportLab, DIN-5008-Faltmarken) |
-| `reminder_service.py` | PDF-Erzeugung Mahnungen (eigene Kopie der Faltmarken-Logik, siehe Dead Ends) |
+| `delivery_note_service.py` | PDF-Erzeugung Lieferscheine (ReportLab) |
+| `reminder_service.py` | PDF-Erzeugung Mahnungen (ReportLab) |
 | `pdf_service.py` | Rechnungs-PDF + EPC-QR-Code fuer SEPA-Ueberweisung |
+| `pdf_utils.py` | Gemeinsame ReportLab-Hilfsfunktion `add_fold_and_punch_marks()` (DIN-5008-Faltmarken), genutzt von allen drei PDF-Modulen oben |
 | `email_service.py` | Rechnungsversand + genereller Mailversand via Flask-Mail |
 | `email_parser.py` | IMAP-Client, liest Shop-Bestellmails ein |
 | `jwt_api.py` | JWT-Erzeugung/-Pruefung + Decorators fuer die PWA-API, unabhaengig von Flask-Login |
@@ -229,15 +230,19 @@ Produktiv laeuft **MariaDB** (docker-compose.yml, `pymysql`-Treiber).
 PostgreSQL wird nicht mehr genutzt und nicht mehr unterstuetzt -- die
 frueheren Postgres-Ueberreste (`psycopg2-binary` in requirements.txt,
 Postgres-Default in config.py, `dialect = postgres` in setup.cfg,
-`fix_permissions.sql`) wurden am 2026-09-05 entfernt, nachdem verifiziert
-wurde, dass kein Deployment mehr PostgreSQL nutzt.
+`fix_permissions.sql`, `postgresql-client`/`libpq-dev` im Dockerfile)
+wurden am 2026-09-05 entfernt, nachdem verifiziert wurde, dass kein
+Deployment mehr PostgreSQL nutzt.
 
-## Doppelter Code
+## PDF-Hilfsfunktionen
 
-`add_fold_and_punch_marks()` (DIN-5008-Faltmarken fuer den PDF-Druck)
-ist identisch in `delivery_note_service.py` und `reminder_service.py`
-dupliziert statt in ein gemeinsames Modul ausgelagert. Bei Aenderungen
-an der Faltmarken-Logik beide Stellen pruefen.
+`add_fold_and_punch_marks()` (DIN-5008-Faltmarken/Lochmarke fuer den
+PDF-Druck) lag urspruenglich dreifach dupliziert in `pdf_service.py`,
+`delivery_note_service.py` und `reminder_service.py`. Seit 2026-09-05
+liegt sie zentral in `pdf_utils.py`, alle drei Module importieren von
+dort. Neue PDF-Erzeugungslogik, die dieselbe Faltmarken-Konvention
+braucht, importiert ebenfalls aus `pdf_utils.py`, statt erneut zu
+duplizieren.
 
 ## Health-Check & SQLAlchemy 2.x
 

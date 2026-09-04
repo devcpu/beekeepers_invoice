@@ -3,7 +3,7 @@ import os
 from datetime import datetime, timedelta
 from decimal import Decimal
 
-from flask import Flask, flash, jsonify, redirect, render_template, request, send_file, session, url_for
+from flask import Flask, flash, redirect, render_template, request, send_file, url_for
 from flask_login import LoginManager, current_user, login_required
 
 from auth_utils import role_required
@@ -11,6 +11,7 @@ from blueprints.api import api_bp
 from blueprints.auth import auth_bp
 from blueprints.main import main_bp
 from blueprints.customers import customers_bp
+from blueprints.pos import pos_bp
 from blueprints.products import products_bp
 from config import config
 from email_service import mail
@@ -61,6 +62,7 @@ def create_app(config_name="default"):
     app.register_blueprint(api_bp)
     app.register_blueprint(products_bp)
     app.register_blueprint(customers_bp)
+    app.register_blueprint(pos_bp)
 
     @login_manager.user_loader
     def load_user(user_id):
@@ -875,233 +877,6 @@ Mit freundlichen Grüßen
 
         products = Product.query.filter_by(active=True).order_by(Product.name).all()
         return render_template("stock_adjustments/create.html", products=products)
-
-    # ============================================================================
-    # POS (Point of Sale) - Kassenseite für Direktverkauf
-    # ============================================================================
-
-    @app.route("/pos")
-    @login_required
-    @role_required("cashier", "admin")
-    def pos():
-        """Kassenseite für schnellen Direktverkauf"""
-        stock_source = session.get("stock_source", "main")
-
-        if stock_source == "market" and current_user.reseller_customer_id:
-            # Marktbestand: Lade ConsignmentStock
-            consignment_items = ConsignmentStock.query.filter_by(customer_id=current_user.reseller_customer_id).filter(ConsignmentStock.quantity > 0).all()
-
-            # Konvertiere zu Product-ähnlicher Struktur für Template
-            products = []
-            for item in consignment_items:
-                product = item.product
-                # Erstelle Product-Kopie mit Marktbestand und Reseller-Preis
-                product_data = {
-                    "id": product.id,
-                    "name": product.name,
-                    "price": float(item.unit_price),  # Reseller-Preis!
-                    "number": item.quantity,  # Marktbestand
-                    "tax_rate": product.tax_rate,
-                    "is_market_stock": True,
-                    "consignment_stock_id": item.id,
-                }
-                products.append(type("obj", (object,), product_data))
-        else:
-            # Hauptbestand: Lade normale Produkte
-            products = Product.query.filter_by(active=True).filter(Product.number > 0).order_by(Product.name).all()
-            for p in products:
-                p.is_market_stock = False
-
-        return render_template("pos.html", products=products, stock_source=stock_source)
-
-    @app.route("/pos/complete-sale", methods=["POST"])
-    @login_required
-    @role_required("cashier", "admin")
-    def complete_pos_sale():
-        """Verkauf abschließen - Bestand reduzieren und GoBD-konform dokumentieren"""
-        try:
-            data = request.get_json()
-            items = data.get("items", {})
-            stock_source = session.get("stock_source", "main")
-
-            if not items:
-                return jsonify({"success": False, "message": "Warenkorb ist leer"}), 400
-
-            # Prüfe ob Rechnung erstellt werden soll (abhängig vom reseller_type)
-            create_invoice = True
-            if current_user.reseller_type == "type3_non_ust_pwa":
-                create_invoice = False
-
-            # Berechne Summen und reduziere Bestand
-            subtotal = Decimal("0.00")
-            line_items_data = []
-
-            for product_id, quantity in items.items():
-                product = Product.query.get(int(product_id))
-                if not product:
-                    return jsonify({"success": False, "message": f"Produkt {product_id} nicht gefunden"}), 404
-
-                if stock_source == "market" and current_user.reseller_customer_id:
-                    # Marktbestand: ConsignmentStock reduzieren
-                    consignment = ConsignmentStock.query.filter_by(customer_id=current_user.reseller_customer_id, product_id=product.id).first()
-
-                    if not consignment or consignment.quantity < quantity:
-                        available = consignment.quantity if consignment else 0
-                        return (
-                            jsonify(
-                                {
-                                    "success": False,
-                                    "message": f"Nicht genug Marktbestand für {product.name}. Verfügbar: {available}, Benötigt: {quantity}",
-                                }
-                            ),
-                            400,
-                        )
-
-                    # Bestand umbuchen
-                    consignment.quantity -= quantity
-                    consignment.quantity_sold += quantity
-
-                    line_total = Decimal(str(consignment.unit_price)) * Decimal(str(quantity))
-                    unit_price = consignment.unit_price
-                else:
-                    # Hauptbestand: Product.number reduzieren
-                    if product.number < quantity:
-                        return (
-                            jsonify(
-                                {
-                                    "success": False,
-                                    "message": f"Nicht genug Bestand für {product.name}. Verfügbar: {product.number}, Benötigt: {quantity}",
-                                }
-                            ),
-                            400,
-                        )
-
-                    product.number -= quantity
-                    line_total = Decimal(str(product.price)) * Decimal(str(quantity))
-                    unit_price = product.price
-
-                subtotal += line_total
-
-                if create_invoice:
-                    line_items_data.append(
-                        {
-                            "product": product,
-                            "quantity": quantity,
-                            "unit_price": unit_price,
-                            "tax_rate": product.tax_rate,
-                            "total": line_total,
-                        }
-                    )
-
-            # Falls keine Rechnung erstellt werden soll (Typ 3)
-            if not create_invoice:
-                db.session.commit()
-                return jsonify(
-                    {
-                        "success": True,
-                        "message": "Verkauf erfolgreich (nur Bestandsumbuchung, keine Rechnung)",
-                        "receipt_number": None,
-                        "total": float(subtotal),
-                    }
-                )
-
-            # Ab hier: Rechnung erstellen (Typ 4 / normale Kasse)
-            today = datetime.now().date()
-            prefix = f"BAR-{today.strftime('%Y%m%d')}"
-
-            last_receipt = Invoice.query.filter(Invoice.invoice_number.like(f"{prefix}%")).order_by(Invoice.invoice_number.desc()).first()
-
-            if last_receipt:
-                last_num = int(last_receipt.invoice_number.split("-")[-1])
-                next_num = last_num + 1
-            else:
-                next_num = 1
-
-            receipt_number = f"{prefix}-{next_num:04d}"
-
-            # Erstelle "Kunde" für Barverkauf (falls nicht vorhanden)
-            bar_customer = Customer.query.filter_by(email="barverkauf@system.local").first()
-            if not bar_customer:
-                bar_customer = Customer(
-                    company_name="Barverkauf",
-                    first_name="Bar",
-                    last_name="Verkauf",
-                    email="barverkauf@system.local",
-                    address="Direktverkauf ohne Rechnungsadresse",
-                )
-                db.session.add(bar_customer)
-                db.session.flush()
-
-            # Berechne Steuer (durchschnittlich 7.80% für Honig)
-            tax_rate = Decimal("7.80")
-            tax_amount = subtotal * (tax_rate / Decimal("100"))
-            total = subtotal  # Preis ist bereits Bruttopreis
-
-            # Erstelle Rechnung (GoBD-konform dokumentiert)
-            invoice = Invoice(
-                invoice_number=receipt_number,
-                customer_id=bar_customer.id,
-                invoice_date=today,
-                due_date=today,
-                status="paid",  # Barverkauf ist sofort bezahlt
-                customer_type="endkunde",
-                tax_model="landwirtschaft",  # §24 UStG für Honig
-                tax_rate=tax_rate,
-                subtotal=subtotal,
-                tax_amount=tax_amount,
-                total=total,
-                payment_method="Barzahlung",
-                notes="Barverkauf / Direktverkauf\nKasse: POS-System",
-            )
-
-            # LineItems ZUERST erstellen (ohne invoice_id, wird später gesetzt)
-            line_items_list = []
-            for idx, item_data in enumerate(line_items_data):
-                line_item = LineItem(
-                    product_id=item_data["product"].id,
-                    description=item_data["product"].name,
-                    quantity=Decimal(str(item_data["quantity"])),
-                    unit_price=item_data["unit_price"],
-                    tax_rate=item_data["tax_rate"],
-                    total=item_data["total"],
-                    position=idx,
-                )
-                line_items_list.append(line_item)
-
-            # LineItems zur Invoice hinzufügen (noch nicht in DB)
-            invoice.line_items = line_items_list
-
-            # JETZT Hash generieren (mit LineItems im Objekt, aber noch nicht in DB)
-            invoice.generate_hash()
-
-            # Jetzt zur Session hinzufügen (mit korrektem Hash)
-            db.session.add(invoice)
-            db.session.flush()  # ID generieren
-
-            # Status-Log erstellen (GoBD Audit Trail)
-            status_log = InvoiceStatusLog(
-                invoice_id=invoice.id,
-                old_status=None,
-                new_status="paid",
-                changed_by=current_user.username,
-                reason="Barverkauf - automatisch als bezahlt markiert",
-            )
-            db.session.add(status_log)
-
-            db.session.commit()
-
-            return jsonify(
-                {
-                    "success": True,
-                    "message": "Verkauf erfolgreich abgeschlossen",
-                    "receipt_number": receipt_number,
-                    "total": float(total),
-                }
-            )
-
-        except Exception as e:
-            db.session.rollback()
-            return jsonify({"success": False, "message": str(e)}), 500
 
     # ============================================================================
     # Berichte / Statistiken

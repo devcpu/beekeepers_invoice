@@ -1,19 +1,124 @@
 # AGENTS.md
 
 Technische Referenz fuer die Arbeit am Code. Zielgruppe: KI-Agenten und
-Entwickler, die aendern statt nur lesen. Coding-Style-Regeln (Naming,
-Formatierung, Commits) stehen in `.instructions.md` -- hier nur, was
-`.instructions.md` nicht abdeckt: Struktur, Fallen, Dead Ends.
+Entwickler, die aendern statt nur lesen.
 
-`.copilot-instructions.md` ist eine aeltere Momentaufnahme (Postgres als
-Primaer-DB, andere Migrations-Struktur) -- bei Widerspruch gilt
-`.instructions.md` und dieses Dokument.
+## Coding-Style
+
+- **Naming (PEP 8)**: `PascalCase` fuer Klassen, `snake_case` fuer
+  Funktionen/Variablen/Datenbankspalten, `ALL_CAPS` fuer Konstanten,
+  `_leading_underscore` fuer private Members. Datenbanktabellen:
+  `snake_case` Plural. Flask-Routen: kebab-case URLs
+  (`/invoice/create`, `/api/customer-list`).
+- **Boolean-Praefixe**: `is_` fuer Zustandsabfragen, `has_` fuer
+  Vorhandensein, `can_` fuer Faehigkeiten/Rechte, `should_` fuer
+  Empfehlungen, `needs_` fuer Anforderungen. Keine doppelten
+  Verneinungen (`is_deleted = False` statt `is_not_deleted = True`).
+  Kein `_flag`-Suffix (das Praefix macht es bereits eindeutig).
+- **Formatierung**: Zeilenlaenge 160 (black/flake8/isort-Konfiguration),
+  4 Leerzeichen Einrueckung, Imports per isort sortiert
+  (stdlib -> third-party -> lokal), f-strings fuer Formatierung.
+  Ausnahme: nie f-strings in Logging-Aufrufen (`logging-fstring-interpolation`
+  vermeiden) -- `logger.error("...%s...", value)` statt
+  `logger.error(f"...{value}...")`.
+- **Fehlerbehandlung**: try/except um DB-Operationen und externe
+  Services, immer `logger.error(...)` mit Kontext, Rollback bei
+  DB-Fehlern. `except Exception` ist fuer Flask-Routen akzeptiert
+  (bewusste Team-Entscheidung, siehe Pylint-Disable-Liste in
+  .pre-commit-config.yaml).
+- **Flask-Konventionen**: `@login_required`/`@role_required` fuer
+  geschuetzte Routen (siehe Abschnitt "Rollen & Autorisierung" unten),
+  `flash()` fuer Nutzer-Feedback, `db.session.commit()` explizit mit
+  Rollback-Pfad, CSRF-Schutz fuer Formulare.
+- **Commits**: Conventional Commits (`feat:`, `fix:`, `chore:`, `docs:`,
+  `style:`, `refactor:`), Commit-Nachrichten auf Deutsch, atomar und
+  fokussiert. Pre-commit-Hooks formatieren automatisch nach.
+- **Markdown-Dokumentation**: Praesens statt Vergangenheit, aktive
+  Stimme, direkte Ansprache in der zweiten Person ("du"/"Sie" je nach
+  Zieldatei), Fakten und direkte Anweisungen statt Konjunktiv
+  ("koennte"/"wuerde" vermeiden).
 
 ## Ueberblick
 
 Flask-3.0-App (App-Factory-Pattern, `create_app()`), SQLAlchemy-ORM,
-Jinja2-Templates. Fachlicher Zweck und Domaenenmodell stehen in
-PROJECT.md -- hier nur Technisches.
+Jinja2-Templates. Geschaeftsmodell und "warum existiert das" stehen in
+PROJECT.md -- hier das Datenmodell und die Code-Patterns, die beim
+Aendern zu beachten sind.
+
+## Kern-Entitaeten (models.py)
+
+- **User**: Auth + Rollen (`role`: `admin`, `cashier`, `reseller`),
+  TOTP-2FA-Felder, API-Token fuer die PWA, optionale FK
+  `reseller_customer_id` fuer Reseller-Self-Service-Logins.
+- **Customer**: Kunden, inkl. DSGVO-Anonymisierung (`anonymize_gdpr()`);
+  Rechnungsdaten selbst bleiben unveraendert (Aufbewahrungspflicht
+  §147 AO ueberwiegt Loeschanspruch).
+- **Product**: `price` (Endkunde) und `reseller_price` getrennt,
+  produktspezifisches `tax_rate`, `lot_number` (Charge), `number`
+  (Hauptbestand).
+- **Invoice** + **LineItem** -- siehe eigener Abschnitt unten, GoBD-kritisch.
+- **InvoiceStatusLog**, **InvoicePdfArchive**: Audit-Trail, siehe GoBD-Abschnitt.
+- **DeliveryNote**, **DeliveryNoteItem**, **ConsignmentStock**: Lieferschein-
+  und Kommissionslager-Fluss fuer Reseller, siehe eigener Abschnitt unten.
+- **PaymentCheck**: Protokoll des automatischen Zahlungsabgleichs.
+- **Reminder**: Mahnstufen fuer ueberfaellige Rechnungen.
+- **StockAdjustment**: GoBD-dokumentierte Eigenentnahme/Inventur/Verderb/Bruch,
+  Begruendung ist Pflichtfeld.
+
+## Steuerberechnung (`Invoice.calculate_totals()`, models.py:338)
+
+Drei `tax_model`-Werte, unterschiedliche Formeln:
+
+- **`standard`**: MwSt. wird auf Netto aufgeschlagen --
+  `tax_amount = subtotal * (tax_rate / 100)`, `total = subtotal + tax_amount`.
+- **`kleinunternehmer`** (§19 UStG): keine MwSt. --
+  `tax_amount = 0`, `total = subtotal`.
+- **`landwirtschaft`** (§24 UStG Durchschnittssatz, z.B. Honig): Brutto = Netto,
+  die MwSt. wird pro LineItem aus dem Bruttobetrag zurueckgerechnet --
+  `item_tax = item.total * (tax_rate / (100 + tax_rate))`, `total = subtotal`.
+  Nutzt dabei die **produktspezifische** `LineItem.tax_rate`, nicht pauschal
+  `Invoice.tax_rate` -- wichtig bei gemischten Warenkoerben.
+
+## Rechnungsnummern-Schema
+
+Prefix zeigt die Art des Belegs, Zaehler ist pro Prefix+Tag eigenstaendig:
+
+- `RE-...` normale Rechnung
+- `STORNO-YYYYMMDD-####` Stornorechnung (negative Betraege, siehe unten)
+- `BAR-YYYYMMDD-####` POS-/Kassenverkauf (sofort `status='paid'`)
+
+## Hash-Generierung -- Reihenfolge ist zwingend
+
+`Invoice.data_hash` ist `nullable=False` (models.py:326) -- das ist ein
+DB-Constraint, kein Trigger. `generate_hash()` (models.py:374) haengt aber
+von bereits gesetzten `line_items` ab. Zwingende Reihenfolge:
+
+```python
+invoice.line_items = line_items_list   # 1. Positionen zuweisen
+invoice.calculate_totals()             # 2. Summen berechnen
+invoice.generate_hash()                # 3. Hash ueber die fertigen Daten
+db.session.add(invoice)                # 4. erst jetzt zur Session
+db.session.commit()
+```
+
+Hash NACH `add()`/`commit()` neu generieren aendert `data_hash` nicht mehr
+sinnvoll nachtraeglich, da der Hash exakt den Stand zum Zeitpunkt der
+Erstellung abbilden soll (Manipulationsschutz) -- bei jeder Aenderung an
+dieser Reihenfolge das GoBD-Kapitel unten beachten.
+
+## Reseller-/Kommissionslager-Fluss
+
+1. Lieferschein anlegen (`DeliveryNote`, Status `delivered`) --
+   Hauptbestand (`Product.number`) sinkt, Kommissionsbestand
+   (`ConsignmentStock.quantity`) beim Reseller steigt (eindeutig pro
+   `customer_id`+`product_id`).
+2. Abrechnung: Rechnung aus dem Lieferschein erzeugen, nur die tatsaechlich
+   verkaufte Menge wird abgerechnet -- Lieferschein-Status wechselt zu
+   `partially_billed` oder `billed`.
+3. Ruecknahme/Storno: Hauptbestand UND Kommissionsbestand beide
+   zurueckbuchen (`product.increase_stock(...)` plus
+   `consignment_item.quantity += ...`) -- eines von beiden zu vergessen
+   ist der haeufigste Fehler in diesem Bereich.
 
 ## app.py ist ein Monolith -- so navigierst du darin
 
@@ -170,15 +275,37 @@ djLint (Jinja2), curlylint, ESLint (JS), Bandit (Security), SQLFluff
 (lint+fix), Pylint, py-compile, Safety (Dependency-Check).
 Auskommentiert: `pytest`, `make_html_doc`.
 
-Coding-Konventionen (Naming, Boolean-Praefixe, Error-Handling,
-Commit-Format) stehen vollstaendig in `.instructions.md` -- nicht hier
-duplizieren, dort pflegen.
-
 ## GoBD-Konformitaet -- beim Aendern beachten
 
 Rechnungen, Zahlungen und Bestandsanpassungen unterliegen expliziten
-Unveraenderbarkeits- und Nachvollziehbarkeitsanforderungen (Details in
+Unveraenderbarkeits- und Nachvollziehbarkeitsanforderungen (volle Details in
 GOBD_COMPLIANCE.md). Vor Aenderungen an `Invoice`, `InvoiceStatusLog`,
 `InvoicePdfArchive`, `StockAdjustment` oder der Storno-Logik
-(Korrekturbeleg statt Loeschung) GOBD_COMPLIANCE.md lesen -- diese
-Anforderungen sind fachlich vorgegeben, nicht optional refaktorierbar.
+GOBD_COMPLIANCE.md lesen -- diese Anforderungen sind fachlich vorgegeben,
+nicht optional refaktorierbar. Kernregeln:
+
+- Status-Workflow nur vorwaerts: `draft` -> `sent` -> `paid`. Ein
+  Zuruecksetzen von `sent` auf `draft` (oder generell rueckwaerts) ist
+  verboten und wird an Stellen im Code explizit abgefangen.
+- Nur `draft`-Rechnungen duerfen geloescht werden (kein abgeschlossener
+  Geschaeftsvorfall). `sent`/`paid` NIE loeschen -- stattdessen eine
+  Stornorechnung erzeugen (negative Betraege, `STORNO-`-Prefix, Bestand
+  wird zurueckgebucht, Original-Status wechselt auf `cancelled`).
+- Jede Statusaenderung erzeugt einen `InvoiceStatusLog`-Eintrag mit
+  `changed_by=current_user.username` -- niemals ein Literal wie
+  `"System"` eintragen, auch nicht bei automatisierten/Batch-Aenderungen.
+- Beim ersten PDF-Download einer `sent`-Rechnung wird ein
+  `InvoicePdfArchive`-Eintrag mit SHA-256-Hash des PDFs angelegt.
+
+## Rollen & Autorisierung
+
+Drei Rollen (`User.role`): `admin` (voller Zugriff), `cashier` (Kasse +
+Rechnungen ansehen), `reseller` (eigener Bestand/Preise, ueber
+`reseller_customer_id` verknuepft). Routen werden mit
+`@role_required(*roles)` geschuetzt (app.py:59), die API-Variante fuer
+JWT-Routen ist `@role_required_api(*roles)`. Ungeschuetzte Routen ohne
+`@login_required` sind auf die erwartbaren Faelle beschraenkt (`/login`,
+`/verify-2fa`, `/forgot-password`, `/reset-password/<token>`, `/health`,
+`/offline`, `/api/auth/login`) -- bei einer neuen Route immer explizit
+entscheiden und mit `@login_required`/`@role_required` versehen, statt sich
+auf einen impliziten Default zu verlassen.

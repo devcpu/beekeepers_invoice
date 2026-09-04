@@ -13,7 +13,7 @@
             {% endif %}
         </h1>
         <div>
-            <a href="{{ url_for('edit_customer', customer_id=customer.id) }}"
+            <a href="{{ url_for('customers.edit_customer', customer_id=customer.id) }}"
                class="btn btn-primary"
                style="margin-right: 0.5rem">Bearbeiten</a>
             {% if not customer.is_anonymized %}
@@ -26,7 +26,7 @@
                     DSGVO Anonymisieren
                 </button>
             {% endif %}
-            <a href="{{ url_for('list_customers') }}"
+            <a href="{{ url_for('customers.list_customers') }}"
                class="btn"
                style="background: #95a5a6;
                       color: white">Zurück</a>
@@ -185,7 +185,7 @@
                 Diese Aktion kann nicht rückgängig gemacht werden!
             </p>
             <form method="POST"
-                  action="{{ url_for('anonymize_customer', customer_id=customer.id) }}">
+                  action="{{ url_for('customers.anonymize_customer', customer_id=customer.id) }}">
                 <div style="display: flex; gap: 1rem; justify-content: flex-end;">
                     <button type="button"
                             class="btn"

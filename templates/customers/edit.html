@@ -6,7 +6,7 @@
                 align-items: center;
                 margin-bottom: 2rem">
         <h1>Kunde bearbeiten</h1>
-        <a href="{{ url_for('view_customer', customer_id=customer.id) }}"
+        <a href="{{ url_for('customers.view_customer', customer_id=customer.id) }}"
            class="btn"
            style="background: #95a5a6;
                   color: white">Abbrechen</a>
@@ -80,7 +80,7 @@
             </div>
             <div style="margin-top: 2rem;">
                 <button type="submit" class="btn btn-primary">Änderungen speichern</button>
-                <a href="{{ url_for('view_customer', customer_id=customer.id) }}"
+                <a href="{{ url_for('customers.view_customer', customer_id=customer.id) }}"
                    class="btn"
                    style="background: #95a5a6;
                           color: white;

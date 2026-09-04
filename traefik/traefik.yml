@@ -43,7 +43,7 @@ certificatesResolvers:
 
       # DNS Challenge (empfohlen für Wildcards)
       dnsChallenge:
-        provider: cloudflare
+        provider: httpnet
         delayBeforeCheck: 30
         resolvers:
           - "1.1.1.1:53"

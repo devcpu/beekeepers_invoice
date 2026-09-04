@@ -4,7 +4,7 @@
 
 - Docker & Docker Compose
 - Domain mit DNS (A-Record auf Server-IP)
-- Cloudflare Account (für DNS Challenge)
+- http.net Account mit API-Key (für DNS Challenge)
 - Server mit mindestens 2GB RAM
 
 ## 🚀 Schnellstart
@@ -32,8 +32,7 @@ nano .env
 - `SECRET_KEY` - Generiere mit:
   `python -c "import secrets; print(secrets.token_hex(32))"`
 - `DB_PASSWORD` - Sicheres Datenbank-Passwort
-- `CF_API_EMAIL` - Cloudflare E-Mail
-- `CF_API_KEY` - Cloudflare Global API Key
+- `HTTPNET_API_KEY` - http.net API-Key (im http.net-Kundencenter erstellen)
 
 ### 3. Traefik konfigurieren
 

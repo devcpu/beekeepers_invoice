@@ -186,8 +186,7 @@ services:
       - "80:80"
       - "443:443"
     environment:
-      - CF_API_EMAIL=${CF_API_EMAIL}
-      - CF_API_KEY=${CF_API_KEY}
+      - HTTPNET_API_KEY=${HTTPNET_API_KEY}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./traefik:/etc/traefik

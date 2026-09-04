@@ -396,7 +396,9 @@ def create_app(config_name="default"):
         """Health Check Endpoint"""
         try:
             # DB Connection testen
-            db.session.execute("SELECT 1")
+            from sqlalchemy import text
+
+            db.session.execute(text("SELECT 1"))
             return {"status": "healthy", "database": "ok"}, 200
         except Exception as e:
             return {"status": "unhealthy", "error": str(e)}, 503

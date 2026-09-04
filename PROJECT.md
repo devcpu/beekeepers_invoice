@@ -23,12 +23,15 @@ alle Statusaenderungen werden in einem Audit-Trail protokolliert.
 
 ## Architektur auf einen Blick
 
-Flask-3.0-Monolith (ein Prozess, keine Microservices), SQLAlchemy-ORM,
+Flask-3.0-App (ein Prozess, keine Microservices), SQLAlchemy-ORM,
 serverseitig gerenderte Jinja2-Templates plus eine schlanke PWA/JWT-API
-fuer mobile Nutzung. PDF-Erzeugung (Rechnungen, Lieferscheine,
-Mahnungen, Jahresbericht) mit ReportLab, inkl. scanbarem EPC-QR-Code
-fuer SEPA-Ueberweisungen direkt aus der Rechnung. E-Mail-Import per
-IMAP fuer automatisierte Rechnungserstellung aus Shop-Bestellungen.
+fuer mobile Nutzung. Routen sind nach Domaene in Flask-Blueprints
+aufgeteilt (Rechnungen, Kunden, Produkte, Kasse, Lieferscheine/
+Kommissionslager, Berichte, Einstellungen, Auth, API). PDF-Erzeugung
+(Rechnungen, Lieferscheine, Mahnungen, Jahresbericht) mit ReportLab,
+inkl. scanbarem EPC-QR-Code fuer SEPA-Ueberweisungen direkt aus der
+Rechnung. E-Mail-Import per IMAP fuer automatisierte Rechnungserstellung
+aus Shop-Bestellungen.
 
 Technische Details, Modulkarte und bekannte Fallen: siehe AGENTS.md.
 
@@ -65,10 +68,11 @@ Technische Details, Modulkarte und bekannte Fallen: siehe AGENTS.md.
 
 ## Bekannte technische Schulden
 
-Siehe AGENTS.md fuer Details -- kurz zusammengefasst: `app.py` ist ein
-3300-Zeilen-Monolith ohne Blueprint-Aufteilung, es gibt keine
-automatisierten Tests, und es bestehen Postgres/MariaDB-Inkonsistenzen
-aus einem nicht vollstaendig nachgezogenen Datenbankwechsel.
+Siehe AGENTS.md fuer Details. Der frueher hier genannte Monolith
+(`app.py` ohne Blueprint-Aufteilung), das Fehlen einer Testsuite, und
+Postgres/MariaDB-Inkonsistenzen aus einem nicht vollstaendig
+nachgezogenen Datenbankwechsel sind inzwischen behoben -- siehe TODO.md
+"Erledigt" fuer Details und Daten.
 
 ## Team
 

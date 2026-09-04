@@ -113,23 +113,23 @@ konvertiert -- aber erst beim naechsten DB-Flush, nicht bei reiner
 Python-Zuweisung). `Invoice.calculate_totals()` (models.py:369)
 multipliziert `item.total` mit einem `Decimal`-Ausdruck
 (`Decimal(...) / Decimal("100")`). Werden `LineItem`-Objekte VOR dem
-ersten Flush mit rohen `float`-Werten konstruiert (wie es
-`create_invoice()` in app.py:850-851 tut: `quantity=float(qty)`,
-`unit_price=float(price)`), bleibt `item.total` nach
+ersten Flush mit rohen `float`-Werten konstruiert, bleibt `item.total` nach
 `calculate_total()` (models.py:481-484) ein `float`. `float * Decimal`
 wirft `TypeError: unsupported operand type(s) for *: 'float' and
 'decimal.Decimal'`.
 
-**Praktische Folge, live gegen MariaDB verifiziert (2026-09-05):** Das
-manuelle Rechnungsformular `/invoices/new` kann in der aktuellen
-Codebasis **niemals erfolgreich eine Rechnung anlegen** -- jeder Versuch
-scheitert mit obigem `TypeError`, abgefangen vom generischen
-`except Exception` (app.py:868), sichtbar nur als generische
-Fehler-Flash-Message. Details und Fix-Vorschlag: TODO.md.
+**War in der urspruenglichen Codebasis ein echter Bug** (live gegen
+MariaDB verifiziert, 2026-09-05): `create_invoice()` konstruierte
+`LineItem`-Objekte mit rohem `float()` statt `Decimal()`, wodurch das
+manuelle Rechnungsformular `/invoices/new` niemals erfolgreich eine
+Rechnung anlegen konnte. **Behoben** -- `create_invoice()`
+(`blueprints/invoices.py`) konstruiert `quantity`/`unit_price` jetzt
+explizit als `Decimal(...)`.
 
-`create_invoice_from_consignment()` (app.py:2726-2738) und der
-POS-Flow sind NICHT betroffen, da sie Betraege bereits explizit als
-`Decimal(...)` konstruieren, bevor `calculate_totals()` laeuft.
+`create_invoice_from_consignment()` (`blueprints/delivery_notes.py`) und
+der POS-Flow (`blueprints/pos.py`) waren nie betroffen, da sie Betraege
+bereits explizit als `Decimal(...)` konstruieren, bevor `calculate_totals()`
+laeuft.
 
 **Lehre fuer neuen Code:** Wird ein SQLAlchemy-Model-Objekt mit
 `db.Numeric`-Spalten konstruiert und VOR dem ersten `flush()`/`commit()`
@@ -144,22 +144,24 @@ Beim Schreiben von `tests/invoice_workflow_test.py` (GoBD-kritische
 End-to-End-Pfade) zwei weitere Bugs gefunden und behoben:
 
 - **Dashboard-Absturz bei ueberfaelligen Rechnungen**: `utility_processor()`
-  (app.py) lieferte `now=datetime.now()` (bereits ausgewertetes Objekt)
-  in den Jinja2-Kontext, aber `templates/index.html:75` ruft `now()` als
+  (`app.py`, Context-Processor in `create_app()`) lieferte
+  `now=datetime.now()` (bereits ausgewertetes Objekt) in den
+  Jinja2-Kontext, aber `templates/index.html:75` ruft `now()` als
   **Funktion** auf (`now().date()`). Sobald mindestens eine `sent`-Rechnung
   mehr als 10 Tage ueberfaellig war, crashte die Startseite `/` mit
   `TypeError: 'datetime.datetime' object is not callable`. Fix: `now=datetime.now`
   (Funktionsreferenz statt Aufruf) in den Context-Processor.
 - **Falscher Audit-Trail-Eintrag bei Storno einer `paid`-Rechnung**:
-  `create_cancellation_invoice()` (app.py) setzte `original_invoice.status = "cancelled"`
-  **vor** der Berechnung von `old_status` fuer den `InvoiceStatusLog`-Eintrag
-  -- `original_invoice.status != "paid"` war zu diesem Zeitpunkt immer
-  `True` (Status ist ja bereits `"cancelled"`), wodurch `old_status`
-  faelschlich immer `"sent"` protokolliert wurde, selbst wenn die
-  Original-Rechnung tatsaechlich `"paid"` war. GoBD-relevant, da der
-  Audit-Trail dadurch falsch wurde. Fix: Ist-Status VOR der Mutation in
-  einer lokalen Variable festhalten (analog zum bereits korrekten Pattern
-  in `update_invoice_status()`, app.py:909).
+  `create_cancellation_invoice()` (`blueprints/invoices.py`) setzte
+  `original_invoice.status = "cancelled"` **vor** der Berechnung von
+  `old_status` fuer den `InvoiceStatusLog`-Eintrag -- `original_invoice.status
+  != "paid"` war zu diesem Zeitpunkt immer `True` (Status ist ja bereits
+  `"cancelled"`), wodurch `old_status` faelschlich immer `"sent"`
+  protokolliert wurde, selbst wenn die Original-Rechnung tatsaechlich
+  `"paid"` war. GoBD-relevant, da der Audit-Trail dadurch falsch wurde.
+  Fix: Ist-Status VOR der Mutation in einer lokalen Variable festhalten
+  (analog zum bereits korrekten Pattern in `update_invoice_status()`,
+  ebenfalls `blueprints/invoices.py`).
 
 **Bekannter, aber harmloser Code-Smell (nicht gefixt):** In
 `create_cancellation_invoice()` fuehrt der erste Guard
@@ -184,26 +186,63 @@ Bug behoben, nur vermerkt.
    `consignment_item.quantity += ...`) -- eines von beiden zu vergessen
    ist der haeufigste Fehler in diesem Bereich.
 
-**Bekannter Bug (siehe TODO.md, noch nicht gefixt):** `delete_invoice()`
-(app.py:1003) greift auf `stock.quantity_remaining` zu -- dieses Feld
-existiert nicht in `ConsignmentStock` (nur `quantity`/`quantity_sold`).
-Reproduzierbar ueber `create_invoice_from_consignment()` (app.py:2732,
-setzt `customer_type="reseller"`) gefolgt vom Loeschen des entstandenen
-`draft`. `update_invoice_status()` (Storno-Pfad, app.py:938) ist davon
-NICHT betroffen -- dort steht korrekt `stock.quantity`.
+**Ehemaliger Bug, bereits behoben:** `delete_invoice()`
+(`blueprints/invoices.py`) griff zuvor faelschlich auf
+`stock.quantity_remaining` zu -- dieses Feld existiert nicht in
+`ConsignmentStock` (nur `quantity`/`quantity_sold`). Fix: `stock.quantity`,
+analog zum bereits korrekten `update_invoice_status()` (Storno-Pfad).
 
-## app.py ist ein Monolith -- so navigierst du darin
+## Blueprint-Struktur -- so navigierst du durch die Routen
 
-`app.py` hat 3335 Zeilen und enthaelt praktisch alle ~65 Routen als
-verschachtelte Funktionen innerhalb von `create_app()`. Das ist bekannt
-und bewusst in Kauf genommen (`# pylint: disable=too-many-lines` steht
-am Dateikopf).
+`app.py` war bis 2026-09-05 ein 3335-Zeilen-Monolith mit praktisch allen
+~65 Routen als verschachtelte Funktionen in `create_app()`. Seitdem ist
+`app.py` auf die App-Factory selbst reduziert (App-/DB-/Mail-/CrowdSec-/
+LoginManager-Init, Blueprint-Registrierung, `utility_processor`-Context-
+Processor, der `/health`-Endpoint, sowie die zwei CLI-Commands
+`init_db`/`seed_db`). Alle Domaenen-Routen liegen in eigenstaendigen
+Flask-Blueprints unter `blueprints/`:
 
-- Lies die Datei NIE komplett. Grep nach Abschnittsmarkern
-  (`# ===`, z.B. `# ========== HAUPTSEITEN-ROUTEN ==========`) oder nach
-  `@app.route`, um die Stelle zu finden, die du brauchst.
-- CLI-Commands (`flask init-db`, `flask seed-db`) liegen ganz am Ende der
-  Datei, ebenfalls innerhalb von `create_app()`.
+| Blueprint (`blueprints/*.py`) | Praefix | Enthaelt |
+|---|---|---|
+| `main.py` (`main_bp`) | `/` | Nur die Dashboard-Route `index` |
+| `auth.py` (`auth_bp`) | -- | Login, 2FA (Setup/Verify/Disable/Backup-Codes), Logout, Bestandsquelle waehlen, Passwort-Reset |
+| `api.py` (`api_bp`) | `/api` | JWT-Login/Verify/Refresh + Invoices/Customers/POS ueber Token, plus die `@login_required`-Autocomplete-/Bestandsaenderungs-Endpoints der Web-UI |
+| `products.py` (`products_bp`) | -- | `/products*`, `/stock` |
+| `customers.py` (`customers_bp`) | -- | `/customers*`, DSGVO-Anonymisierung |
+| `pos.py` (`pos_bp`) | -- | `/pos`, `/pos/complete-sale` (Kasse) |
+| `reports.py` (`reports_bp`) | `/reports` | Jahresuebersicht Einnahmen (Web + PDF) |
+| `users.py` (`users_bp`) | -- | `/settings*` (Firmendaten, Benutzerverwaltung, SMTP/IMAP-Verbindungstest) |
+| `delivery_notes.py` (`delivery_notes_bp`) | -- | `/delivery-notes*`, `/consignment/*`, `/payments/*` |
+| `invoices.py` (`invoices_bp`) | -- | `/invoices*` (CRUD, Storno, PDF, E-Mail, Mahnwesen), `/stock-adjustments*` -- groesster Blueprint |
+
+Alle Blueprints sind mit explizitem Namen registriert
+(z.B. `main_bp = Blueprint("main", __name__)`), daher heissen Endpoints
+`<blueprintname>.<funktionsname>` -- z.B. `url_for("main.index")`,
+`url_for("invoices.view_invoice", invoice_id=...)`. Das gilt fuer JEDEN
+`url_for()`-Aufruf, auch in Templates. Beim Hinzufuegen einer neuen Route:
+
+- Passt sie zu einer bestehenden Domaene? In das entsprechende
+  `blueprints/*.py` einfuegen.
+- Passt sie zu keiner? Neues `blueprints/<name>.py` anlegen (Muster:
+  `<name>_bp = Blueprint("<name>", __name__)`, in `create_app()`
+  importieren und mit `app.register_blueprint(<name>_bp)` registrieren).
+- Innerhalb eines Blueprint-Moduls gibt es kein `app`-Objekt mehr im
+  Scope -- `current_app` (aus `flask`) statt `app` fuer Config-Zugriffe
+  (`current_app.config[...]`) und Logging (`current_app.logger`).
+- `tests/endpoints_test.py` scannt `app.py`, `blueprints/*.py` UND
+  `templates/*.html` auf `url_for("...")`-Aufrufe und prueft, dass jeder
+  Endpoint tatsaechlich registriert ist -- Sicherheitsnetz gegen falsche
+  oder vergessene Blueprint-Praefixe. Bei jeder Aenderung an Endpoint-Namen
+  oder neuen Blueprints diesen Test mitlaufen lassen.
+- `auth_utils.py` enthaelt den `role_required(*roles)`-Decorator
+  (eigenstaendiges Modul, nicht mehr in `create_app()` verschachtelt) --
+  siehe Abschnitt "Rollen & Autorisierung" unten.
+- `invoice_numbering.py` enthaelt `generate_invoice_number()`, genutzt von
+  `app.py` (CLI `seed_db`) und `blueprints/api.py` (POS-Verkauf via API) --
+  eigenstaendiges Modul, um einen Zirkelimport zwischen `app.py` und den
+  Blueprints zu vermeiden.
+- CLI-Commands (`flask init-db`, `flask seed-db`) liegen weiterhin in
+  `app.py`, innerhalb von `create_app()`.
 - Flask registriert `@app.cli.command()`-Funktionsnamen mit Unterstrichen
   automatisch als Bindestrich-Commands: `init_db` im Code heisst auf der
   Kommandozeile `flask init-db`, nicht `flask init_db`.
@@ -212,7 +251,19 @@ am Dateikopf).
 
 | Datei | Zweck |
 |---|---|
-| `app.py` | App-Factory, alle Routen, CLI-Commands |
+| `app.py` | App-Factory, Blueprint-Registrierung, `/health`, CLI-Commands |
+| `blueprints/main.py` | Dashboard-Route `/` |
+| `blueprints/auth.py` | Login, 2FA, Logout, Bestandsquelle, Passwort-Reset |
+| `blueprints/api.py` | JWT-API fuer die PWA + Web-UI-Autocomplete-/Bestandsendpoints unter `/api` |
+| `blueprints/products.py` | Produktverwaltung, Bestandsuebersicht (`/products*`, `/stock`) |
+| `blueprints/customers.py` | Kundenverwaltung, DSGVO-Anonymisierung |
+| `blueprints/pos.py` | Kasse/Direktverkauf (`/pos*`) |
+| `blueprints/reports.py` | Jahresuebersicht Einnahmen (Web + PDF) unter `/reports` |
+| `blueprints/users.py` | Einstellungen, Benutzerverwaltung, E-Mail-Verbindungstest |
+| `blueprints/delivery_notes.py` | Lieferscheine, Kommissionslager, Zahlungsabgleich |
+| `blueprints/invoices.py` | Rechnungs-CRUD/Storno/PDF/E-Mail/Mahnwesen, Bestandsanpassungen |
+| `auth_utils.py` | `role_required(*roles)`-Decorator fuer rollenbasierte Zugriffskontrolle |
+| `invoice_numbering.py` | `generate_invoice_number()`, gemeinsam genutzt von `app.py` und `blueprints/api.py` |
 | `models.py` | 13 SQLAlchemy-Modelle, mit GoBD-Hinweisen im Docstring |
 | `config.py` | Config-Klassen (Development/Production/Testing), liest alle ENV-Variablen |
 | `delivery_note_service.py` | PDF-Erzeugung Lieferscheine (ReportLab) |
@@ -327,18 +378,36 @@ nie einen nackten String an `.execute()` uebergeben.
 
 ## Tests
 
-Es existiert kein einziger Test. `setup.cfg` hat zwar eine
-`[tool:pytest]`-Sektion (`testpaths = tests`, `python_files = *_test.py`
--- unueblich, Standard waere `test_*.py`), aber:
+80 Tests in `tests/` (pytest, In-Memory-SQLite via `TestingConfig`):
 
-- Verzeichnis `tests/` existiert nicht
-- `pytest` fehlt in requirements.txt
-- Der `pytest`-Hook in `.pre-commit-config.yaml` ist auskommentiert
+- `conftest.py`: Fixtures (`app`, `client`, `db_session`, `admin_user`/
+  `cashier_user`/`reseller_user`, `customer`, `product`) und Helper-
+  Funktionen (`make_user`, `make_customer`, `make_product`, `make_invoice`,
+  `make_line_item`, `login(client, username, password)`). Setzt
+  `SECRET_KEY` und den Projekt-Root in `sys.path` selbst, laeuft also ohne
+  manuell gesetzte ENV-Variablen.
+- `invoice_model_test.py`: Charakterisierungstests fuer Modell-Logik --
+  `calculate_totals()` (alle drei `tax_model`-Werte inkl. gemischtem
+  Warenkorb), `generate_hash()`/`verify_hash()`, `reduce_stock()`/
+  `increase_stock()`, `anonymize_gdpr()`, User-Passwort/Backup-Codes/Rollen.
+- `routes_smoke_test.py`: Login-Flow, oeffentliche Routen, Rollen-
+  Autorisierung, CRUD-Grundpfade fuer Invoices/Customers/Products/POS.
+- `invoice_workflow_test.py`: GoBD-kritische End-to-End-Pfade --
+  Lebenszyklus draft->sent->paid, verbotene Statusuebergaenge, Storno-Flow
+  (inkl. Audit-Trail), Kommissionsbestand-Rueckbuchung, POS-Verkauf,
+  PDF-Archivierung, Mahnwesen.
+- `endpoints_test.py`: Sicherheitsnetz fuer den Blueprint-Split -- prueft,
+  dass jeder statische `url_for("...")`-Aufruf in `app.py`, `blueprints/*.py`
+  und `templates/*.html` auf einen tatsaechlich registrierten Endpoint zeigt,
+  sowie dass `login_manager.login_view` aufloesbar ist.
 
-Neue Business-Logik (Steuerberechnung, GoBD-Storno-Flow, Reseller-
-Kommissionslogik) sollte nicht ungetestet bleiben -- vor einer groesseren
-Aenderung an diesen Bereichen zumindest ein minimales `tests/`-Setup
-(pytest + Fixtures) anlegen, statt manuell durchzuklicken.
+`pytest` ist in requirements.txt, der `pytest`-Hook in
+`.pre-commit-config.yaml` ist aktiv. `setup.cfg` hat eine
+`[tool:pytest]`-Sektion mit `python_files = *_test.py` -- unueblich,
+Testdateien muessen auf `_test.py` enden, nicht mit `test_` beginnen.
+
+**Noch nicht geschrieben, optionale Ergaenzung:** Tests fuer
+`email_parser.py` (IMAP-Client) mit IMAP-Mocking.
 
 ## Linting & pre-commit
 
@@ -375,8 +444,9 @@ nicht optional refaktorierbar. Kernregeln:
 Drei Rollen (`User.role`): `admin` (voller Zugriff), `cashier` (Kasse +
 Rechnungen ansehen), `reseller` (eigener Bestand/Preise, ueber
 `reseller_customer_id` verknuepft). Routen werden mit
-`@role_required(*roles)` geschuetzt (app.py:59), die API-Variante fuer
-JWT-Routen ist `@role_required_api(*roles)`. Ungeschuetzte Routen ohne
+`@role_required(*roles)` geschuetzt (`auth_utils.py`, eigenstaendiges
+Modul seit dem Blueprint-Split), die API-Variante fuer JWT-Routen ist
+`@role_required_api(*roles)` (`jwt_api.py`). Ungeschuetzte Routen ohne
 `@login_required` sind auf die erwartbaren Faelle beschraenkt (`/login`,
 `/verify-2fa`, `/forgot-password`, `/reset-password/<token>`, `/health`,
 `/offline`, `/api/auth/login`) -- bei einer neuen Route immer explizit

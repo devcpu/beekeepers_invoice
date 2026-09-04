@@ -21,17 +21,15 @@ optionale Ergaenzung, kein Blocker fuer Phase-2-Rest.
 Folgende Punkte sind weiterhin bewusst noch keine Aufgaben, sondern
 Vorschlaege. Vor Umsetzung jeweils einzeln besprechen:
 
-- **app.py aufteilen**: 3335 Zeilen, praktisch alle ~65 Routen als
-  verschachtelte Funktionen in `create_app()`. Ein Split in
-  Flask-Blueprints (z.B. nach Domaene: invoices, customers, products,
-  delivery_notes, auth, pos, api) wuerde Navigierbarkeit und Testbarkeit
-  verbessern. Mit der jetzt vorhandenen Testsuite als Sicherheitsnetz
-  risikoaermer als zuvor -- aber `url_for()`/Template-Referenzen muessen
-  bei einem Blueprint-Praefix konsequent mitgeaendert werden (siehe
-  Plan-Datei, Abschnitt "Bekannte Unbekannte & Risiken").
-- **Rechnungsnummern-Generierung, Steuerberechnung, PDF-Erzeugung**:
-  ggf. aus app.py in eigene Service-Module extrahieren (aehnlich
-  `delivery_note_service.py`), sobald ein Blueprint-Split ansteht.
+- **Steuerberechnung, PDF-Erzeugung weiter aus den Blueprints extrahieren**:
+  Rechnungsnummern-Generierung ist bereits in `invoice_numbering.py`
+  ausgelagert. Steuerberechnungslogik und PDF-Erzeugungsaufrufe liegen
+  aber weiterhin direkt in den jeweiligen Blueprint-Routen
+  (`blueprints/invoices.py`, `blueprints/delivery_notes.py`). Eine
+  weitere Extraktion in eigene Service-Module (aehnlich
+  `delivery_note_service.py`) waere jetzt, nach dem abgeschlossenen
+  Blueprint-Split, risikoarm moeglich, ist aber weiterhin nur ein
+  Vorschlag, keine Aufgabe.
 
 ## Erledigt (zur Referenz, aus vorherigen Sessions)
 
@@ -88,3 +86,15 @@ Vorschlaege. Vor Umsetzung jeweils einzeln besprechen:
       `InvoiceStatusLog` faelschlich `old_status="sent"` statt `"paid"`
       (Status wurde vor der `old_status`-Berechnung bereits mutiert).
       GoBD-relevant: Audit-Trail war dadurch falsch. Details: AGENTS.md.
+- [x] **app.py aufteilen** (2026-09-05, siehe Plan-Datei
+      `joyful-swinging-forest.md`, Teil B): `app.py` von 3335 auf ~190
+      Zeilen reduziert (nur noch App-Factory, Blueprint-Registrierung,
+      `/health`, CLI-Commands). Alle ~65 Routen in 10 Flask-Blueprints
+      unter `blueprints/` verschoben (main, auth, api, products,
+      customers, pos, reports, users, delivery_notes, invoices).
+      `role_required`-Decorator nach `auth_utils.py`, `generate_invoice_number()`
+      nach `invoice_numbering.py` ausgelagert. Alle ~183 `url_for()`-Aufrufe
+      in app.py und Templates auf `<blueprint>.<funktion>`-Endpoints
+      umgestellt. Neuer Test `tests/endpoints_test.py` als Sicherheitsnetz
+      gegen falsche/vergessene Endpoint-Praefixe. 80 Tests gruen (vorher
+      76). Details: AGENTS.md Abschnitt "Blueprint-Struktur".

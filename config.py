@@ -96,7 +96,10 @@ class TestingConfig(Config):
     """Test-Konfiguration"""
 
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = "mysql+pymysql://localhost/rechnungen_test"
+    SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+    WTF_CSRF_ENABLED = False
+    MAIL_SUPPRESS_SEND = True
+    SECRET_KEY = "test-secret-key"
 
 
 config = {

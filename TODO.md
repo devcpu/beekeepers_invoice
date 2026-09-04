@@ -5,18 +5,7 @@ entfernen (nicht abhaken stehen lassen).
 
 ## Phase 1: Aufraeumen
 
-### 1. Verwaiste Einmal-Skripte pruefen und ggf. loeschen
-
-- [ ] `debug_hash.py` -- keine externen Referenzen gefunden. Loeste einen
-      konkreten, laengst behobenen Hash-Verifikations-Bug. Vor dem
-      Loeschen kurz pruefen, ob der Debugging-Ansatz als Beispiel-Pattern
-      erhaltenswert ist (z.B. als Kommentar/Snippet in AGENTS.md), sonst
-      loeschen.
-- [ ] `regenerate_hashes.py` -- nur Selbstaufruf (Zeile 38), keine externen
-      Referenzen. War ein einmaliges Migrationsskript fuer einen
-      Hash-Format-Wechsel. Gleiches Vorgehen wie oben.
-
-### 2. Tote Umgebungsvariablen entfernen oder tatsaechlich aktivieren
+### Tote Umgebungsvariablen entfernen oder tatsaechlich aktivieren
 
 Verifizierte Fallen (Details: AGENTS.md "Gesetzt, aber wirkungslos"):
 
@@ -32,7 +21,7 @@ Verifizierte Fallen (Details: AGENTS.md "Gesetzt, aber wirkungslos"):
       separaten Key umstellen (staerkere Trennung von Session- und
       API-Secrets).
 
-### 3. Doppelten Code zusammenfuehren
+### Doppelten Code zusammenfuehren
 
 - [ ] `add_fold_and_punch_marks()` (DIN-5008-Faltmarken) ist identisch in
       `delivery_note_service.py` und `reminder_service.py` dupliziert.
@@ -73,3 +62,9 @@ nach Phase 1. Vor Umsetzung jeweils einzeln besprechen.
       SQLFluff-Dialekt auf `mysql`, `fix_permissions.sql` geloescht
 - [x] Verwaistes `migrations/`-Verzeichnis geloescht (`migrations_archive/`
       bleibt bewusst erhalten, siehe MIGRATIONS.md)
+- [x] `debug_hash.py` und `regenerate_hashes.py` geloescht. Befund:
+      `regenerate_hashes.py` haette bei erneutem Lauf den
+      Manipulationsschutz bestehender Rechnungen rueckwirkend
+      ausgehebelt (ueberschrieb `data_hash` per Commit); `debug_hash.py`
+      war zudem bereits mit einem veralteten Hash-Schema inkonsistent.
+      Details/Lehre daraus: AGENTS.md Abschnitt "Dead Ends".

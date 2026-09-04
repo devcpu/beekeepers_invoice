@@ -154,15 +154,7 @@ am Dateikopf).
 | `cleanup_database.py` | Wartungsskript zur Datenbereinigung |
 | `migrate.py` | Alembic-Wrapper, liest `DATABASE_URL` aus `.env` |
 | `seed_reseller_test_data.py` | Testdaten-Generator fuer Reseller-Szenarien |
-| `debug_hash.py` | Einmalig genutztes Debug-Skript zu einem behobenen Hash-Verifikations-Bug |
-| `regenerate_hashes.py` | Einmaliges Migrationsskript, hat alle Invoice-Hashes neu berechnet |
-| `fix_permissions.sql` | Postgres-GRANT-Fix -- nur relevant bei PostgreSQL-Betrieb, nicht bei MariaDB |
 | `generate_icons.py` | Generiert PWA-Icons in versch. Groessen aus einer Quellgrafik |
-
-`debug_hash.py` und `regenerate_hashes.py` loesten einen konkreten,
-bereits behobenen Bug (Hash-Format-Aenderung). Sie laufen nicht
-automatisiert und sind primaer als Beispiel-Pattern interessant, falls
-ein aehnlicher Migrations-/Hash-Bug erneut auftritt.
 
 ## Datenbank & Migrationen
 
@@ -188,6 +180,17 @@ Schema-Aenderungen an einer bestehenden Datenbank -- fuer die nutzt du
   kein Code las daraus. Falls ein aehnliches Verzeichnis wieder auftaucht:
   gleiche Pruefung wie hier (MIGRATIONS.md durchsuchen, Code-Referenzen
   grep'en) vor dem Anfassen.
+- **`regenerate_hashes.py`** (geloescht 2026-09-05) rief `generate_hash()`
+  auf saemtliche bestehenden Invoices auf und ueberschrieb `data_hash`
+  per Commit. Ein erneuter Lauf eines solchen Skripts wuerde den
+  Manipulationsschutz bestehender Rechnungen rueckwirkend aushebeln --
+  `data_hash` soll den Stand zum Erstellzeitpunkt fixieren, nicht
+  nachtraeglich neu berechnet werden. Bei einem kuenftigen
+  Hash-Format-Wechsel stattdessen einen versionierten Hash (z.B.
+  Format-Marker im gespeicherten Wert) einfuehren, statt Bestandsdaten
+  neu zu hashen. `debug_hash.py` (ebenfalls geloescht) war ein reines
+  Lese-Debug-Skript ohne dieses Risiko, aber bereits mit einem veralteten
+  Hash-Schema (fehlten `product_id`/`tax_rate` je LineItem).
 
 ## Konfiguration & Umgebungsvariablen
 

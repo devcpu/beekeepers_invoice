@@ -11,24 +11,13 @@ services:
     container_name: rechnungen-app
     restart: unless-stopped
     environment:
-      # Database - Shared MySQL/MariaDB oder PostgreSQL im intern-service Netzwerk
-      # MySQL Format: mysql+pymysql://user:password@hostname:3306/dbname?charset=utf8mb4
-      # PostgreSQL Format: postgresql://user:password@hostname:5432/dbname
+      # Database - Shared MariaDB/MySQL im intern-service Netzwerk
+      # Format: mysql+pymysql://user:password@hostname:3306/dbname?charset=utf8mb4
       DATABASE_URL: ${DATABASE_URL}
-
-      # Session Storage
-      # VARIANTE 1: File-based (Standard, <1000 User)
-      SESSION_TYPE: ${SESSION_TYPE:-filesystem}
-      SESSION_FILE_DIR: /app/flask_session
-
-      # VARIANTE 2: Shared Redis im intern-service Netzwerk
-      # SESSION_TYPE: redis
-      # SESSION_REDIS: ${REDIS_URL:-redis://redis:6379/0}
 
       # Flask
       FLASK_ENV: production
       SECRET_KEY: ${SECRET_KEY}
-      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-${SECRET_KEY}}
 
       # Company Data
       COMPANY_NAME: ${COMPANY_NAME}

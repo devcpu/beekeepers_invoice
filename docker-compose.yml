@@ -77,18 +77,6 @@ services:
       # Database (MySQL/MariaDB)
       DATABASE_URL: mysql+pymysql://${DB_USER:-rechnungen_user}:${DB_PASSWORD}@db:3306/${DB_NAME:-rechnungen}?charset=utf8mb4
 
-      # Database (PostgreSQL - wenn PostgreSQL-Service aktiv)
-      # DATABASE_URL: postgresql://${DB_USER:-rechnungen_user}:${DB_PASSWORD}@db:5432/${DB_NAME:-rechnungen}
-
-      # Session Storage (File-based - ausreichend für die meisten Setups)
-      # Für Redis: Kommentiere die nächsten zwei Zeilen aus und aktiviere Redis-Service
-      SESSION_TYPE: filesystem
-      SESSION_FILE_DIR: /app/flask_session
-
-      # Redis Session (nur wenn Redis-Service aktiviert)
-      # SESSION_TYPE: redis
-      # SESSION_REDIS: redis://redis:6379/0
-
       # Flask
       FLASK_ENV: production
       SECRET_KEY: ${SECRET_KEY}

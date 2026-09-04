@@ -116,19 +116,6 @@ docker-compose exec app flask seed-db
 1. `docker-compose up -d`
 1. App läuft unter: `https://ihr-server.de`
 
-**Redis aktivieren (bei Bedarf):**
-
-```yaml
-# In docker-compose.yml auskommentieren:
-redis:
-  image: redis:7-alpine
-  # ...
-
-# In app service ändern:
-SESSION_TYPE: redis
-REDIS_URL: redis://redis:6379
-```
-
 ______________________________________________________________________
 
 ### Variante 2: Integrierte Variante (Shared Infrastructure)
@@ -306,9 +293,6 @@ SMTP_PORT=587
 SMTP_USERNAME=noreply@ihre-domain.de
 SMTP_PASSWORD=smtp-passwort
 SMTP_USE_TLS=True
-
-# Optional: JWT Token Secret (für API-Authentifizierung)
-JWT_SECRET_KEY=ein-anderer-sehr-sicherer-schluessel
 ```
 
 **Tipp:** Ihre aktuellen Einstellungen können Sie jederzeit in der Web-UI unter

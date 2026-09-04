@@ -65,57 +65,11 @@ Nutze die `docker-compose.yml` (Standalone-Variante) wenn:
 - Compliance-Anforderungen separate Instanzen fordern
 - Hohe Last isoliert werden muss (>10.000 Requests/min)
 
-## Redis-Setup (Optional)
+## Sessions
 
-> **Achtung:** `flask-session` ist aktuell nicht in requirements.txt
-> enthalten und wird im Code nicht importiert. Die `SESSION_TYPE`/
-> `SESSION_REDIS`-Variablen unten haben ohne diesen zusätzlichen
-> Einbau **keine Wirkung** -- die App nutzt tatsächlich Standard-
-> Client-Cookie-Sessions, unabhängig vom gesetzten Wert (Details:
-> AGENTS.md, Abschnitt "Gesetzt, aber wirkungslos"). Wer Redis-Sessions
-> tatsächlich nutzen will, muss `flask-session` zuerst in
-> requirements.txt aufnehmen und in app.py per `Session(app)`
-> initialisieren.
-
-### Wann Redis nutzen?
-
-**File-based Sessions (Standard):**
-
-- ✅ \<1000 gleichzeitige User
-- ✅ Single-Server Setup
-- ✅ Begrenzter RAM (Sessions ~1KB/User)
-
-**Redis Sessions:**
-
-- ✅ >1000 gleichzeitige User
-- ✅ Horizontales Scaling (mehrere App-Container)
-- ✅ Session-Sharing zwischen Servern
-- ✅ Schnellere Performance bei vielen Sessions
-
-### Redis aktivieren
-
-```bash
-# In deinem Redis-Container (falls vorhanden)
-docker exec -it redis redis-cli
-
-# DB auswählen (z.B. DB 5 für Rechnungen)
-SELECT 5
-INFO keyspace
-```
-
-**In .env:**
-
-```env
-SESSION_TYPE=redis
-REDIS_URL=redis://redis:6379/5
-```
-
-**In docker-compose.integrated.yml auskommentieren:**
-
-```yaml
-# SESSION_TYPE: redis
-# SESSION_REDIS: ${REDIS_URL:-redis://redis:6379/0}
-```
+Die App nutzt Standard-Flask-Client-Cookie-Sessions (kein Redis, kein
+`flask-session`). Für horizontales Scaling mit mehreren App-Containern
+ist das relevant, siehe Abschnitt "Skalierung" weiter unten.
 
 ## Traefik-Konfiguration
 
@@ -206,18 +160,11 @@ nano .env
 **Wichtige Variablen:**
 
 ```env
-# Datenbank (Shared PostgreSQL)
-DATABASE_URL=postgresql://rechnungen_user:passwort@postgres:5432/rechnungen
-
-# Session (File-based oder Redis)
-SESSION_TYPE=filesystem
-# SESSION_REDIS=redis://redis:6379/5
+# Datenbank (Shared MariaDB/MySQL)
+DATABASE_URL=mysql+pymysql://rechnungen_user:passwort@mariadb:3306/rechnungen?charset=utf8mb4
 
 # Secrets (generiere neue!)
 SECRET_KEY=<generiere mit: openssl rand -hex 32>
-# JWT_SECRET_KEY wird gesetzt, aber jwt_api.py signiert/verifiziert
-# Tokens tatsächlich mit SECRET_KEY (siehe AGENTS.md) -- eine separate
-# JWT_SECRET_KEY hat aktuell keine Wirkung.
 
 # Domain
 DOMAIN=rechnungen.deine-domain.de
@@ -351,10 +298,14 @@ docker exec crowdsec cscli alerts list --origin rechnungen
 
 ### Horizontales Scaling (mehrere App-Container)
 
-**Voraussetzung:** Redis für Session-Sharing -- setzt voraus, dass
-`flask-session` zuerst tatsächlich eingebaut wird (siehe Warnhinweis im
-Redis-Abschnitt oben). Ohne diesen Einbau laufen mehrere Replicas mit
-inkonsistenten Client-Cookie-Sessions.
+Die App nutzt aktuell Standard-Flask-Client-Cookie-Sessions, kein
+`flask-session`/Redis (siehe AGENTS.md). Client-Cookie-Sessions sind
+zustandslos auf Serverseite und funktionieren daher grundsaetzlich auch
+mit mehreren Replicas, ohne zusaetzliches Session-Sharing. Fuer echtes
+horizontales Scaling ist `flask-session` mit Redis trotzdem sinnvoll
+(z.B. um Session-Groesse/-Sicherheit nicht an den Client zu binden) --
+das ist aber ein eigenstaendiges Feature, das erst noch eingebaut werden
+muesste (Import + `Session(app)` in app.py).
 
 ```yaml
 # docker-compose.integrated.yml erweitern:
@@ -362,9 +313,6 @@ services:
   app:
     deploy:
       replicas: 3
-    environment:
-      SESSION_TYPE: redis
-      REDIS_URL: redis://redis:6379/5
 ```
 
 **Traefik übernimmt automatisch Load-Balancing.**

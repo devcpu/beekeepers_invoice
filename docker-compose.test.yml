@@ -36,9 +36,6 @@ services:
     environment:
       DATABASE_URL: mysql+pymysql://${DB_USER:-rechnungen_user}:${DB_PASSWORD}@db:3306/${DB_NAME:-rechnungen}?charset=utf8mb4
 
-      SESSION_TYPE: filesystem
-      SESSION_FILE_DIR: /app/flask_session
-
       FLASK_ENV: production
       SECRET_KEY: ${SECRET_KEY}
 

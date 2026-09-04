@@ -5,22 +5,6 @@ entfernen (nicht abhaken stehen lassen).
 
 ## Phase 1: Aufraeumen
 
-### Tote Umgebungsvariablen entfernen oder tatsaechlich aktivieren
-
-Verifizierte Fallen (Details: AGENTS.md "Gesetzt, aber wirkungslos"):
-
-- [ ] `SESSION_TYPE` / `SESSION_FILE_DIR`: `flask-session` ist nicht
-      installiert, die Variablen wirken nicht. Entscheidung noetig:
-      **(a)** Variablen aus docker-compose.yml, docker-compose.test.yml
-      und .env.docker entfernen (App nutzt ohnehin Client-Cookie-Sessions),
-      oder **(b)** `flask-session` in requirements.txt aufnehmen und in
-      app.py per `Session(app)` tatsaechlich aktivieren.
-- [ ] `JWT_SECRET_KEY` in docker-compose.integrated.yml: wird von
-      jwt_api.py nicht gelesen (nutzt `SECRET_KEY`). Entscheidung noetig:
-      **(a)** Variable entfernen, oder **(b)** jwt_api.py auf einen
-      separaten Key umstellen (staerkere Trennung von Session- und
-      API-Secrets).
-
 ### Doppelten Code zusammenfuehren
 
 - [ ] `add_fold_and_punch_marks()` (DIN-5008-Faltmarken) ist identisch in
@@ -68,3 +52,9 @@ nach Phase 1. Vor Umsetzung jeweils einzeln besprechen.
       ausgehebelt (ueberschrieb `data_hash` per Commit); `debug_hash.py`
       war zudem bereits mit einem veralteten Hash-Schema inkonsistent.
       Details/Lehre daraus: AGENTS.md Abschnitt "Dead Ends".
+- [x] Tote Umgebungsvariablen `SESSION_TYPE`/`SESSION_FILE_DIR`/
+      `SESSION_REDIS`/`JWT_SECRET_KEY` komplett entfernt (Entscheidung:
+      entfernen statt aktivieren) -- aus docker-compose.yml,
+      docker-compose.test.yml, docker-compose.integrated.yml,
+      .env.docker, README.md und SETUP_INTEGRATED.md. App nutzt weiterhin
+      Standard-Client-Cookie-Sessions, JWT nutzt weiterhin `SECRET_KEY`.

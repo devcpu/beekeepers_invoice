@@ -206,18 +206,17 @@ Schema-Aenderungen an einer bestehenden Datenbank -- fuer die nutzt du
 `COMPANY_WEBSITE`, `BANK_NAME`, `BANK_IBAN`, `BANK_BIC`, `PAYPAL`,
 `DEFAULT_TAX_RATE`, `LANDWIRTSCHAFTLICHE_URPRODUKTION_TAX_RATE`
 
-### Gesetzt, aber wirkungslos -- Falle
-
-- `SESSION_TYPE` / `SESSION_FILE_DIR`: werden in docker-compose.yml
-  gesetzt, aber `flask-session` ist nicht in requirements.txt und wird
-  im Code nicht importiert. Flask nutzt tatsaechlich Standard-
-  Client-Cookie-Sessions. Wer Redis-Sessions einschalten will, muss
-  `flask-session` zuerst tatsaechlich einbauen (Import + `Session(app)`),
-  nicht nur die ENV-Variable setzen.
-- `JWT_SECRET_KEY`: wird in docker-compose.integrated.yml gesetzt, aber
-  `jwt_api.py` signiert/verifiziert Tokens mit `current_app.config["SECRET_KEY"]`
-  (siehe jwt_api.py:30 und :46) -- derselbe Key wie die Flask-Session,
-  nicht der separate JWT-Key.
+Die App nutzt Standard-Flask-Client-Cookie-Sessions; `flask-session`
+ist nicht installiert. `jwt_api.py` signiert/verifiziert JWT-Tokens mit
+`current_app.config["SECRET_KEY"]` (jwt_api.py:30 und :46) -- es gibt
+keinen separaten JWT-Key. Die zuvor gesetzten, wirkungslosen Variablen
+`SESSION_TYPE`/`SESSION_FILE_DIR`/`SESSION_REDIS`/`JWT_SECRET_KEY` wurden
+am 2026-09-05 aus allen docker-compose-Dateien, `.env.docker` und der
+Dokumentation entfernt (siehe TODO.md "Erledigt"). Wer server-seitige
+Sessions oder einen separaten JWT-Key will, muss das als eigenes Feature
+einbauen (`flask-session` in requirements.txt + `Session(app)` in app.py
+bzw. `jwt_api.py` auf einen zweiten Key umstellen), nicht nur ENV-Werte
+setzen.
 
 ### Deployment-spezifisch (nicht von der App selbst gelesen)
 

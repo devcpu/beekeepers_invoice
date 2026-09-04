@@ -6,13 +6,13 @@
             <h1>📊 Jahresübersicht Einnahmen</h1>
             <div class="d-flex gap-2">
                 <!-- PDF-Export -->
-                <a href="{{ url_for('annual_revenue_report_pdf', year=stats.year) }}"
+                <a href="{{ url_for('reports.annual_revenue_report_pdf', year=stats.year) }}"
                    class="btn btn-danger"
                    target="_blank">📄 PDF exportieren</a>
                 <!-- Jahr-Auswahl -->
                 <select class="form-select d-inline-block"
                         style="width: auto"
-                        onchange="window.location.href='{{ url_for("annual_revenue_report") }}?year=' + this.value">
+                        onchange="window.location.href='{{ url_for("reports.annual_revenue_report") }}?year=' + this.value">
                     {% for y in available_years %}
                         <option value="{{ y }}" {% if y == stats.year %}selected{% endif %}>{{ y }}</option>
                     {% endfor %}

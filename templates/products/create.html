@@ -6,7 +6,7 @@
                 align-items: center;
                 margin-bottom: 2rem">
         <h1>Neues Produkt anlegen</h1>
-        <a href="{{ url_for('list_products') }}"
+        <a href="{{ url_for('products.list_products') }}"
            class="btn"
            style="background: #95a5a6;
                   color: white">Abbrechen</a>
@@ -87,7 +87,7 @@
             </div>
             <div style="margin-top: 2rem;">
                 <button type="submit" class="btn btn-primary">Produkt anlegen</button>
-                <a href="{{ url_for('list_products') }}"
+                <a href="{{ url_for('products.list_products') }}"
                    class="btn"
                    style="background: #95a5a6;
                           color: white;

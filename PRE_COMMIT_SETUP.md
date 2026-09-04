@@ -26,21 +26,24 @@ pre-commit run
 # Nur bestimmten Hook ausführen
 pre-commit run black --all-files
 pre-commit run curlylint --all-files
-pre-commit run jinjalint --all-files
+pre-commit run djlint-reformat-jinja --all-files
 ```
 
 ## Was wird geprüft?
 
 ### Python Code
 
-- **black**: Code-Formatierung (120 Zeichen/Zeile)
+- **black**: Code-Formatierung (160 Zeichen/Zeile)
 - **flake8**: Linting & Style-Guide (PEP8)
 - **isort**: Import-Sortierung
+- **pylint**: zusätzliches Linting (mit projektspezifischen Disables)
 - **bandit**: Security-Checks
+- **py-compile**: Syntax-Check
+- **safety**: Dependency-Sicherheitscheck
 
 ### HTML & Jinja2 Templates
 
-- **jinjalint**: Jinja2-Syntax-Validierung
+- **djlint**: Jinja2-Reformatierung (Ersatz für das früher genutzte jinjalint)
 - **curlylint**: HTML + Jinja2 Best Practices
   - Alt-Texte für Bilder
   - ARIA-Rollen
@@ -49,7 +52,7 @@ pre-commit run jinjalint --all-files
 
 ### SQL
 
-- **sqlfluff**: PostgreSQL SQL-Linting
+- **sqlfluff**: SQL-Linting (lint + fix)
 
 ### Allgemein
 
@@ -62,11 +65,11 @@ pre-commit run jinjalint --all-files
 
 ## Häufige Probleme
 
-### Jinjalint: Syntax-Fehler
+### djlint: Reformatierung schlägt fehl
 
 ```bash
-# Nur Syntax-Check, findet Fehler wie doppelte {% endblock %}
-pre-commit run jinjalint --all-files
+# Findet Syntax-Fehler wie doppelte {% endblock %}
+pre-commit run djlint-reformat-jinja --all-files
 ```
 
 ### Curlylint: Template-Warnings
@@ -109,5 +112,5 @@ Alle Konfigurationsdateien:
 
 - `.pre-commit-config.yaml` - Hauptkonfiguration
 - `.curlylintrc.yaml` - HTML/Jinja2 Rules
-- `.jinjalintrc` - Jinja2 Syntax
-- `pyproject.toml` - Python Tools (black, isort, bandit)
+- `.jinjalintrc` - djlint-Konfiguration
+- `setup.cfg` - Python Tools (black, flake8, isort, pylint, pytest)

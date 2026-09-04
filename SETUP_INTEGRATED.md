@@ -67,6 +67,16 @@ Nutze die `docker-compose.yml` (Standalone-Variante) wenn:
 
 ## Redis-Setup (Optional)
 
+> **Achtung:** `flask-session` ist aktuell nicht in requirements.txt
+> enthalten und wird im Code nicht importiert. Die `SESSION_TYPE`/
+> `SESSION_REDIS`-Variablen unten haben ohne diesen zusätzlichen
+> Einbau **keine Wirkung** -- die App nutzt tatsächlich Standard-
+> Client-Cookie-Sessions, unabhängig vom gesetzten Wert (Details:
+> AGENTS.md, Abschnitt "Gesetzt, aber wirkungslos"). Wer Redis-Sessions
+> tatsächlich nutzen will, muss `flask-session` zuerst in
+> requirements.txt aufnehmen und in app.py per `Session(app)`
+> initialisieren.
+
 ### Wann Redis nutzen?
 
 **File-based Sessions (Standard):**
@@ -205,7 +215,9 @@ SESSION_TYPE=filesystem
 
 # Secrets (generiere neue!)
 SECRET_KEY=<generiere mit: openssl rand -hex 32>
-JWT_SECRET_KEY=<generiere mit: openssl rand -hex 32>
+# JWT_SECRET_KEY wird gesetzt, aber jwt_api.py signiert/verifiziert
+# Tokens tatsächlich mit SECRET_KEY (siehe AGENTS.md) -- eine separate
+# JWT_SECRET_KEY hat aktuell keine Wirkung.
 
 # Domain
 DOMAIN=rechnungen.deine-domain.de
@@ -226,17 +238,18 @@ docker-compose -f docker-compose.integrated.yml logs -f app
 ### 3. Datenbank initialisieren
 
 ```bash
-# Tabellen erstellen
+# Tabellen erstellen + Standard-Admin (admin/admin) + Marktstand-Kunde
 docker-compose -f docker-compose.integrated.yml exec app flask init-db
 
-# Migrationen ausführen
-docker-compose -f docker-compose.integrated.yml exec app python migrate_add_gobd_tables.py
-docker-compose -f docker-compose.integrated.yml exec app python migrate_add_reminders.py
-docker-compose -f docker-compose.integrated.yml exec app python migrate_add_password_reset.py
-
-# Admin-User erstellen
-docker-compose -f docker-compose.integrated.yml exec app flask create-admin
+# Alembic-Migrationen anwenden (siehe MIGRATIONS.md)
+docker-compose -f docker-compose.integrated.yml exec app alembic upgrade head
 ```
+
+**Hinweis:** Die einzelnen `migrate_add_*.py`-Skripte existieren nicht mehr als
+eigenständig lauffähige Migrationen -- sie liegen archiviert in
+`migrations_archive/` (siehe MIGRATIONS.md). Schema-Änderungen laufen
+ausschließlich über Alembic. Nach dem ersten Login mit `admin`/`admin`
+sofort das Passwort ändern.
 
 ### 4. Testen
 
@@ -338,7 +351,10 @@ docker exec crowdsec cscli alerts list --origin rechnungen
 
 ### Horizontales Scaling (mehrere App-Container)
 
-**Voraussetzung:** Redis für Session-Sharing!
+**Voraussetzung:** Redis für Session-Sharing -- setzt voraus, dass
+`flask-session` zuerst tatsächlich eingebaut wird (siehe Warnhinweis im
+Redis-Abschnitt oben). Ohne diesen Einbau laufen mehrere Replicas mit
+inkonsistenten Client-Cookie-Sessions.
 
 ```yaml
 # docker-compose.integrated.yml erweitern:

@@ -811,11 +811,11 @@ def create_app(config_name="default"):
 
                 # Steuersatz je nach Modell
                 if tax_model == "standard":
-                    tax_rate = float(request.form.get("tax_rate", app.config.get("DEFAULT_TAX_RATE", 19.0)))
+                    tax_rate = Decimal(str(request.form.get("tax_rate", app.config.get("DEFAULT_TAX_RATE", 19.0))))
                 elif tax_model == "landwirtschaft":
-                    tax_rate = float(app.config.get("LANDWIRTSCHAFTLICHE_URPRODUKTION_TAX_RATE", 7.8))
+                    tax_rate = Decimal(str(app.config.get("LANDWIRTSCHAFTLICHE_URPRODUKTION_TAX_RATE", 7.8)))
                 else:  # kleinunternehmer
-                    tax_rate = 0.0
+                    tax_rate = Decimal("0.0")
 
                 invoice = Invoice(
                     invoice_number=invoice_number,
@@ -847,8 +847,8 @@ def create_app(config_name="default"):
                         line_item = LineItem(
                             product_id=int(prod_id) if prod_id and prod_id.strip() else None,
                             description=desc,
-                            quantity=float(qty),
-                            unit_price=float(price),
+                            quantity=Decimal(qty),
+                            unit_price=Decimal(price),
                             tax_rate=tax_rate_for_item,
                             position=idx,
                         )
@@ -1000,7 +1000,7 @@ def create_app(config_name="default"):
                             stock = ConsignmentStock.query.filter_by(customer_id=invoice.customer_id, product_id=line_item.product_id).first()
                             if stock:
                                 # Menge zurück ins Kommissionslager
-                                stock.quantity_remaining += int(line_item.quantity)
+                                stock.quantity += int(line_item.quantity)
 
             # Alle LineItems löschen (CASCADE sollte das eigentlich automatisch machen)
             for line_item in invoice.line_items:

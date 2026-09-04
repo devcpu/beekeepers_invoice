@@ -133,16 +133,10 @@ def test_create_invoice_form_accessible(client, admin_user):
     assert response.status_code == 200
 
 
-def test_create_invoice_post_currently_fails_with_type_error(client, admin_user, db_session):
-    """KRITISCHER BUG (siehe AGENTS.md / TODO.md, live gegen MariaDB
-    verifiziert): create_invoice() konstruiert LineItem mit rohen
-    float-Werten (app.py:850-851). Invoice.calculate_totals() rechnet
-    damit `float * Decimal` und wirft TypeError -- das manuelle
-    Rechnungsformular kann aktuell KEINE Rechnung erfolgreich anlegen.
-    Dieser Test haelt den Ist-Zustand fest (Fehler-Flash, kein Invoice
-    in der DB) und MUSS nach dem Fix (TODO.md) durch einen
-    Erfolgs-Assert ersetzt werden -- dann darf `invoice is not None`
-    und `invoice.verify_hash() is True` gelten."""
+def test_create_invoice_post_creates_invoice_and_customer(client, admin_user, db_session):
+    """Regressionstest fuer den behobenen float/Decimal-Bug (siehe
+    AGENTS.md / TODO.md): create_invoice() konstruiert LineItem jetzt
+    mit Decimal statt float, calculate_totals() laeuft ohne TypeError."""
     login(client, "admin")
 
     response = client.post(
@@ -170,10 +164,11 @@ def test_create_invoice_post_currently_fails_with_type_error(client, admin_user,
     )
 
     assert response.status_code == 200
-    assert "Fehler beim Erstellen der Rechnung" in response.get_data(as_text=True)
-    assert "unsupported operand type" in response.get_data(as_text=True)
-    # Kein Invoice wurde angelegt (Rollback bei Fehler)
-    assert Invoice.query.first() is None
+    invoice = Invoice.query.first()
+    assert invoice is not None
+    assert invoice.customer.email == "neu@example.test"
+    assert invoice.subtotal == Decimal("30.00")
+    assert invoice.verify_hash() is True
 
 
 def test_view_invoice_detail(client, admin_user, db_session, customer):

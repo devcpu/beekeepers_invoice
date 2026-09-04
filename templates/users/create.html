@@ -4,7 +4,7 @@
     <div style="margin-bottom: 2rem;">
         <h1>➕ Neuen Benutzer erstellen</h1>
     </div>
-    <form method="POST" action="{{ url_for('create_user') }}">
+    <form method="POST" action="{{ url_for('users.create_user') }}">
         <div class="card">
             <h2>Benutzerdaten</h2>
             <div class="form-grid">
@@ -65,7 +65,7 @@
             <button type="submit" class="btn" style="background: #28a745; color: white;">
                 <i class="bi bi-check-circle"></i> Benutzer erstellen
             </button>
-            <a href="{{ url_for('list_users') }}"
+            <a href="{{ url_for('users.list_users') }}"
                class="btn"
                style="background: #6c757d;
                       color: white">

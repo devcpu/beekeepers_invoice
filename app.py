@@ -6,14 +6,14 @@ from decimal import Decimal
 from flask import Flask, flash, redirect, render_template, request, send_file, url_for
 from flask_login import LoginManager, current_user, login_required
 
-from auth_utils import role_required
 from blueprints.api import api_bp
 from blueprints.auth import auth_bp
-from blueprints.main import main_bp
 from blueprints.customers import customers_bp
+from blueprints.main import main_bp
 from blueprints.pos import pos_bp
 from blueprints.products import products_bp
 from blueprints.reports import reports_bp
+from blueprints.users import users_bp
 from config import config
 from email_service import mail
 from invoice_numbering import generate_invoice_number
@@ -65,6 +65,7 @@ def create_app(config_name="default"):
     app.register_blueprint(customers_bp)
     app.register_blueprint(pos_bp)
     app.register_blueprint(reports_bp)
+    app.register_blueprint(users_bp)
 
     @login_manager.user_loader
     def load_user(user_id):
@@ -880,207 +881,6 @@ Mit freundlichen Grüßen
         products = Product.query.filter_by(active=True).order_by(Product.name).all()
         return render_template("stock_adjustments/create.html", products=products)
 
-    # ============================================================================
-    # Einstellungen
-    # ============================================================================
-
-    @app.route("/settings")
-    @login_required
-    @role_required("admin")
-    def settings():
-        """Einstellungen - Firmendaten anzeigen"""
-        company_data = {
-            "name": app.config.get("COMPANY_NAME"),
-            "holder": app.config.get("COMPANY_HOLDER"),
-            "street": app.config.get("COMPANY_STREET"),
-            "zip": app.config.get("COMPANY_ZIP"),
-            "city": app.config.get("COMPANY_CITY"),
-            "country": app.config.get("COMPANY_COUNTRY"),
-            "email": app.config.get("COMPANY_EMAIL"),
-            "phone": app.config.get("COMPANY_PHONE"),
-            "tax_id": app.config.get("COMPANY_TAX_ID"),
-            "website": app.config.get("COMPANY_WEBSITE"),
-        }
-        bank_data = {
-            "name": app.config.get("BANK_NAME"),
-            "iban": app.config.get("BANK_IBAN"),
-            "bic": app.config.get("BANK_BIC"),
-        }
-        return render_template("settings.html", company=company_data, bank=bank_data, config=app.config)
-
-    @app.route("/settings/users")
-    @login_required
-    @role_required("admin")
-    def list_users():
-        """User-Verwaltung - Liste aller Benutzer"""
-        users = User.query.order_by(User.created_at.desc()).all()
-        return render_template("users/list.html", users=users)
-
-    @app.route("/settings/users/new", methods=["GET", "POST"])
-    @login_required
-    @role_required("admin")
-    def create_user():
-        """Neuen Benutzer erstellen"""
-        if request.method == "POST":
-            try:
-                username = request.form.get("username")
-                email = request.form.get("email")
-                password = request.form.get("password")
-                role = request.form.get("role", "cashier")
-
-                # Validierung
-                if User.query.filter_by(username=username).first():
-                    flash("Benutzername bereits vergeben.", "danger")
-                    return render_template("users/create.html")
-
-                if User.query.filter_by(email=email).first():
-                    flash("E-Mail-Adresse bereits vergeben.", "danger")
-                    return render_template("users/create.html")
-
-                # Benutzer erstellen
-                user = User(username=username, email=email, role=role, is_active=True)
-                user.set_password(password)
-
-                # Optional: Reseller-Verknüpfung
-                if role == "reseller":
-                    customer_id = request.form.get("reseller_customer_id")
-                    if customer_id:
-                        user.reseller_customer_id = int(customer_id)
-
-                db.session.add(user)
-                db.session.commit()
-
-                flash(f'Benutzer "{username}" wurde erfolgreich erstellt.', "success")
-                return redirect(url_for("list_users"))
-
-            except Exception as e:
-                db.session.rollback()
-                flash(f"Fehler beim Erstellen des Benutzers: {str(e)}", "danger")
-
-        # GET: Formular anzeigen
-        customers = Customer.query.order_by(Customer.company_name).all()
-        return render_template("users/create.html", customers=customers)
-
-    @app.route("/settings/users/<int:user_id>/edit", methods=["GET", "POST"])
-    @login_required
-    @role_required("admin")
-    def edit_user(user_id):
-        """Benutzer bearbeiten"""
-        user = User.query.get_or_404(user_id)
-
-        if request.method == "POST":
-            try:
-                # E-Mail aktualisieren
-                new_email = request.form.get("email")
-                if new_email != user.email:
-                    if User.query.filter_by(email=new_email).first():
-                        flash("E-Mail-Adresse bereits vergeben.", "danger")
-                        return render_template("users/edit.html", user=user, customers=Customer.query.all())
-                    user.email = new_email
-
-                # Rolle aktualisieren
-                user.role = request.form.get("role", user.role)
-
-                # Reseller-Verknüpfung
-                if user.role == "reseller":
-                    customer_id = request.form.get("reseller_customer_id")
-                    user.reseller_customer_id = int(customer_id) if customer_id else None
-                else:
-                    user.reseller_customer_id = None
-
-                # Aktiv-Status
-                user.is_active = request.form.get("is_active") == "on"
-
-                # 2FA-Pflicht
-                user.totp_required = request.form.get("totp_required") == "on"
-
-                # Passwort ändern (optional)
-                new_password = request.form.get("new_password")
-                if new_password:
-                    user.set_password(new_password)
-
-                db.session.commit()
-                flash(f'Benutzer "{user.username}" wurde aktualisiert.', "success")
-                return redirect(url_for("list_users"))
-
-            except Exception as e:
-                db.session.rollback()
-                flash(f"Fehler beim Aktualisieren des Benutzers: {str(e)}", "danger")
-
-        customers = Customer.query.order_by(Customer.company_name).all()
-        return render_template("users/edit.html", user=user, customers=customers)
-
-    @app.route("/settings/users/<int:user_id>/toggle-active", methods=["POST"])
-    @login_required
-    @role_required("admin")
-    def toggle_user_active(user_id):
-        """Benutzer aktivieren/deaktivieren"""
-        user = User.query.get_or_404(user_id)
-
-        if user.id == current_user.id:
-            flash("Sie können sich nicht selbst deaktivieren.", "danger")
-            return redirect(url_for("list_users"))
-
-        user.is_active = not user.is_active
-        db.session.commit()
-
-        status = "aktiviert" if user.is_active else "deaktiviert"
-        flash(f'Benutzer "{user.username}" wurde {status}.', "success")
-        return redirect(url_for("list_users"))
-
-    @app.route("/settings/users/<int:user_id>/reset-2fa", methods=["POST"])
-    @login_required
-    @role_required("admin")
-    def reset_user_2fa(user_id):
-        """2FA für Benutzer zurücksetzen"""
-        user = User.query.get_or_404(user_id)
-
-        user.totp_enabled = False
-        user.totp_secret = None
-        user.backup_codes = None
-        db.session.commit()
-
-        flash(f'2FA für "{user.username}" wurde zurückgesetzt.', "warning")
-        return redirect(url_for("list_users"))
-
-    @app.route("/settings/users/<int:user_id>/toggle-2fa-required", methods=["POST"])
-    @login_required
-    @role_required("admin")
-    def toggle_user_2fa_required(user_id):
-        """2FA-Pflicht für Benutzer umschalten"""
-        user = User.query.get_or_404(user_id)
-
-        user.totp_required = not user.totp_required
-        db.session.commit()
-
-        if user.totp_required:
-            flash(
-                f'2FA ist jetzt Pflicht für "{user.username}". Der Benutzer muss 2FA beim nächsten Login einrichten.',
-                "success",
-            )
-        else:
-            flash(f'2FA-Pflicht für "{user.username}" wurde aufgehoben.', "info")
-
-        return redirect(url_for("list_users"))
-
-    @app.route("/settings/users/<int:user_id>/delete", methods=["POST"])
-    @login_required
-    @role_required("admin")
-    def delete_user(user_id):
-        """Benutzer löschen"""
-        user = User.query.get_or_404(user_id)
-
-        if user.id == current_user.id:
-            flash("Sie können sich nicht selbst löschen.", "danger")
-            return redirect(url_for("list_users"))
-
-        username = user.username
-        db.session.delete(user)
-        db.session.commit()
-
-        flash(f'Benutzer "{username}" wurde gelöscht.', "success")
-        return redirect(url_for("list_users"))
-
     @app.route("/payments/review")
     @login_required
     def payment_review():
@@ -1405,109 +1205,6 @@ Mit freundlichen Grüßen
             flash("Prüfung als erledigt markiert", "success")
 
         return redirect(url_for("payment_review"))
-
-    @app.route("/settings/test-email", methods=["POST"])
-    @login_required
-    @role_required("admin")
-    def test_email_settings():
-        """E-Mail-Einstellungen (SMTP und IMAP) testen"""
-        import imaplib
-        import smtplib
-        import socket
-
-        results = {"smtp": {"success": False, "message": ""}, "imap": {"success": False, "message": ""}}
-
-        # SMTP Test
-        try:
-            smtp_server = app.config.get("MAIL_SERVER")
-            smtp_port = app.config.get("MAIL_PORT")
-            smtp_username = app.config.get("MAIL_USERNAME")
-            smtp_password = app.config.get("MAIL_PASSWORD")
-            smtp_use_ssl = app.config.get("MAIL_USE_SSL")
-
-            if not smtp_server or not smtp_username or not smtp_password:
-                results["smtp"]["message"] = "SMTP-Konfiguration unvollständig (Server, Username oder Passwort fehlt)"
-            else:
-                # Verbindung aufbauen
-                if smtp_use_ssl:
-                    server = smtplib.SMTP_SSL(smtp_server, smtp_port, timeout=10)
-                else:
-                    server = smtplib.SMTP(smtp_server, smtp_port, timeout=10)
-                    if app.config.get("MAIL_USE_TLS"):
-                        server.starttls()
-
-                # Login versuchen
-                server.login(smtp_username, smtp_password)
-                server.quit()
-
-                results["smtp"]["success"] = True
-                results["smtp"]["message"] = f"Verbindung erfolgreich zu {smtp_server}:{smtp_port}"
-
-        except smtplib.SMTPAuthenticationError:
-            results["smtp"]["message"] = "Authentifizierung fehlgeschlagen - Benutzername oder Passwort falsch"
-        except smtplib.SMTPException as e:
-            results["smtp"]["message"] = f"SMTP-Fehler: {str(e)}"
-        except socket.gaierror:
-            results["smtp"]["message"] = f"Server {smtp_server} nicht erreichbar - DNS-Fehler"
-        except socket.timeout:
-            results["smtp"]["message"] = f"Zeitüberschreitung bei Verbindung zu {smtp_server}:{smtp_port}"
-        except Exception as e:
-            results["smtp"]["message"] = f"Unerwarteter Fehler: {str(e)}"
-
-        # IMAP Test
-        try:
-            imap_server = app.config.get("IMAP_SERVER")
-            imap_port = app.config.get("IMAP_PORT")
-            imap_username = app.config.get("IMAP_USERNAME")
-            imap_password = app.config.get("IMAP_PASSWORD")
-            imap_use_ssl = app.config.get("IMAP_USE_SSL")
-
-            if not imap_server or not imap_username or not imap_password:
-                results["imap"]["message"] = "IMAP-Konfiguration unvollständig (Server, Username oder Passwort fehlt)"
-            else:
-                # Verbindung aufbauen
-                if imap_use_ssl:
-                    mail = imaplib.IMAP4_SSL(imap_server, imap_port)
-                else:
-                    mail = imaplib.IMAP4(imap_server, imap_port)
-
-                # Login versuchen
-                mail.login(imap_username, imap_password)
-
-                # Mailboxen auflisten
-                status, folders = mail.list()  # pylint: disable=unused-variable
-                folder_count = len(folders) if folders else 0
-
-                mail.logout()
-
-                results["imap"]["success"] = True
-                results["imap"]["message"] = f"Verbindung erfolgreich zu {imap_server}:{imap_port} ({folder_count} Ordner gefunden)"
-
-        except imaplib.IMAP4.error as e:
-            error_msg = str(e)
-            if "authentication failed" in error_msg.lower():
-                results["imap"]["message"] = "Authentifizierung fehlgeschlagen - Benutzername oder Passwort falsch"
-            else:
-                results["imap"]["message"] = f"IMAP-Fehler: {error_msg}"
-        except socket.gaierror:
-            results["imap"]["message"] = f"Server {imap_server} nicht erreichbar - DNS-Fehler"
-        except socket.timeout:
-            results["imap"]["message"] = f"Zeitüberschreitung bei Verbindung zu {imap_server}:{imap_port}"
-        except Exception as e:
-            results["imap"]["message"] = f"Unerwarteter Fehler: {str(e)}"
-
-        # Flash-Nachrichten erstellen
-        if results["smtp"]["success"]:
-            flash(f'✓ SMTP: {results["smtp"]["message"]}', "success")
-        else:
-            flash(f'✗ SMTP: {results["smtp"]["message"]}', "error")
-
-        if results["imap"]["success"]:
-            flash(f'✓ IMAP: {results["imap"]["message"]}', "success")
-        else:
-            flash(f'✗ IMAP: {results["imap"]["message"]}', "error")
-
-        return redirect(url_for("settings"))
 
     # CLI Commands
     @app.cli.command()

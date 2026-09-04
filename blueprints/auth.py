@@ -224,7 +224,7 @@ def setup_2fa():
     """2FA aktivieren"""
     if current_user.totp_enabled:
         flash("2FA ist bereits aktiviert.", "info")
-        return redirect(url_for("settings"))
+        return redirect(url_for("users.settings"))
 
     if request.method == "POST":
         token = request.form.get("token", "").replace(" ", "")
@@ -264,13 +264,13 @@ def disable_2fa():
     """2FA deaktivieren"""
     if current_user.totp_required:
         flash("2FA ist für Ihren Account verpflichtend und kann nicht deaktiviert werden.", "danger")
-        return redirect(url_for("settings"))
+        return redirect(url_for("users.settings"))
 
     password = request.form.get("password")
 
     if not current_user.check_password(password):
         flash("Falsches Passwort.", "danger")
-        return redirect(url_for("settings"))
+        return redirect(url_for("users.settings"))
 
     current_user.totp_enabled = False
     current_user.totp_secret = None
@@ -278,7 +278,7 @@ def disable_2fa():
     db.session.commit()
 
     flash("2FA wurde deaktiviert.", "warning")
-    return redirect(url_for("settings"))
+    return redirect(url_for("users.settings"))
 
 
 @auth_bp.route("/settings/2fa-regenerate-codes", methods=["POST"])
@@ -287,12 +287,12 @@ def regenerate_backup_codes():
     """Backup-Codes neu generieren"""
     if not current_user.totp_enabled:
         flash("2FA ist nicht aktiviert.", "danger")
-        return redirect(url_for("settings"))
+        return redirect(url_for("users.settings"))
 
     password = request.form.get("password")
     if not current_user.check_password(password):
         flash("Falsches Passwort.", "danger")
-        return redirect(url_for("settings"))
+        return redirect(url_for("users.settings"))
 
     backup_codes = current_user.generate_backup_codes()
     db.session.commit()

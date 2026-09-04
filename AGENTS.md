@@ -183,11 +183,11 @@ Schema-Aenderungen an einer bestehenden Datenbank -- fuer die nutzt du
 - **`migrations_archive/`** (12 Dateien + eigenes README): das alte,
   handgeschriebene Ad-hoc-Migrationssystem vor Alembic. In MIGRATIONS.md
   explizit als archiviert bezeichnet. Kein Code liest daraus.
-- **`migrations/`** (nur `add_totp_required.py`, `create_users_table.py`):
-  ein noch aelterer, undokumentierter Zwischenstand -- taucht in
-  MIGRATIONS.md gar nicht auf. Nicht der aktuelle Migrationsweg. Wirkt
-  auf den ersten Blick wie ein aktives Verzeichnis, ist es aber nicht --
-  bei Schema-Aenderungen ausschliesslich Alembic verwenden.
+- **`migrations/`** (ein noch aelterer, undokumentierter Zwischenstand)
+  wurde geloescht (2026-09-05) -- tauchte in MIGRATIONS.md nicht auf,
+  kein Code las daraus. Falls ein aehnliches Verzeichnis wieder auftaucht:
+  gleiche Pruefung wie hier (MIGRATIONS.md durchsuchen, Code-Referenzen
+  grep'en) vor dem Anfassen.
 
 ## Konfiguration & Umgebungsvariablen
 
@@ -221,20 +221,14 @@ Schema-Aenderungen an einer bestehenden Datenbank -- fuer die nutzt du
 `DOMAIN`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_ROOT_PASSWORD`,
 `HTTPNET_API_KEY` (Traefik DNS-Challenge, siehe DOCKER_DEPLOYMENT.md).
 
-## Postgres/MariaDB-Inkonsistenz
+## Datenbank-Dialekt: MariaDB
 
 Produktiv laeuft **MariaDB** (docker-compose.yml, `pymysql`-Treiber).
-Mehrere Stellen zeigen aber noch auf PostgreSQL und sind nicht
-nachgezogen:
-
-- `config.py`-Default fuer `DATABASE_URL` ist `postgresql://localhost/rechnungen`
-- `psycopg2-binary` steht weiterhin in requirements.txt
-- SQLFluff-Konfiguration in setup.cfg hat `dialect = postgres`
-- `fix_permissions.sql` enthaelt Postgres-`GRANT`-Syntax
-
-Vor dem Bereinigen pruefen, ob noch irgendein Deployment tatsaechlich
-PostgreSQL nutzt (z.B. eine sehr alte Installation) -- sonst sind das
-sichere Aufraeum-Kandidaten.
+PostgreSQL wird nicht mehr genutzt und nicht mehr unterstuetzt -- die
+frueheren Postgres-Ueberreste (`psycopg2-binary` in requirements.txt,
+Postgres-Default in config.py, `dialect = postgres` in setup.cfg,
+`fix_permissions.sql`) wurden am 2026-09-05 entfernt, nachdem verifiziert
+wurde, dass kein Deployment mehr PostgreSQL nutzt.
 
 ## Doppelter Code
 

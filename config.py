@@ -12,7 +12,7 @@ class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")
 
     # Database
-    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", "postgresql://localhost/rechnungen")
+    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", "mysql+pymysql://localhost/rechnungen")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # File uploads
@@ -96,7 +96,7 @@ class TestingConfig(Config):
     """Test-Konfiguration"""
 
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = "postgresql://localhost/rechnungen_test"
+    SQLALCHEMY_DATABASE_URI = "mysql+pymysql://localhost/rechnungen_test"
 
 
 config = {

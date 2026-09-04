@@ -106,6 +106,38 @@ sinnvoll nachtraeglich, da der Hash exakt den Stand zum Zeitpunkt der
 Erstellung abbilden soll (Manipulationsschutz) -- bei jeder Aenderung an
 dieser Reihenfolge das GoBD-Kapitel unten beachten.
 
+## KRITISCHER BUG: `float`/`Decimal`-Mischung in `calculate_totals()`
+
+`Invoice`/`LineItem`-Spalten sind `db.Numeric` (werden zu `Decimal`
+konvertiert -- aber erst beim naechsten DB-Flush, nicht bei reiner
+Python-Zuweisung). `Invoice.calculate_totals()` (models.py:369)
+multipliziert `item.total` mit einem `Decimal`-Ausdruck
+(`Decimal(...) / Decimal("100")`). Werden `LineItem`-Objekte VOR dem
+ersten Flush mit rohen `float`-Werten konstruiert (wie es
+`create_invoice()` in app.py:850-851 tut: `quantity=float(qty)`,
+`unit_price=float(price)`), bleibt `item.total` nach
+`calculate_total()` (models.py:481-484) ein `float`. `float * Decimal`
+wirft `TypeError: unsupported operand type(s) for *: 'float' and
+'decimal.Decimal'`.
+
+**Praktische Folge, live gegen MariaDB verifiziert (2026-09-05):** Das
+manuelle Rechnungsformular `/invoices/new` kann in der aktuellen
+Codebasis **niemals erfolgreich eine Rechnung anlegen** -- jeder Versuch
+scheitert mit obigem `TypeError`, abgefangen vom generischen
+`except Exception` (app.py:868), sichtbar nur als generische
+Fehler-Flash-Message. Details und Fix-Vorschlag: TODO.md.
+
+`create_invoice_from_consignment()` (app.py:2726-2738) und der
+POS-Flow sind NICHT betroffen, da sie Betraege bereits explizit als
+`Decimal(...)` konstruieren, bevor `calculate_totals()` laeuft.
+
+**Lehre fuer neuen Code:** Wird ein SQLAlchemy-Model-Objekt mit
+`db.Numeric`-Spalten konstruiert und VOR dem ersten `flush()`/`commit()`
+in einer eigenen Berechnung weiterverwendet (wie hier
+`calculate_totals()`), muessen alle daran beteiligten Werte bereits
+explizit `Decimal` sein -- sich auf die implizite Typkonvertierung durch
+SQLAlchemy zu verlassen funktioniert nur nach einem Flush.
+
 ## Reseller-/Kommissionslager-Fluss
 
 1. Lieferschein anlegen (`DeliveryNote`, Status `delivered`) --
@@ -119,6 +151,14 @@ dieser Reihenfolge das GoBD-Kapitel unten beachten.
    zurueckbuchen (`product.increase_stock(...)` plus
    `consignment_item.quantity += ...`) -- eines von beiden zu vergessen
    ist der haeufigste Fehler in diesem Bereich.
+
+**Bekannter Bug (siehe TODO.md, noch nicht gefixt):** `delete_invoice()`
+(app.py:1003) greift auf `stock.quantity_remaining` zu -- dieses Feld
+existiert nicht in `ConsignmentStock` (nur `quantity`/`quantity_sold`).
+Reproduzierbar ueber `create_invoice_from_consignment()` (app.py:2732,
+setzt `customer_type="reseller"`) gefolgt vom Loeschen des entstandenen
+`draft`. `update_invoice_status()` (Storno-Pfad, app.py:938) ist davon
+NICHT betroffen -- dort steht korrekt `stock.quantity`.
 
 ## app.py ist ein Monolith -- so navigierst du darin
 

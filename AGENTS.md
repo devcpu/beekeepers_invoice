@@ -209,17 +209,18 @@ Fuenf Modelle in `models.py`, ein eigenes Blueprint `blueprints/production.py`
   Property** (`voll`/`teilweise_abgefuellt`/`leer`, aus `restmenge_kg` vs.
   `gewicht_kg` berechnet) -- KEINE DB-Spalte, daher kein `filter_by(status=...)`
   moeglich. Offene Chargen werden ueber
-  `HonigCharge.query.filter(HonigCharge.restmenge_kg > 0)` abgefragt.
-  Das Befuellen-Formular (`/production/eimer/<id>/befuellen`, GET) schlaegt
-  Sorte/Schleudertag/Wassergehalt der **zuletzt angelegten** `HonigCharge`
-  ueber ALLE Eimer hinweg vor (`HonigCharge.query.order_by(HonigCharge.id.desc()).first()`
-  in `blueprints/production.py::befuellen_eimer`) -- beim Schleudern fallen
-  mehrere Eimer nacheinander an, Auswiegen/Wassergehalt-Messung passiert oft
-  erst Tage spaeter mit denselben Werten fuer alle Eimer derselben
-  Schleuderung; wird die Sorte zwischendurch geaendert, soll der naechste
-  Eimer den geaenderten Wert uebernehmen, nicht den vom allerersten Eimer.
-  Nur ein Vorschlag (Formularwert bleibt aenderbar), `gewicht_kg` wird
-  bewusst NICHT vorbefuellt (variiert immer von Eimer zu Eimer).
+  `HonigCharge.query.filter(HonigCharge.restmenge_kg > 0)` abgefragt. Das
+  Befuellen-Formular (`/production/eimer/<id>/befuellen`, GET) schlaegt
+  Sorte/Schleudertag/Wassergehalt der **zuletzt angelegten** `HonigCharge` ueber
+  ALLE Eimer hinweg vor
+  (`HonigCharge.query.order_by(HonigCharge.id.desc()).first()` in
+  `blueprints/production.py::befuellen_eimer`) -- beim Schleudern fallen mehrere
+  Eimer nacheinander an, Auswiegen/Wassergehalt-Messung passiert oft erst Tage
+  spaeter mit denselben Werten fuer alle Eimer derselben Schleuderung; wird die
+  Sorte zwischendurch geaendert, soll der naechste Eimer den geaenderten Wert
+  uebernehmen, nicht den vom allerersten Eimer. Nur ein Vorschlag (Formularwert
+  bleibt aenderbar), `gewicht_kg` wird bewusst NICHT vorbefuellt (variiert immer
+  von Eimer zu Eimer).
 - **`AbfuellCharge`**: Kopf einer Abfuellsitzung. Traegt die Chargennummer (=
   MHD, **global eindeutig**, `unique=True`) und die Quellen -- NICHT
   `product_id`/Glasanzahl direkt, siehe naechster Punkt. Eine Chargennummer
@@ -267,19 +268,19 @@ Domaenen-Routen liegen in eigenstaendigen Flask-Blueprints unter `blueprints/`:
 (`main_bp`) | `/` | Nur die Dashboard-Route `index` | | `auth.py` (`auth_bp`) |
 -- | Login, 2FA (Setup/Verify/Disable/Backup-Codes), Logout, Bestandsquelle
 waehlen, Passwort-Reset | | `api.py` (`api_bp`) | `/api` |
-JWT-Login/Verify/Refresh + Invoices/Customers/POS ueber Token, plus die
+JWT-Login/Verify/Refresh/Device + Invoices/Customers/POS ueber Token, plus die
 `@login_required`-Autocomplete-/Bestandsaenderungs-Endpoints der Web-UI | |
 `products.py` (`products_bp`) | -- | `/products*`, `/stock` | | `customers.py`
 (`customers_bp`) | -- | `/customers*`, DSGVO-Anonymisierung | | `pos.py`
 (`pos_bp`) | -- | `/pos`, `/pos/complete-sale` (Kasse) | | `reports.py`
 (`reports_bp`) | `/reports` | Jahresuebersicht Einnahmen (Web + PDF) | |
 `users.py` (`users_bp`) | -- | `/settings*` (Firmendaten, Benutzerverwaltung,
-SMTP/IMAP-Verbindungstest) | | `delivery_notes.py` (`delivery_notes_bp`) | -- |
-`/delivery-notes*`, `/consignment/*`, `/payments/*` | | `invoices.py`
-(`invoices_bp`) | -- | `/invoices*` (CRUD, Storno, PDF, E-Mail, Mahnwesen),
-`/stock-adjustments*` -- groesster Blueprint | | `production.py`
-(`production_bp`) | -- | `/production/eimer*`, `/production/abfuellungen*` --
-Honig-Rueckverfolgbarkeit |
+SMTP/IMAP-Verbindungstest), `/settings/device-tokens*` (Geraete-Tokens) | |
+`delivery_notes.py` (`delivery_notes_bp`) | -- | `/delivery-notes*`,
+`/consignment/*`, `/payments/*` | | `invoices.py` (`invoices_bp`) | -- |
+`/invoices*` (CRUD, Storno, PDF, E-Mail, Mahnwesen), `/stock-adjustments*` --
+groesster Blueprint | | `production.py` (`production_bp`) | -- |
+`/production/eimer*`, `/production/abfuellungen*` -- Honig-Rueckverfolgbarkeit |
 
 Alle Blueprints sind mit explizitem Namen registriert (z.B.
 `main_bp = Blueprint("main", __name__)`), daher heissen Endpoints
@@ -443,7 +444,7 @@ nie einen nackten String an `.execute()` uebergeben.
 
 ## Tests
 
-105 Tests in `tests/` (pytest, In-Memory-SQLite via `TestingConfig`):
+119 Tests in `tests/` (pytest, In-Memory-SQLite via `TestingConfig`):
 
 - `conftest.py`: Fixtures (`app`, `client`, `db_session`, `admin_user`/
   `cashier_user`/`reseller_user`, `customer`, `product`) und Helper- Funktionen
@@ -472,6 +473,13 @@ nie einen nackten String an `.execute()` uebergeben.
   Abfuellsitzung mit mehreren Produkt-Ergebnissen (teilt sich eine
   Chargennummer), Validierung (doppelte Chargennummer, leere Quellen/
   Ergebnisse, Entnahme > Restmenge), Storno-Route mit Rueckbuchung.
+- `device_token_test.py`: Geraete-Tokens -- Liste zeigt nur eigene Tokens,
+  Mehrfachgeraete pro User erzeugen unterschiedliche Tokens, Widerruf-IDOR-
+  Schutz (fremdes Token per ID nicht widerrufbar), `/api/auth/device` liefert
+  ein funktionierendes JWT fuer eine bestehende `@token_required`-Route,
+  aktualisiert `last_used_at` statt `user.last_login`, lehnt unbekannte/
+  widerrufene Tokens und inaktive User ab, Widerruf eines Tokens laesst andere
+  Tokens desselben Users unberuehrt.
 
 `pytest` ist in requirements.txt, der `pytest`-Hook in `.pre-commit-config.yaml`
 ist aktiv. `setup.cfg` hat eine `[tool:pytest]`-Sektion mit
@@ -519,7 +527,62 @@ geschuetzt (`auth_utils.py`, eigenstaendiges Modul seit dem Blueprint-Split),
 die API-Variante fuer JWT-Routen ist `@role_required_api(*roles)`
 (`jwt_api.py`). Ungeschuetzte Routen ohne `@login_required` sind auf die
 erwartbaren Faelle beschraenkt (`/login`, `/verify-2fa`, `/forgot-password`,
-`/reset-password/<token>`, `/health`, `/offline`, `/api/auth/login`) -- bei
-einer neuen Route immer explizit entscheiden und mit
+`/reset-password/<token>`, `/health`, `/offline`, `/api/auth/login`,
+`/api/auth/device`) -- bei einer neuen Route immer explizit entscheiden und mit
 `@login_required`/`@role_required` versehen, statt sich auf einen impliziten
 Default zu verlassen.
+
+## Geraete-Tokens (mehrere widerrufbare Dauer-Tokens pro User)
+
+Fuer App-Zugriff (z.B. Android) ohne staendigen Passwort-Login gibt es
+`DeviceToken` (models.py) -- eine 1:n-Tabelle zu `User` (`user.device_tokens`),
+NICHT ein einzelnes Feld auf `User` (das fruehere, nie genutzte
+`User.api_token`/`api_token_expires`/`generate_api_token()`/
+`verify_api_token()` wurde entfernt, Migration `b4134be103fd` -- falls diese
+Namen in aelteren Notizen auftauchen, sind sie durch `DeviceToken` ersetzt).
+Grund fuer die eigene Tabelle: ein User kann mehrere Geraete koppeln (z.B.
+mehrere Handys/Tablets), jedes einzeln benannt (`label`, Pflichtfeld) und
+einzeln widerrufbar, ohne die anderen zu beeinflussen.
+
+**Ablauf:**
+
+1. `/settings/device-tokens` (`blueprints/users.py`, nur `@login_required`, KEIN
+   `@role_required` -- jede Rolle verwaltet ihre eigenen Geraete) zeigt die
+   eigene Token-Liste und ein Formular zum Koppeln eines neuen Geraets.
+1. `POST /settings/device-tokens/create` erzeugt eine `DeviceToken`-Zeile
+   (`secrets.token_urlsafe(32)`, kein Ablaufdatum -- gilt bis zum manuellen
+   Widerruf). Der Rohtoken wird NUR direkt nach dem Erzeugen angezeigt (Text
+   - QR-Code), danach ist in der Liste nur noch das Label sichtbar -- es gibt
+     bewusst keinen Re-Anzeige-Mechanismus (Token liegt im Klartext in der DB,
+     siehe unten -- Hashing wuerde die Einmal-Anzeige verhindern). Geht ein
+     Token verloren, muss ein neues Geraet gekoppelt und das alte widerrufen
+     werden.
+1. `POST /settings/device-tokens/<id>/revoke` loescht die Zeile
+   (`db.session.delete`, kein Soft-Delete -- GoBD-Vorgaben gelten nur fuer
+   Rechnungen/Zahlungen/Bestandsanpassungen, nicht fuer Auth-Tokens). Scopt
+   IMMER auf `filter_by(id=token_id, user_id=current_user.id).first_or_404()`,
+   NIE auf `get_or_404(token_id)` alleine -- sonst koennte ein Nutzer per
+   erratener ID das Geraet eines anderen Users widerrufen (IDOR).
+1. `POST /api/auth/device` (`blueprints/api.py`, unauthentifiziert) tauscht
+   einen gueltigen Device-Token gegen ein normales, kurzlebiges JWT
+   (`generate_jwt_token()`, wie beim Passwort-Login) -- das Geraet speichert nur
+   dieses JWT + den Device-Token fuer spaetere Refreshes, niemals das Passwort.
+   **Kein neuer Decorator**: alle bestehenden `@token_required`-Routen bleiben
+   unveraendert, sie sehen nur ein normales JWT. Schreibt
+   `last_used_at`/`last_used_ip` auf der `DeviceToken`-Zeile, NICHT
+   `user.last_login`/`last_login_ip` -- dieses Feld bedeutet "letzter Web-Login"
+   und wuerde bei mehreren, unabhaengig authentifizierenden Geraeten zwischen
+   ihnen hin- und herspringen. Fehlschlag (unbekannter/ widerrufener Token,
+   inaktiver User) loggt via
+   `crowdsec_app.log_failed_login("device-token", reason="invalid_device_token")`
+   nach `logs/security.log`, analog zu fehlgeschlagenen Web-Logins.
+1. QR-Payload ist JSON (`{"server": ..., "token": ...}`), nicht der nackte
+   Token, damit die App die Server-URL nicht manuell braucht. Die Basis-URL ist
+   waehlbar zwischen zwei Config-Werten `APP_URL_LOCAL`/`APP_URL_REMOTE`
+   (config.py, beide optional -- Homelab-intern vs. Internet/VPN-extern, da die
+   App aus beiden Netzen erreichbar sein soll). Auswahl ueber
+   `?zugang=local|remote` auf derselben Seite, keine Automatik. Ist eine
+   Variable nicht gesetzt, wird die zugehoerige Option ausgeblendet.
+
+Rohtoken liegt im Klartext in der DB (bewusst, Homelab-Single-User-Kontext, kein
+Hashing) -- ein DB-Dump/Backup enthaelt damit gueltige Dauer-Credentials.

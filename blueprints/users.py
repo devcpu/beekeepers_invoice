@@ -1,14 +1,19 @@
 """Einstellungen, Benutzerverwaltung und E-Mail-Konfigurationstest."""
 
+import base64
 import imaplib
+import json
+import secrets
 import smtplib
 import socket
+from io import BytesIO
 
+import qrcode
 from flask import Blueprint, current_app, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
 from auth_utils import role_required
-from models import Customer, User, db
+from models import Customer, DeviceToken, User, db
 
 users_bp = Blueprint("users", __name__)
 
@@ -297,4 +302,84 @@ def test_email_settings():
     else:
         flash(f'✗ IMAP: {results["imap"]["message"]}', "error")
 
-    return redirect(url_for("users.settings"))
+
+def _build_device_token_qr(server_url, token):
+    """Erzeugt den QR-Code fuer die Geraete-Kopplung als Base64-Data-URI.
+
+    Payload ist bewusst JSON ({"server": ..., "token": ...}), nicht nur der
+    nackte Token, damit eine Android-App die Server-URL nicht manuell
+    braucht. Analog zum QR-Erzeugungsmuster in pdf_service.py:38-53, hier
+    aber als Data-URI fuer die direkte Web-Anzeige statt als ReportLab-Image.
+    """
+    payload = json.dumps({"server": server_url, "token": token})
+    qr = qrcode.QRCode(version=None, error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=8, border=4)
+    qr.add_data(payload)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+
+    buffer = BytesIO()
+    img.save(buffer, format="PNG")
+    return "data:image/png;base64," + base64.b64encode(buffer.getvalue()).decode("ascii")
+
+
+@users_bp.route("/settings/device-tokens")
+@login_required
+def list_device_tokens():
+    """Liste der eigenen Geraete-Tokens (mehrere Geraete pro User moeglich)."""
+    zugang = request.args.get("zugang", "local")
+    if zugang not in ("local", "remote"):
+        zugang = "local"
+
+    server_url = current_app.config.get("APP_URL_LOCAL") if zugang == "local" else current_app.config.get("APP_URL_REMOTE")
+
+    tokens = DeviceToken.query.filter_by(user_id=current_user.id).order_by(DeviceToken.created_at.desc()).all()
+
+    neuer_token = None
+    new_token_value = request.args.get("neuer_token")
+    if new_token_value:
+        neuer_token = next((t for t in tokens if t.token == new_token_value), None)
+
+    qr_data_uri = _build_device_token_qr(server_url, neuer_token.token) if neuer_token and server_url else None
+
+    return render_template(
+        "users/device_tokens.html",
+        tokens=tokens,
+        zugang=zugang,
+        app_url_local=current_app.config.get("APP_URL_LOCAL"),
+        app_url_remote=current_app.config.get("APP_URL_REMOTE"),
+        neuer_token=neuer_token,
+        qr_data_uri=qr_data_uri,
+    )
+
+
+@users_bp.route("/settings/device-tokens/create", methods=["POST"])
+@login_required
+def create_device_token():
+    """Neues Geraete-Token erzeugen (Label ist Pflicht, zur Unterscheidung mehrerer Geraete)."""
+    label = request.form.get("label", "").strip()
+    if not label:
+        flash("Bitte eine Bezeichnung fuer das Geraet angeben.", "error")
+        return redirect(url_for("users.list_device_tokens"))
+
+    device_token = DeviceToken(user_id=current_user.id, label=label, token=secrets.token_urlsafe(32))
+    db.session.add(device_token)
+    db.session.commit()
+
+    flash(f'Geraet "{label}" gekoppelt. Token/QR-Code jetzt notieren -- er wird danach nicht erneut angezeigt.', "success")
+    return redirect(url_for("users.list_device_tokens", neuer_token=device_token.token, zugang=request.form.get("zugang", "local")))
+
+
+@users_bp.route("/settings/device-tokens/<int:token_id>/revoke", methods=["POST"])
+@login_required
+def revoke_device_token(token_id):
+    """Widerruft ein eigenes Geraete-Token. Auf user_id=current_user.id
+    scopen (nicht get_or_404) -- sonst koennte ein Nutzer per erratener ID
+    das Geraet eines anderen Users widerrufen (IDOR)."""
+    device_token = DeviceToken.query.filter_by(id=token_id, user_id=current_user.id).first_or_404()
+
+    label = device_token.label
+    db.session.delete(device_token)
+    db.session.commit()
+
+    flash(f'Geraet "{label}" widerrufen.', "success")
+    return redirect(url_for("users.list_device_tokens"))

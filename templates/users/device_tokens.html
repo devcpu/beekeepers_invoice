@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% block title %}Geräte-Tokens{% endblock %}
+{% block content %}
+    <div style="display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 2rem">
+        <h1>📱 Geräte-Tokens</h1>
+    </div>
+    <div class="card" style="margin-bottom: 1.5rem;">
+        <p style="color: #6c757d;">
+            Ein Geräte-Token erlaubt einer App (z.B. Android) dauerhaften Zugriff, ohne dass sich das Gerät jedes Mal mit Benutzername/Passwort einloggen muss.
+            Jedes Gerät bekommt ein eigenes Token -- einzeln benannt und einzeln widerrufbar.
+        </p>
+        <form method="POST" action="{{ url_for('users.create_device_token') }}">
+            <input type="hidden" name="zugang" value="{{ zugang }}">
+            <div class="form-row">
+                <div class="form-group" style="flex: 1;">
+                    <label for="label">Bezeichnung des Geräts *</label>
+                    <input type="text"
+                           name="label"
+                           id="label"
+                           required
+                           placeholder="z.B. Handy Janusz, Tablet Marktstand">
+                </div>
+                <div class="form-group" style="align-self: flex-end;">
+                    <button type="submit" class="btn btn-success">Gerät koppeln</button>
+                </div>
+            </div>
+        </form>
+    </div>
+    {% if neuer_token %}
+        <div class="card"
+             style="margin-bottom: 1.5rem;
+                    border: 2px solid #28a745">
+            <h3 style="margin-top: 0;">Neues Token für "{{ neuer_token.label }}"</h3>
+            <p style="color: #dc3545;">
+                <strong>Wichtig:</strong> dieses Token wird nur jetzt angezeigt. Bitte jetzt scannen oder kopieren -- danach ist es nicht mehr abrufbar.
+            </p>
+            <div class="form-row">
+                <div>
+                    <a href="{{ url_for('users.list_device_tokens', zugang='local') }}"
+                       class="btn btn-sm"
+                       style="background: {% if zugang == 'local' %}#007bff{% else %}#e9ecef{% endif %};
+                              color: {% if zugang == 'local' %}white{% else %}#000{% endif %};
+                              text-decoration: none">Homelab</a>
+                    <a href="{{ url_for('users.list_device_tokens', zugang='remote') }}"
+                       class="btn btn-sm"
+                       style="background: {% if zugang == 'remote' %}#007bff{% else %}#e9ecef{% endif %};
+                              color: {% if zugang == 'remote' %}white{% else %}#000{% endif %};
+                              text-decoration: none">Extern</a>
+                </div>
+            </div>
+            {% if qr_data_uri %}
+                <p style="margin-top: 1rem;">
+                    <img src="{{ qr_data_uri }}"
+                         alt="QR-Code Geräte-Token"
+                         style="max-width: 300px">
+                </p>
+            {% elif zugang == 'local' and not app_url_local %}
+                <p style="color: #6c757d; margin-top: 1rem;">
+                    Keine Homelab-URL konfiguriert (APP_URL_LOCAL) -- nur Text unten verwenden.
+                </p>
+            {% elif zugang == 'remote' and not app_url_remote %}
+                <p style="color: #6c757d; margin-top: 1rem;">
+                    Keine externe URL konfiguriert (APP_URL_REMOTE) -- nur Text unten verwenden.
+                </p>
+            {% endif %}
+            <p>
+                <code style="display: block;
+                             padding: 0.8rem;
+                             background: #f8f9fa;
+                             border-radius: 4px;
+                             word-break: break-all;
+                             user-select: all">{{ neuer_token.token }}</code>
+            </p>
+        </div>
+    {% endif %}
+    <div class="card">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                    <th style="padding: 1rem; text-align: left;">Bezeichnung</th>
+                    <th style="padding: 1rem; text-align: left;">Erzeugt am</th>
+                    <th style="padding: 1rem; text-align: left;">Zuletzt genutzt</th>
+                    <th style="padding: 1rem; text-align: right;">Aktionen</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for token in tokens %}
+                    <tr style="border-bottom: 1px solid #dee2e6;">
+                        <td style="padding: 1rem;">
+                            <strong>{{ token.label }}</strong>
+                        </td>
+                        <td style="padding: 1rem;">{{ token.created_at.strftime("%d.%m.%Y %H:%M") if token.created_at else '-' }}</td>
+                        <td style="padding: 1rem;">
+                            {% if token.last_used_at %}
+                                {{ token.last_used_at.strftime("%d.%m.%Y %H:%M") }}
+                                {% if token.last_used_ip %}
+                                    <br>
+                                    <small style="color: #6c757d;">{{ token.last_used_ip }}</small>
+                                {% endif %}
+                            {% else %}
+                                <span style="color: #6c757d;">Nie</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 1rem; text-align: right;">
+                            <form method="POST"
+                                  action="{{ url_for('users.revoke_device_token', token_id=token.id) }}"
+                                  style="display: inline">
+                                <button type="submit"
+                                        class="btn btn-sm"
+                                        style="background: #dc3545;
+                                               color: white;
+                                               padding: 0.4rem 0.8rem;
+                                               border: none;
+                                               border-radius: 4px;
+                                               cursor: pointer"
+                                        onclick="return confirm('Gerät \'{{ token.label }}\' wirklich widerrufen?')">
+                                    Widerrufen
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if tokens|length == 0 %}
+            <div style="padding: 3rem; text-align: center; color: #6c757d;">
+                <p>Noch keine Geräte gekoppelt.</p>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

@@ -45,9 +45,6 @@ class Config:
     SESSION_COOKIE_SAMESITE = "Lax"
     PERMANENT_SESSION_LIFETIME = 3600  # Session-Lebensdauer in Sekunden (1 Stunde)
 
-    # API Token Gültigkeit (in Tagen) - konfigurierbar
-    API_TOKEN_EXPIRY_DAYS = int(os.getenv("API_TOKEN_EXPIRY_DAYS", "30"))
-
     # 2FA
     TOTP_ISSUER_NAME = os.getenv("TOTP_ISSUER_NAME", "Rechnungssystem")
 
@@ -70,6 +67,13 @@ class Config:
 
     # PayPal
     PAYPAL = os.getenv("PAYPAL", "")
+
+    # Basis-URLs fuer den QR-Code der Geraete-Kopplung (/settings/device-tokens),
+    # jeweils optional -- Homelab-intern und Internet/VPN-extern koennen sich
+    # unterscheiden. Ist eine Variable nicht gesetzt, wird die zugehoerige
+    # Option in der UI ausgeblendet.
+    APP_URL_LOCAL = os.getenv("APP_URL_LOCAL")
+    APP_URL_REMOTE = os.getenv("APP_URL_REMOTE")
 
     # Standard-Steuersatz für neue Rechnungen (in %)
     DEFAULT_TAX_RATE = float(os.getenv("DEFAULT_TAX_RATE", "19.00"))

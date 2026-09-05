@@ -10,7 +10,7 @@ from flask_login import login_required
 
 from invoice_numbering import generate_invoice_number
 from jwt_api import generate_jwt_token, role_required_api, token_required
-from models import Customer, Invoice, InvoiceStatusLog, LineItem, Product, User, db
+from models import Customer, DeviceToken, Invoice, InvoiceStatusLog, LineItem, Product, User, db
 
 api_bp = Blueprint("api", __name__, url_prefix="/api")
 
@@ -96,6 +96,49 @@ def api_refresh_token(current_user):
     """Token erneuern"""
     token = generate_jwt_token(current_user.id)
     return jsonify({"token": token}), 200
+
+
+@api_bp.route("/auth/device", methods=["POST"])
+def api_device_login():
+    """Tauscht ein widerrufbares Geraete-Token (siehe /settings/device-tokens)
+    gegen ein kurzlebiges JWT -- fuer Android-App o.ae., ohne dass sich das
+    Geraet mit Benutzername/Passwort einloggen muss."""
+    from crowdsec_app import crowdsec_app
+
+    data = request.get_json()
+    token = data.get("token") if data else None
+
+    if not token:
+        return jsonify({"error": "token required"}), 400
+
+    token_row = DeviceToken.query.filter_by(token=token).first()
+
+    if not token_row or not token_row.user.is_active:
+        crowdsec_app.log_failed_login("device-token", reason="invalid_device_token")
+        return jsonify({"error": "invalid or revoked token"}), 401
+
+    token_row.last_used_at = datetime.utcnow()
+    token_row.last_used_ip = request.remote_addr
+    db.session.commit()
+
+    user = token_row.user
+    jwt_token = generate_jwt_token(user.id)
+
+    return (
+        jsonify(
+            {
+                "token": jwt_token,
+                "user": {
+                    "id": user.id,
+                    "username": user.username,
+                    "email": user.email,
+                    "role": user.role,
+                    "totp_enabled": user.totp_enabled,
+                },
+            }
+        ),
+        200,
+    )
 
 
 @api_bp.route("/invoices", methods=["GET"])

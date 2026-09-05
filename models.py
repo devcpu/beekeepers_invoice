@@ -33,10 +33,6 @@ class User(UserMixin, db.Model):
     totp_required = db.Column(db.Boolean, default=False)  # Admin kann 2FA-Pflicht erzwingen
     backup_codes = db.Column(db.Text, nullable=True)  # JSON-Array mit Backup-Codes (gehashed)
 
-    # API-Token für PWA
-    api_token = db.Column(db.String(255), nullable=True, unique=True)
-    api_token_expires = db.Column(db.DateTime, nullable=True)
-
     # Passwort-Reset
     reset_token = db.Column(db.String(255), nullable=True, unique=True)
     reset_token_expires = db.Column(db.DateTime, nullable=True)
@@ -139,25 +135,8 @@ class User(UserMixin, db.Model):
                 return True
         return False
 
-    def generate_api_token(self, expires_in_days=30):
-        """Generiert API-Token für PWA"""
-        import secrets
-        from datetime import timedelta
-
-        self.api_token = secrets.token_urlsafe(32)
-        self.api_token_expires = datetime.utcnow() + timedelta(days=expires_in_days)
-        return self.api_token
-
-    def verify_api_token(self, token):
-        """Verifiziert API-Token"""
-        if not self.api_token or not self.api_token_expires:
-            return False
-        if datetime.utcnow() > self.api_token_expires:
-            return False  # Token abgelaufen
-        return self.api_token == token
-
-    def to_dict(self, include_sensitive=False):
-        data = {
+    def to_dict(self):
+        return {
             "id": self.id,
             "username": self.username,
             "email": self.email,
@@ -167,10 +146,32 @@ class User(UserMixin, db.Model):
             "created_at": self.created_at.isoformat(),
             "last_login": self.last_login.isoformat() if self.last_login else None,
         }
-        if include_sensitive:
-            data["api_token"] = self.api_token
-            data["api_token_expires"] = self.api_token_expires.isoformat() if self.api_token_expires else None
-        return data
+
+
+class DeviceToken(db.Model):
+    """Widerrufbares Dauer-Token fuer Geraete-/App-Zugriff (Android-App o.ae.),
+    unabhaengig vom Web-Login-Session-Cookie. Ein User kann mehrere Geraete
+    koppeln (z.B. mehrere Handys), jedes einzeln benannt und widerrufbar."""
+
+    __tablename__ = "device_tokens"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    label = db.Column(db.String(100), nullable=False)
+    token = db.Column(db.String(255), unique=True, nullable=False, index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    last_used_at = db.Column(db.DateTime, nullable=True)
+    last_used_ip = db.Column(db.String(45), nullable=True)
+
+    user = db.relationship("User", backref="device_tokens")
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "label": self.label,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "last_used_at": self.last_used_at.isoformat() if self.last_used_at else None,
+        }
 
 
 class Product(db.Model):

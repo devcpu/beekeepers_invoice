@@ -71,7 +71,11 @@
                         <option value="">-- Eimer/Charge wählen --</option>
                         {% for charge in offene_chargen %}
                             <option value="{{ charge.id }}" data-sorte="{{ charge.sorte }}">
-                                {{ charge.eimer.eimer_nummer }} -- {{ charge.sorte }} ({{ "%.3f"|format(charge.restmenge_kg) }} kg verfügbar)
+                                {{ charge.eimer.eimer_nummer }} -- {{ charge.sorte }} ({{ "%.3f"|format(charge.restmenge_kg) }} kg verfügbar
+                                {% if charge.wassergehalt_prozent is not none %}
+                                    , {{ "%.2f"|format(charge.wassergehalt_prozent) }} % Wasser
+                                {% endif %}
+                                )
                             </option>
                         {% endfor %}
                     </select>

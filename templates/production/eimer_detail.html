@@ -44,6 +44,7 @@
                         <th>Schleudertag</th>
                         <th style="text-align: right;">Ursprüngliches Gewicht</th>
                         <th style="text-align: right;">Restmenge</th>
+                        <th style="text-align: right;">Wassergehalt</th>
                         <th>Status</th>
                     </tr>
                 </thead>
@@ -54,6 +55,9 @@
                             <td>{{ charge.schleudertag.isoformat() }}</td>
                             <td style="text-align: right;">{{ "%.3f"|format(charge.gewicht_kg) }} kg</td>
                             <td style="text-align: right;">{{ "%.3f"|format(charge.restmenge_kg) }} kg</td>
+                            <td style="text-align: right;">
+                                {{ "%.2f"|format(charge.wassergehalt_prozent) ~ ' %' if charge.wassergehalt_prozent is not none else '-' }}
+                            </td>
                             <td>
                                 {% if charge.status == "voll" %}
                                     <span class="badge badge-paid">Voll</span>

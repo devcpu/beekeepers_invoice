@@ -78,12 +78,19 @@ def befuellen_eimer(eimer_id):
                 flash("Das Gewicht muss größer als 0 sein.", "error")
                 return redirect(url_for("production.befuellen_eimer", eimer_id=eimer.id))
 
+            wassergehalt_str = request.form.get("wassergehalt_prozent", "").strip()
+            wassergehalt = Decimal(wassergehalt_str) if wassergehalt_str else None
+            if wassergehalt is not None and not 0 < wassergehalt < 100:
+                flash("Der Wassergehalt muss zwischen 0 und 100 % liegen.", "error")
+                return redirect(url_for("production.befuellen_eimer", eimer_id=eimer.id))
+
             charge = HonigCharge(
                 eimer_id=eimer.id,
                 sorte=request.form["sorte"],
                 schleudertag=datetime.strptime(request.form["schleudertag"], "%Y-%m-%d").date(),
                 gewicht_kg=gewicht,
                 restmenge_kg=gewicht,
+                wassergehalt_prozent=wassergehalt,
             )
             db.session.add(charge)
             db.session.commit()

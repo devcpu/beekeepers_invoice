@@ -45,6 +45,17 @@
                            placeholder="z.B. 22.5">
                 </div>
             </div>
+            <div class="form-group">
+                <label for="wassergehalt_prozent">Wassergehalt (%)</label>
+                <input type="number"
+                       name="wassergehalt_prozent"
+                       id="wassergehalt_prozent"
+                       step="0.01"
+                       min="0"
+                       max="100"
+                       placeholder="z.B. 17.5">
+                <small style="color: #7f8c8d;">Optional, schwankt auch innerhalb derselben Schleuderung von Eimer zu Eimer</small>
+            </div>
             <div style="margin-top: 2rem;">
                 <button type="submit" class="btn btn-primary">Befüllen</button>
                 <a href="{{ url_for('production.view_eimer', eimer_id=eimer.id) }}"

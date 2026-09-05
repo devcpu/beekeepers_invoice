@@ -202,7 +202,10 @@ Fuenf Modelle in `models.py`, ein eigenes Blueprint `blueprints/production.py`
   vorhanden, sonst `None`) -- ein Eimer hat immer hoechstens eine offene
   `HonigCharge` gleichzeitig (vom Blueprint erzwungen, nicht per DB-Constraint).
 - **`HonigCharge`**: eine Befuellung eines Eimers (Sorte, Schleudertag,
-  urspruengliches Gewicht, `restmenge_kg`). `status` ist eine **abgeleitete
+  urspruengliches Gewicht, `restmenge_kg`, optional `wassergehalt_prozent`).
+  `wassergehalt_prozent` gehoert bewusst zur Charge, nicht zum Eimer -- schwankt
+  auch innerhalb derselben Schleuderung von Eimer zu Eimer, ist also eine
+  Eigenschaft der jeweiligen Fuellung. `status` ist eine **abgeleitete
   Property** (`voll`/`teilweise_abgefuellt`/`leer`, aus `restmenge_kg` vs.
   `gewicht_kg` berechnet) -- KEINE DB-Spalte, daher kein `filter_by(status=...)`
   moeglich. Offene Chargen werden ueber

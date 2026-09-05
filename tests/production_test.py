@@ -154,7 +154,12 @@ def test_eimer_befuellen_route(client, admin_user, db_session):
 
     response = client.post(
         f"/production/eimer/{eimer.id}/befuellen",
-        data={"sorte": "Waldhonig", "schleudertag": date.today().isoformat(), "gewicht_kg": "22.500"},
+        data={
+            "sorte": "Waldhonig",
+            "schleudertag": date.today().isoformat(),
+            "gewicht_kg": "22.500",
+            "wassergehalt_prozent": "17.50",
+        },
         follow_redirects=True,
     )
     assert response.status_code == 200
@@ -164,7 +169,47 @@ def test_eimer_befuellen_route(client, admin_user, db_session):
     assert charge.sorte == "Waldhonig"
     assert charge.gewicht_kg == Decimal("22.500")
     assert charge.restmenge_kg == Decimal("22.500")
+    assert charge.wassergehalt_prozent == Decimal("17.50")
     assert charge.status == "voll"
+
+
+def test_eimer_befuellen_route_ohne_wassergehalt(client, admin_user, db_session):
+    """Wassergehalt ist optional -- ohne Angabe bleibt das Feld leer."""
+    login(client, "admin")
+    eimer = make_eimer()
+    db_session.add(eimer)
+    db_session.commit()
+
+    response = client.post(
+        f"/production/eimer/{eimer.id}/befuellen",
+        data={"sorte": "Waldhonig", "schleudertag": date.today().isoformat(), "gewicht_kg": "22.500"},
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+
+    charge = HonigCharge.query.filter_by(eimer_id=eimer.id).first()
+    assert charge is not None
+    assert charge.wassergehalt_prozent is None
+
+
+def test_eimer_befuellen_route_wassergehalt_ausserhalb_bereich_abgelehnt(client, admin_user, db_session):
+    login(client, "admin")
+    eimer = make_eimer()
+    db_session.add(eimer)
+    db_session.commit()
+
+    response = client.post(
+        f"/production/eimer/{eimer.id}/befuellen",
+        data={
+            "sorte": "Waldhonig",
+            "schleudertag": date.today().isoformat(),
+            "gewicht_kg": "22.500",
+            "wassergehalt_prozent": "104.00",
+        },
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+    assert HonigCharge.query.filter_by(eimer_id=eimer.id).first() is None
 
 
 def test_eimer_befuellen_route_abgelehnt_wenn_bereits_offene_charge(client, admin_user, db_session):

@@ -264,6 +264,7 @@ class HonigCharge(db.Model):
     schleudertag = db.Column(db.Date, nullable=False)
     gewicht_kg = db.Column(db.Numeric(10, 3), nullable=False)  # ursprüngliches Gewicht bei Befüllung
     restmenge_kg = db.Column(db.Numeric(10, 3), nullable=False)  # aktuell noch vorhanden (sinkt durch Abfüllungen)
+    wassergehalt_prozent = db.Column(db.Numeric(4, 2))  # optional, schwankt je Eimer auch innerhalb derselben Schleuderung
 
     notizen = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -295,6 +296,7 @@ class HonigCharge(db.Model):
             "schleudertag": self.schleudertag.isoformat() if self.schleudertag else None,
             "gewicht_kg": float(self.gewicht_kg),
             "restmenge_kg": float(self.restmenge_kg),
+            "wassergehalt_prozent": float(self.wassergehalt_prozent) if self.wassergehalt_prozent is not None else None,
             "status": self.status,
         }
 

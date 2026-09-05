@@ -75,6 +75,24 @@ def test_device_token_create_route_mehrfach_erzeugt_unterschiedliche_tokens(clie
     assert tokens[0].token != tokens[1].token
 
 
+def test_device_token_create_zeigt_rohtoken_nur_einmalig_ueber_session(client, admin_user, db_session):
+    """Der Rohtoken darf NICHT als Query-Parameter durch den Redirect wandern
+    (Secrets-in-URLs/Logs) -- er wird stattdessen kurz in der Session
+    gehalten und beim ersten GET danach wieder entfernt."""
+    login(client, "admin")
+    create_response = client.post("/settings/device-tokens/create", data={"label": "Handy Janusz"}, follow_redirects=False)
+    assert create_response.status_code == 302
+    assert "neuer_token=" not in create_response.headers["Location"]
+
+    device_token = DeviceToken.query.filter_by(user_id=admin_user.id).first()
+
+    first_get = client.get(create_response.headers["Location"])
+    assert device_token.token in first_get.get_data(as_text=True)
+
+    second_get = client.get("/settings/device-tokens")
+    assert device_token.token not in second_get.get_data(as_text=True)
+
+
 def test_device_token_revoke_eigenes_token(client, admin_user, db_session):
     dt = make_device_token(admin_user)
     db_session.add(dt)

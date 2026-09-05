@@ -9,7 +9,7 @@ import socket
 from io import BytesIO
 
 import qrcode
-from flask import Blueprint, current_app, flash, redirect, render_template, request, url_for
+from flask import Blueprint, current_app, flash, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required
 
 from auth_utils import role_required
@@ -335,7 +335,7 @@ def list_device_tokens():
     tokens = DeviceToken.query.filter_by(user_id=current_user.id).order_by(DeviceToken.created_at.desc()).all()
 
     neuer_token = None
-    new_token_value = request.args.get("neuer_token")
+    new_token_value = session.pop("_new_device_token", None)
     if new_token_value:
         neuer_token = next((t for t in tokens if t.token == new_token_value), None)
 
@@ -365,8 +365,10 @@ def create_device_token():
     db.session.add(device_token)
     db.session.commit()
 
+    session["_new_device_token"] = device_token.token
+
     flash(f'Geraet "{label}" gekoppelt. Token/QR-Code jetzt notieren -- er wird danach nicht erneut angezeigt.', "success")
-    return redirect(url_for("users.list_device_tokens", neuer_token=device_token.token, zugang=request.form.get("zugang", "local")))
+    return redirect(url_for("users.list_device_tokens", zugang=request.form.get("zugang", "local")))
 
 
 @users_bp.route("/settings/device-tokens/<int:token_id>/revoke", methods=["POST"])

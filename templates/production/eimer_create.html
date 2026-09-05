@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Neuer Eimer{% endblock %}
+{% block content %}
+    <div style="display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 2rem">
+        <h1>Neuen Eimer anlegen</h1>
+        <a href="{{ url_for('production.list_eimer') }}"
+           class="btn"
+           style="background: #95a5a6;
+                  color: white">Abbrechen</a>
+    </div>
+    <div class="card">
+        <form method="POST">
+            <div class="form-group">
+                <label for="eimer_nummer">Eimernummer *</label>
+                <input type="text"
+                       name="eimer_nummer"
+                       id="eimer_nummer"
+                       required
+                       placeholder="z.B. E-007">
+                <small style="color: #7f8c8d;">Feste Nummer, wird auf ein Etikett am Eimer geschrieben</small>
+            </div>
+            <div class="form-group">
+                <label for="kapazitaet_kg">Nennkapazität (kg)</label>
+                <input type="number"
+                       name="kapazitaet_kg"
+                       id="kapazitaet_kg"
+                       step="0.001"
+                       min="0"
+                       placeholder="z.B. 25">
+            </div>
+            <div style="margin-top: 2rem;">
+                <button type="submit" class="btn btn-primary">Eimer anlegen</button>
+                <a href="{{ url_for('production.list_eimer') }}"
+                   class="btn"
+                   style="background: #95a5a6;
+                          color: white;
+                          margin-left: 0.5rem">Abbrechen</a>
+            </div>
+        </form>
+    </div>
+{% endblock %}

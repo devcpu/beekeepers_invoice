@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Eimer {{ eimer.eimer_nummer }}{% endblock %}
+{% block content %}
+    <div style="display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 2rem">
+        <h1>🪣 Eimer {{ eimer.eimer_nummer }}</h1>
+        <div>
+            <a href="{{ url_for('production.list_eimer') }}"
+               class="btn"
+               style="background: #95a5a6;
+                      color: white">Zurück</a>
+            {% if not eimer.aktuelle_charge %}
+                <a href="{{ url_for('production.befuellen_eimer', eimer_id=eimer.id) }}"
+                   class="btn btn-success">Befüllen</a>
+            {% endif %}
+        </div>
+    </div>
+    <div class="card">
+        <h3>Stammdaten</h3>
+        <p>
+            <strong>Nummer:</strong> {{ eimer.eimer_nummer }}
+        </p>
+        <p>
+            <strong>Nennkapazität:</strong> {{ "%.3f"|format(eimer.kapazitaet_kg) ~ ' kg' if eimer.kapazitaet_kg else '-' }}
+        </p>
+        <p>
+            <strong>Status:</strong>
+            {% if eimer.aktuelle_charge %}
+                <span class="badge badge-paid">Befüllt</span>
+            {% else %}
+                <span class="badge" style="background: #95a5a6;">Frei</span>
+            {% endif %}
+        </p>
+    </div>
+    <div class="card" style="margin-top: 1.5rem;">
+        <h3>Historie der Befüllungen</h3>
+        {% if eimer.chargen %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Sorte</th>
+                        <th>Schleudertag</th>
+                        <th style="text-align: right;">Ursprüngliches Gewicht</th>
+                        <th style="text-align: right;">Restmenge</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for charge in eimer.chargen %}
+                        <tr>
+                            <td>{{ charge.sorte }}</td>
+                            <td>{{ charge.schleudertag.isoformat() }}</td>
+                            <td style="text-align: right;">{{ "%.3f"|format(charge.gewicht_kg) }} kg</td>
+                            <td style="text-align: right;">{{ "%.3f"|format(charge.restmenge_kg) }} kg</td>
+                            <td>
+                                {% if charge.status == "voll" %}
+                                    <span class="badge badge-paid">Voll</span>
+                                {% elif charge.status == "teilweise_abgefuellt" %}
+                                    <span class="badge" style="background: #f39c12; color: white;">Teilweise abgefüllt</span>
+                                {% else %}
+                                    <span class="badge" style="background: #95a5a6;">Leer</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>Dieser Eimer wurde noch nie befüllt.</p>
+        {% endif %}
+    </div>
+{% endblock %}

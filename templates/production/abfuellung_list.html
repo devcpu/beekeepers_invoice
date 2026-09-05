@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Abfüllungen{% endblock %}
+{% block content %}
+    <div style="display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 2rem">
+        <h1>🍯 Abfüllungen</h1>
+        <div>
+            <a href="{{ url_for('production.list_eimer') }}"
+               class="btn"
+               style="background: #95a5a6;
+                      color: white">Eimer</a>
+            <a href="{{ url_for('production.create_abfuellung') }}"
+               class="btn btn-primary">+ Neue Abfüllung</a>
+        </div>
+    </div>
+    <div class="card">
+        {% if abfuellungen %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Chargennummer (MHD)</th>
+                        <th>Sorte</th>
+                        <th>Abfülldatum</th>
+                        <th>Erzeugte Produkte</th>
+                        <th>Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for abfuellung in abfuellungen %}
+                        <tr>
+                            <td>
+                                <strong>{{ abfuellung.chargennummer }}</strong>
+                            </td>
+                            <td>{{ abfuellung.sorte }}</td>
+                            <td>{{ abfuellung.abfuelldatum.isoformat() }}</td>
+                            <td>
+                                {% for ergebnis in abfuellung.ergebnisse %}
+                                    {{ ergebnis.anzahl_glaeser }}x {{ ergebnis.product.name }}
+                                    {% if not loop.last %},{% endif %}
+                                {% endfor %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('production.view_abfuellung', charge_id=abfuellung.id) }}"
+                                   class="btn btn-primary"
+                                   style="padding: 0.4rem 0.8rem;
+                                          font-size: 0.875rem">Details</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>
+                Noch keine Abfüllungen vorhanden. <a href="{{ url_for('production.create_abfuellung') }}">Erste Abfüllung anlegen</a>
+            </p>
+        {% endif %}
+    </div>
+{% endblock %}

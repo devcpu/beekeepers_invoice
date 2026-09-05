@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 import hashlib
 import json
 from datetime import datetime
@@ -216,6 +217,179 @@ class Product(db.Model):
     def increase_stock(self, amount):
         """Erhöht den Lagerbestand"""
         self.number += amount
+
+
+class HonigEimer(db.Model):
+    """Physischer Behälter (10-25kg) für Honig-Rohmaterial -- feste Nummer, wiederverwendet"""
+
+    __tablename__ = "honig_eimer"
+
+    id = db.Column(db.Integer, primary_key=True)
+    eimer_nummer = db.Column(db.String(20), unique=True, nullable=False, index=True)  # Etikett am Eimer, z.B. "E-007"
+    kapazitaet_kg = db.Column(db.Numeric(10, 3))  # Nennkapazität, informativ
+    aktiv = db.Column(db.Boolean, default=True)  # False = ausgemustert/beschädigt
+    notizen = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    chargen = db.relationship("HonigCharge", backref="eimer", lazy=True, order_by="HonigCharge.created_at.desc()")
+
+    def __repr__(self):
+        return f"<HonigEimer {self.eimer_nummer}>"
+
+    @property
+    def aktuelle_charge(self):
+        """Charge mit Status != 'leer', sofern vorhanden (ein Eimer hat max. eine offene Füllung)"""
+        return next((c for c in self.chargen if c.status != "leer"), None)
+
+    def to_dict(self):
+        aktuelle = self.aktuelle_charge
+        return {
+            "id": self.id,
+            "eimer_nummer": self.eimer_nummer,
+            "kapazitaet_kg": float(self.kapazitaet_kg) if self.kapazitaet_kg else None,
+            "aktiv": self.aktiv,
+            "aktuelle_charge": aktuelle.to_dict() if aktuelle else None,
+        }
+
+
+class HonigCharge(db.Model):
+    """Eine Befüllung eines Eimers: Sorte, Schleudertag, Gewicht -- Rohmaterial-Charge"""
+
+    __tablename__ = "honig_chargen"
+
+    id = db.Column(db.Integer, primary_key=True)
+    eimer_id = db.Column(db.Integer, db.ForeignKey("honig_eimer.id"), nullable=False)
+
+    sorte = db.Column(db.String(100), nullable=False)  # z.B. "Blütenhonig", "Waldhonig"
+    schleudertag = db.Column(db.Date, nullable=False)
+    gewicht_kg = db.Column(db.Numeric(10, 3), nullable=False)  # ursprüngliches Gewicht bei Befüllung
+    restmenge_kg = db.Column(db.Numeric(10, 3), nullable=False)  # aktuell noch vorhanden (sinkt durch Abfüllungen)
+
+    notizen = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def __repr__(self):
+        return f"<HonigCharge Eimer:{self.eimer_id} {self.sorte} {self.restmenge_kg}kg>"
+
+    @property
+    def status(self):
+        """Abgeleitet aus restmenge_kg, statt gespeichert -- kann nicht mit gewicht_kg/restmenge_kg auseinanderlaufen.
+
+        voll: gerade befüllt, unangetastet
+        teilweise_abgefuellt: mind. eine Entnahme, Rest noch vorhanden
+        leer: restmenge_kg == 0, Eimer wieder frei für neue Befüllung
+        """
+        if self.restmenge_kg <= 0:
+            return "leer"
+        if self.restmenge_kg < self.gewicht_kg:
+            return "teilweise_abgefuellt"
+        return "voll"
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "eimer_id": self.eimer_id,
+            "eimer_nummer": self.eimer.eimer_nummer if self.eimer else None,
+            "sorte": self.sorte,
+            "schleudertag": self.schleudertag.isoformat() if self.schleudertag else None,
+            "gewicht_kg": float(self.gewicht_kg),
+            "restmenge_kg": float(self.restmenge_kg),
+            "status": self.status,
+        }
+
+
+class AbfuellCharge(db.Model):
+    """Kopf einer Abfüllsitzung: Chargennummer (=MHD), Quell-Eimer -- kann mehrere Produkte/Glasgrößen erzeugen"""
+
+    __tablename__ = "abfuell_chargen"
+
+    id = db.Column(db.Integer, primary_key=True)
+    chargennummer = db.Column(db.String(50), unique=True, nullable=False, index=True)  # angezeigtes MHD, z.B. "2028-06-15"
+    mindesthaltbarkeitsdatum = db.Column(db.Date, nullable=False)
+
+    sorte = db.Column(db.String(100), nullable=False)  # frei editierbar, ggf. "Mischung"
+    abfuelldatum = db.Column(db.Date, nullable=False, default=datetime.utcnow)
+
+    notizen = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    quellen = db.relationship("AbfuellungQuelle", backref="abfuellung", lazy=True, cascade="all, delete-orphan")
+    ergebnisse = db.relationship("AbfuellErgebnis", backref="abfuellung", lazy=True, cascade="all, delete-orphan")
+
+    def __repr__(self):
+        return f"<AbfuellCharge {self.chargennummer}>"
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "chargennummer": self.chargennummer,
+            "mindesthaltbarkeitsdatum": self.mindesthaltbarkeitsdatum.isoformat(),
+            "sorte": self.sorte,
+            "abfuelldatum": self.abfuelldatum.isoformat(),
+            "quellen": [
+                {
+                    "eimer_nummer": q.honig_charge.eimer.eimer_nummer,
+                    "honig_charge_id": q.honig_charge_id,
+                    "entnommene_menge_kg": float(q.entnommene_menge_kg),
+                }
+                for q in self.quellen
+            ],
+            "ergebnisse": [{"product_id": e.product_id, "product_name": e.product.name, "anzahl_glaeser": e.anzahl_glaeser} for e in self.ergebnisse],
+        }
+
+
+class AbfuellungQuelle(db.Model):
+    """Assoziationsmodell: welche Honig-Charge(n)/Eimer wurden für eine Abfüllsitzung angezapft, mit welcher Menge"""
+
+    __tablename__ = "abfuellung_quellen"
+
+    id = db.Column(db.Integer, primary_key=True)
+    abfuell_charge_id = db.Column(db.Integer, db.ForeignKey("abfuell_chargen.id"), nullable=False)
+    honig_charge_id = db.Column(db.Integer, db.ForeignKey("honig_chargen.id"), nullable=False)
+    entnommene_menge_kg = db.Column(db.Numeric(10, 3), nullable=False)
+
+    honig_charge = db.relationship("HonigCharge", backref="entnahmen")
+
+    def __repr__(self):
+        return f"<AbfuellungQuelle Charge:{self.abfuell_charge_id} Eimer-Charge:{self.honig_charge_id}>"
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "abfuell_charge_id": self.abfuell_charge_id,
+            "honig_charge_id": self.honig_charge_id,
+            "eimer_nummer": self.honig_charge.eimer.eimer_nummer if self.honig_charge else None,
+            "entnommene_menge_kg": float(self.entnommene_menge_kg),
+        }
+
+
+class AbfuellErgebnis(db.Model):
+    """Eine Positionszeile einer Abfüllsitzung: welches Produkt/welche Glasgröße, wie viele Gläser"""
+
+    __tablename__ = "abfuell_ergebnisse"
+
+    id = db.Column(db.Integer, primary_key=True)
+    abfuell_charge_id = db.Column(db.Integer, db.ForeignKey("abfuell_chargen.id"), nullable=False)
+
+    product_id = db.Column(db.Integer, db.ForeignKey("products.id"), nullable=False)
+    product = db.relationship("Product", backref="abfuell_ergebnisse")
+
+    anzahl_glaeser = db.Column(db.Integer, nullable=False)
+    anzahl_glaeser_aktuell = db.Column(db.Integer, nullable=False)  # sinkt durch Verkauf (Phase 2), erstmal = anzahl_glaeser
+
+    def __repr__(self):
+        return f"<AbfuellErgebnis Charge:{self.abfuell_charge_id} Product:{self.product_id} x{self.anzahl_glaeser}>"
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "abfuell_charge_id": self.abfuell_charge_id,
+            "product_id": self.product_id,
+            "product_name": self.product.name if self.product else None,
+            "anzahl_glaeser": self.anzahl_glaeser,
+            "anzahl_glaeser_aktuell": self.anzahl_glaeser_aktuell,
+        }
 
 
 class Customer(db.Model):

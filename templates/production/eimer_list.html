@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Honig-Eimer{% endblock %}
+{% block content %}
+    <div style="display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 2rem">
+        <h1>🪣 Honig-Eimer</h1>
+        <div>
+            <a href="{{ url_for('production.list_abfuellungen') }}"
+               class="btn"
+               style="background: #95a5a6;
+                      color: white">Abfüllungen</a>
+            <a href="{{ url_for('production.create_eimer') }}"
+               class="btn btn-primary">+ Neuer Eimer</a>
+        </div>
+    </div>
+    <div class="card">
+        {% if eimer_liste %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nummer</th>
+                        <th>Status</th>
+                        <th>Sorte</th>
+                        <th>Schleudertag</th>
+                        <th style="text-align: right;">Restmenge</th>
+                        <th>Aktionen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for eimer in eimer_liste %}
+                        {% set charge = eimer.aktuelle_charge %}
+                        <tr>
+                            <td>
+                                <strong>{{ eimer.eimer_nummer }}</strong>
+                            </td>
+                            <td>
+                                {% if charge %}
+                                    <span class="badge badge-paid">Befüllt</span>
+                                {% else %}
+                                    <span class="badge" style="background: #95a5a6;">Frei</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ charge.sorte if charge else '-' }}</td>
+                            <td>{{ charge.schleudertag.isoformat() if charge else '-' }}</td>
+                            <td style="text-align: right;">{{ "%.3f"|format(charge.restmenge_kg) ~ ' kg' if charge else '-' }}</td>
+                            <td>
+                                <a href="{{ url_for('production.view_eimer', eimer_id=eimer.id) }}"
+                                   class="btn btn-primary"
+                                   style="padding: 0.4rem 0.8rem;
+                                          font-size: 0.875rem">Details</a>
+                                {% if not charge %}
+                                    <a href="{{ url_for('production.befuellen_eimer', eimer_id=eimer.id) }}"
+                                       class="btn btn-success"
+                                       style="padding: 0.4rem 0.8rem;
+                                              font-size: 0.875rem">Befüllen</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>
+                Noch keine Eimer vorhanden. <a href="{{ url_for('production.create_eimer') }}">Ersten Eimer anlegen</a>
+            </p>
+        {% endif %}
+    </div>
+{% endblock %}

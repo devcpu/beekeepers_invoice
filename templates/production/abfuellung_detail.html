@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Abfüllung {{ abfuellung.chargennummer }}{% endblock %}
+{% block content %}
+    <div style="display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 2rem">
+        <h1>🍯 Abfüllung {{ abfuellung.chargennummer }}</h1>
+        <div>
+            <a href="{{ url_for('production.list_abfuellungen') }}"
+               class="btn"
+               style="background: #95a5a6;
+                      color: white">Zurück</a>
+            <form method="POST"
+                  action="{{ url_for('production.delete_abfuellung', charge_id=abfuellung.id) }}"
+                  style="display: inline"
+                  onsubmit="return confirm('Abfüllung wirklich stornieren? Bestand und Restmenge werden zurückgebucht.');">
+                <button type="submit" class="btn" style="background: #e74c3c; color: white;">Stornieren</button>
+            </form>
+        </div>
+    </div>
+    <div class="card">
+        <h3>Chargendaten</h3>
+        <p>
+            <strong>Chargennummer (MHD):</strong> {{ abfuellung.chargennummer }}
+        </p>
+        <p>
+            <strong>Mindesthaltbarkeitsdatum:</strong> {{ abfuellung.mindesthaltbarkeitsdatum.isoformat() }}
+        </p>
+        <p>
+            <strong>Sorte:</strong> {{ abfuellung.sorte }}
+        </p>
+        <p>
+            <strong>Abfülldatum:</strong> {{ abfuellung.abfuelldatum.isoformat() }}
+        </p>
+    </div>
+    <div class="card" style="margin-top: 1.5rem;">
+        <h3>Quellen (Rohmaterial-Herkunft)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Eimer</th>
+                    <th style="text-align: right;">Entnommene Menge</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for quelle in abfuellung.quellen %}
+                    <tr>
+                        <td>{{ quelle.honig_charge.eimer.eimer_nummer }}</td>
+                        <td style="text-align: right;">{{ "%.3f"|format(quelle.entnommene_menge_kg) }} kg</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr style="font-weight: bold;">
+                    <td>Entnommene Rohmenge total</td>
+                    <td style="text-align: right;">{{ "%.3f"|format(abfuellung.quellen | sum(attribute="entnommene_menge_kg") ) }} kg</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+    <div class="card" style="margin-top: 1.5rem;">
+        <h3>Ergebnisse (erzeugte Produkte)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Produkt</th>
+                    <th style="text-align: right;">Anzahl Gläser</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ergebnis in abfuellung.ergebnisse %}
+                    <tr>
+                        <td>{{ ergebnis.product.name }}</td>
+                        <td style="text-align: right;">{{ ergebnis.anzahl_glaeser }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

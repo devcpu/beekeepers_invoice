@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% block title %}Neue Abfüllung{% endblock %}
+{% block extra_css %}
+    <style>
+    .quelle-row, .ergebnis-row {
+        display: grid;
+        grid-template-columns: 2fr 1fr auto;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+        align-items: center;
+    }
+
+    .btn-remove {
+        background: #e74c3c;
+        color: white;
+        border: none;
+        padding: 0.6rem;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    #sorten-warnung {
+        display: none;
+        background: #fff3cd;
+        border: 1px solid #f39c12;
+        color: #856404;
+        padding: 0.8rem;
+        border-radius: 4px;
+        margin-bottom: 1rem;
+    }
+    </style>
+{% endblock %}
+{% block content %}
+    <div style="display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 2rem">
+        <h1>Neue Abfüllung</h1>
+        <a href="{{ url_for('production.list_abfuellungen') }}"
+           class="btn"
+           style="background: #95a5a6;
+                  color: white">Abbrechen</a>
+    </div>
+    <div class="card">
+        <form method="POST" id="abfuellungForm">
+            <h3 style="margin-top: 0; margin-bottom: 1rem;">Chargendaten</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="chargennummer">Chargennummer (MHD) *</label>
+                    <input type="date"
+                           name="chargennummer"
+                           id="chargennummer"
+                           required
+                           value="{{ mhd_vorschlag }}">
+                    <small style="color: #7f8c8d;">Vorschlag: heute + 2 Jahre. Bei Kollision mit einer bestehenden Chargennummer bitte abweichendes Datum wählen.</small>
+                </div>
+                <div class="form-group">
+                    <label for="sorte">Sorte *</label>
+                    <input type="text"
+                           name="sorte"
+                           id="sorte"
+                           required
+                           placeholder="z.B. Blütenhonig oder Mischung">
+                </div>
+            </div>
+            <h3 style="margin-top: 2rem; margin-bottom: 1rem;">Quellen (Eimer/Chargen)</h3>
+            <div id="sorten-warnung">⚠ Achtung: die gewählten Quellen haben unterschiedliche Sorten.</div>
+            <div id="quellenContainer">
+                <div class="quelle-row">
+                    <select name="honig_charge_id[]" class="quelle-select" required>
+                        <option value="">-- Eimer/Charge wählen --</option>
+                        {% for charge in offene_chargen %}
+                            <option value="{{ charge.id }}" data-sorte="{{ charge.sorte }}">
+                                {{ charge.eimer.eimer_nummer }} -- {{ charge.sorte }} ({{ "%.3f"|format(charge.restmenge_kg) }} kg verfügbar)
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <input type="number"
+                           name="entnommene_menge_kg[]"
+                           step="0.001"
+                           min="0.001"
+                           placeholder="Menge (kg)"
+                           required>
+                    <button type="button" class="btn-remove" onclick="removeRow(this)">×</button>
+                </div>
+            </div>
+            <button type="button"
+                    class="btn btn-success"
+                    onclick="addQuelleRow()"
+                    style="margin-top: 0.5rem">+ Weitere Quelle</button>
+            <h3 style="margin-top: 2rem; margin-bottom: 1rem;">Ergebnisse (erzeugte Produkte)</h3>
+            <div id="ergebnisseContainer">
+                <div class="ergebnis-row">
+                    <select name="product_id[]" required>
+                        <option value="">-- Produkt wählen --</option>
+                        {% for produkt in produkte %}
+                            <option value="{{ produkt.id }}">{{ produkt.name }} ({{ produkt.quantity or '-' }})</option>
+                        {% endfor %}
+                    </select>
+                    <input type="number"
+                           name="anzahl_glaeser[]"
+                           min="1"
+                           placeholder="Anzahl Gläser"
+                           required>
+                    <button type="button" class="btn-remove" onclick="removeRow(this)">×</button>
+                </div>
+            </div>
+            <button type="button"
+                    class="btn btn-success"
+                    onclick="addErgebnisRow()"
+                    style="margin-top: 0.5rem">+ Weiteres Produkt</button>
+            <div style="margin-top: 2rem;">
+                <button type="submit" class="btn btn-primary">Abfüllung anlegen</button>
+                <a href="{{ url_for('production.list_abfuellungen') }}"
+                   class="btn"
+                   style="background: #95a5a6;
+                          color: white;
+                          margin-left: 0.5rem">Abbrechen</a>
+            </div>
+        </form>
+    </div>
+    <script>
+    const quelleRowTemplate = document.querySelector('#quellenContainer .quelle-row').outerHTML;
+    const ergebnisRowTemplate = document.querySelector('#ergebnisseContainer .ergebnis-row').outerHTML;
+
+    function addQuelleRow() {
+        const container = document.getElementById('quellenContainer');
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = quelleRowTemplate;
+        const row = wrapper.firstElementChild;
+        row.querySelectorAll('input').forEach(input => input.value = '');
+        row.querySelector('select').selectedIndex = 0;
+        container.appendChild(row);
+        attachSortenCheck(row.querySelector('select'));
+    }
+
+    function addErgebnisRow() {
+        const container = document.getElementById('ergebnisseContainer');
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = ergebnisRowTemplate;
+        const row = wrapper.firstElementChild;
+        row.querySelectorAll('input').forEach(input => input.value = '');
+        row.querySelector('select').selectedIndex = 0;
+        container.appendChild(row);
+    }
+
+    function removeRow(button) {
+        const row = button.closest('.quelle-row, .ergebnis-row');
+        const container = row.parentElement;
+        if (container.children.length > 1) {
+            row.remove();
+            checkSortenMischung();
+        }
+    }
+
+    function checkSortenMischung() {
+        const selects = document.querySelectorAll('.quelle-select');
+        const sorten = new Set();
+        selects.forEach(select => {
+            const option = select.options[select.selectedIndex];
+            if (option && option.dataset.sorte) {
+                sorten.add(option.dataset.sorte);
+            }
+        });
+        document.getElementById('sorten-warnung').style.display = sorten.size > 1 ? 'block' : 'none';
+    }
+
+    function attachSortenCheck(select) {
+        select.addEventListener('change', checkSortenMischung);
+    }
+
+    document.querySelectorAll('.quelle-select').forEach(attachSortenCheck);
+    </script>
+{% endblock %}

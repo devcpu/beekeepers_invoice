@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Eimer {{ eimer.eimer_nummer }} befüllen{% endblock %}
+{% block content %}
+    <div style="display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 2rem">
+        <h1>Eimer {{ eimer.eimer_nummer }} befüllen</h1>
+        <a href="{{ url_for('production.view_eimer', eimer_id=eimer.id) }}"
+           class="btn"
+           style="background: #95a5a6;
+                  color: white">Abbrechen</a>
+    </div>
+    <div class="card">
+        <form method="POST">
+            <div class="form-group">
+                <label for="sorte">Sorte *</label>
+                <input type="text"
+                       name="sorte"
+                       id="sorte"
+                       required
+                       list="sorten-datalist"
+                       placeholder="z.B. Blütenhonig">
+                <datalist id="sorten-datalist">
+                    {% for sorte in sorten %}<option value="{{ sorte }}"></option>{% endfor %}
+                </datalist>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="schleudertag">Schleudertag *</label>
+                    <input type="date"
+                           name="schleudertag"
+                           id="schleudertag"
+                           required
+                           value="{{ today }}">
+                </div>
+                <div class="form-group">
+                    <label for="gewicht_kg">Gewicht (kg) *</label>
+                    <input type="number"
+                           name="gewicht_kg"
+                           id="gewicht_kg"
+                           step="0.001"
+                           min="0.001"
+                           required
+                           placeholder="z.B. 22.5">
+                </div>
+            </div>
+            <div style="margin-top: 2rem;">
+                <button type="submit" class="btn btn-primary">Befüllen</button>
+                <a href="{{ url_for('production.view_eimer', eimer_id=eimer.id) }}"
+                   class="btn"
+                   style="background: #95a5a6;
+                          color: white;
+                          margin-left: 0.5rem">Abbrechen</a>
+            </div>
+        </form>
+    </div>
+{% endblock %}

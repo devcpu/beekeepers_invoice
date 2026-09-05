@@ -12,6 +12,7 @@ from blueprints.delivery_notes import delivery_notes_bp
 from blueprints.invoices import invoices_bp
 from blueprints.main import main_bp
 from blueprints.pos import pos_bp
+from blueprints.production import production_bp
 from blueprints.products import products_bp
 from blueprints.reports import reports_bp
 from blueprints.users import users_bp
@@ -54,6 +55,7 @@ def create_app(config_name="default"):
     app.register_blueprint(users_bp)
     app.register_blueprint(delivery_notes_bp)
     app.register_blueprint(invoices_bp)
+    app.register_blueprint(production_bp)
 
     @login_manager.user_loader
     def load_user(user_id):

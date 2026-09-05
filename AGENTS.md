@@ -210,6 +210,16 @@ Fuenf Modelle in `models.py`, ein eigenes Blueprint `blueprints/production.py`
   `gewicht_kg` berechnet) -- KEINE DB-Spalte, daher kein `filter_by(status=...)`
   moeglich. Offene Chargen werden ueber
   `HonigCharge.query.filter(HonigCharge.restmenge_kg > 0)` abgefragt.
+  Das Befuellen-Formular (`/production/eimer/<id>/befuellen`, GET) schlaegt
+  Sorte/Schleudertag/Wassergehalt der **zuletzt angelegten** `HonigCharge`
+  ueber ALLE Eimer hinweg vor (`HonigCharge.query.order_by(HonigCharge.id.desc()).first()`
+  in `blueprints/production.py::befuellen_eimer`) -- beim Schleudern fallen
+  mehrere Eimer nacheinander an, Auswiegen/Wassergehalt-Messung passiert oft
+  erst Tage spaeter mit denselben Werten fuer alle Eimer derselben
+  Schleuderung; wird die Sorte zwischendurch geaendert, soll der naechste
+  Eimer den geaenderten Wert uebernehmen, nicht den vom allerersten Eimer.
+  Nur ein Vorschlag (Formularwert bleibt aenderbar), `gewicht_kg` wird
+  bewusst NICHT vorbefuellt (variiert immer von Eimer zu Eimer).
 - **`AbfuellCharge`**: Kopf einer Abfuellsitzung. Traegt die Chargennummer (=
   MHD, **global eindeutig**, `unique=True`) und die Quellen -- NICHT
   `product_id`/Glasanzahl direkt, siehe naechster Punkt. Eine Chargennummer
@@ -433,7 +443,7 @@ nie einen nackten String an `.execute()` uebergeben.
 
 ## Tests
 
-101 Tests in `tests/` (pytest, In-Memory-SQLite via `TestingConfig`):
+105 Tests in `tests/` (pytest, In-Memory-SQLite via `TestingConfig`):
 
 - `conftest.py`: Fixtures (`app`, `client`, `db_session`, `admin_user`/
   `cashier_user`/`reseller_user`, `customer`, `product`) und Helper- Funktionen
@@ -456,8 +466,10 @@ nie einen nackten String an `.execute()` uebergeben.
   `templates/*.html` auf einen tatsaechlich registrierten Endpoint zeigt, sowie
   dass `login_manager.login_view` aufloesbar ist.
 - `production_test.py`: Honig-Rueckverfolgbarkeit -- `HonigCharge.status`-
-  Property-Uebergaenge, Eimer-Befuellungs-Guard, Abfuellung aus mehreren Eimern
-  (m:n), Abfuellsitzung mit mehreren Produkt-Ergebnissen (teilt sich eine
+  Property-Uebergaenge, Eimer-Befuellungs-Guard, Vorbefuellung des
+  Befuellen-Formulars aus der zuletzt angelegten `HonigCharge` (Sorte/
+  Schleudertag/Wassergehalt), Abfuellung aus mehreren Eimern (m:n),
+  Abfuellsitzung mit mehreren Produkt-Ergebnissen (teilt sich eine
   Chargennummer), Validierung (doppelte Chargennummer, leere Quellen/
   Ergebnisse, Entnahme > Restmenge), Storno-Route mit Rueckbuchung.
 

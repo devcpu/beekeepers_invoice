@@ -233,6 +233,53 @@ def test_eimer_befuellen_route_abgelehnt_wenn_bereits_offene_charge(client, admi
     assert len(chargen) == 1  # kein zweiter offener Datensatz entstanden
 
 
+def test_befuellen_formular_uebernimmt_werte_der_letzten_charge(client, admin_user, db_session):
+    """Beim Schleudern fallen viele Eimer an, ausgewogen/analysiert wird oft erst
+    Tage spaeter -- das Formular soll Sorte/Schleudertag/Wassergehalt der
+    zuletzt angelegten Charge vorschlagen, nicht die eines frueheren Eimers."""
+    login(client, "admin")
+    eimer1 = make_eimer(eimer_nummer="E-050")
+    eimer2 = make_eimer(eimer_nummer="E-051")
+    db_session.add_all([eimer1, eimer2])
+    db_session.commit()
+
+    charge1 = make_honig_charge(eimer1, sorte="Waldhonig", schleudertag=date(2026, 9, 1), gewicht_kg=Decimal("20.000"))
+    charge1.wassergehalt_prozent = Decimal("16.00")
+    db_session.add(charge1)
+    db_session.commit()
+
+    charge2 = make_honig_charge(eimer2, sorte="Blütenhonig", schleudertag=date(2026, 9, 3), gewicht_kg=Decimal("18.000"))
+    charge2.wassergehalt_prozent = Decimal("17.80")
+    db_session.add(charge2)
+    db_session.commit()
+
+    eimer3 = make_eimer(eimer_nummer="E-052")
+    db_session.add(eimer3)
+    db_session.commit()
+
+    response = client.get(f"/production/eimer/{eimer3.id}/befuellen")
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+
+    # Werte der zuletzt angelegten Charge (charge2), nicht der aeltesten (charge1)
+    assert 'value="Blütenhonig"' in html
+    assert 'value="2026-09-03"' in html
+    assert 'value="17.80"' in html
+
+
+def test_befuellen_formular_ohne_bisherige_charge_zeigt_leere_felder(client, admin_user, db_session):
+    login(client, "admin")
+    eimer = make_eimer()
+    db_session.add(eimer)
+    db_session.commit()
+
+    response = client.get(f"/production/eimer/{eimer.id}/befuellen")
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+
+    assert 'value=""' in html  # Sorte-Feld leer, keine vorherige Charge vorhanden
+
+
 # ---------------------------------------------------------------------------
 # Routen: Abfuellung anlegen -- ein Eimer, ein Ergebnis
 # ---------------------------------------------------------------------------

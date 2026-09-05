@@ -102,7 +102,14 @@ def befuellen_eimer(eimer_id):
             flash("Ungültige Eingabe.", "error")
 
     sorten = [s[0] for s in db.session.query(HonigCharge.sorte).distinct().all()]
-    return render_template("production/eimer_befuellen.html", eimer=eimer, sorten=sorten, today=date.today().isoformat())
+    letzte_charge = HonigCharge.query.order_by(HonigCharge.id.desc()).first()
+    return render_template(
+        "production/eimer_befuellen.html",
+        eimer=eimer,
+        sorten=sorten,
+        today=date.today().isoformat(),
+        letzte_charge=letzte_charge,
+    )
 
 
 @production_bp.route("/production/abfuellungen")

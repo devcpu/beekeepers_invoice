@@ -20,6 +20,7 @@
                        id="sorte"
                        required
                        list="sorten-datalist"
+                       value="{{ letzte_charge.sorte if letzte_charge else '' }}"
                        placeholder="z.B. Blütenhonig">
                 <datalist id="sorten-datalist">
                     {% for sorte in sorten %}<option value="{{ sorte }}"></option>{% endfor %}
@@ -32,7 +33,7 @@
                            name="schleudertag"
                            id="schleudertag"
                            required
-                           value="{{ today }}">
+                           value="{{ letzte_charge.schleudertag.isoformat() if letzte_charge else today }}">
                 </div>
                 <div class="form-group">
                     <label for="gewicht_kg">Gewicht (kg) *</label>
@@ -53,6 +54,7 @@
                        step="0.01"
                        min="0"
                        max="100"
+                       value="{{ letzte_charge.wassergehalt_prozent if letzte_charge and letzte_charge.wassergehalt_prozent is not none else '' }}"
                        placeholder="z.B. 17.5">
                 <small style="color: #7f8c8d;">Optional, schwankt auch innerhalb derselben Schleuderung von Eimer zu Eimer</small>
             </div>
